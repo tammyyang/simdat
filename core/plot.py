@@ -698,10 +698,11 @@ class PLOT(tools.DATA, COLORS):
                               show_text=True, clear=True,
                               cmap=plt.cm.Blues, norm=True):
 
-        plot_matrix(cm, title=title, xticks=xticks, yticks=yticks,
-                    fname=fname, xlabel=xlabel, ylabel=ylabel,
-                    xrotation=xrotation, show_text=show_text,
-                    cmap=cmap, norm=norm, clear=clear, show_axis=show_axis)
+        self.plot_matrix(cm, title=title, xticks=xticks, yticks=yticks,
+                         fname=fname, xlabel=xlabel, ylabel=ylabel,
+                         xrotation=xrotation, show_text=show_text,
+                         cmap=cmap, norm=norm, clear=clear,
+                         show_axis=show_axis)
 
     def plot_matrix(self, cm, title='',
                     xticks=None, yticks=None, fname='./cm.png',
@@ -753,6 +754,8 @@ class PLOT(tools.DATA, COLORS):
             xticks = xtick_marks
         if yticks is None:
             yticks = ytick_marks
+        xticks = self.pick_ticks(xticks)
+        yticks = self.pick_ticks(yticks)
         plt.xticks(xtick_marks, xticks, rotation=xrotation)
         plt.yticks(ytick_marks, yticks)
         plt.tight_layout()
@@ -764,3 +767,17 @@ class PLOT(tools.DATA, COLORS):
             plt.savefig(fname)
         if clear:
             plt.cla()
+
+    def pick_ticks(self, ticks, at=20):
+        """Pick ticks to be shown"""
+
+        N = len(ticks)
+        r = N/at
+        out_ticks = []
+        for i in range(0, N):
+            if N % r == 0:
+                out_ticks.append(ticks[i])
+            else:
+                out_ticks.append('')
+        return out_ticks
+
