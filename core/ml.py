@@ -44,17 +44,7 @@ class DataArgs(Args):
     def _add_args(self):
         """Called by __init__ of Args class"""
 
-        self._add_da_args()
-
-    def _add_da_args(self):
-        """Add additional arguments for MLData class"""
-
         self.target = None
-        self.start = None
-        self.end = None
-        self.query_map = None
-        self.extend_map = None
-
         self.target_bin = True
         self.inc_flat = True
         self.label = 'trend'
@@ -62,6 +52,12 @@ class DataArgs(Args):
         self.shift = 1
         self.norm = 'l2'
         self.extend_by_shift = True
+
+        self._add_da_args()
+
+    def _add_da_args(self):
+        """Add additional arguments"""
+        pass
 
 
 class MLArgs(Args):
