@@ -3,10 +3,13 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
+from simdat.core import tools
 from simdat.core import plot
 
+io = tools.MLIO()
+pl = plot.PLOT()
 
-class OPENFACE(plot.PLOT):
+class OPENFACE:
     def get_name_root(self, name):
         return name.split('_')[0]
 
@@ -38,7 +41,7 @@ class OPENFACE(plot.PLOT):
         """
 
         fname = ''.join([preffix, '_', brand_id, '.json'])
-        ori_input = self.parse_json(fname)
+        ori_input = io.parse_json(fname)
         r = ori_input['results']
         output = []
         img_counter = 0.0
@@ -71,7 +74,7 @@ class OPENFACE(plot.PLOT):
         fname -- input json file to be opened (default: './output.json')
 
         """
-        output = self.parse_json(fname)
+        output = io.parse_json(fname)
         keys = self.find_unique_keys(output)
         index = {}
 
@@ -80,7 +83,7 @@ class OPENFACE(plot.PLOT):
             for name2 in output[name1]:
                 self.assign_index(index, name2)
 
-        combs = list(self.get_combinations(keys))
+        combs = list(io.get_combinations(keys))
         result = {}
 
         for comb in combs:
@@ -105,10 +108,11 @@ class OPENFACE(plot.PLOT):
         cm = plt.cm.Greys
         for comb in combs:
             rkey = comb[0] + '-' + comb[1]
-            self.plot_confusion_matrix(result[rkey], show_text=False,
-                                       norm=False, xlabel='', ylabel='',
-                                       yticks=index[comb[0]],
-                                       xticks=index[comb[1]],
-                                       title="Compare Image Distances",
-                                       xrotation=90, cmap=cm,
-                                       fname='./cm_' + rkey + '.png')
+            pl.plot_confusion_matrix(result[rkey], show_text=False,
+                                     norm=False, xlabel='', ylabel='',
+                                     yticks=index[comb[0]],
+                                     xticks=index[comb[1]],
+                                     title="Compare Image Distances",
+                                     xrotation=90, cmap=cm,
+                                     fname='./cm_' + rkey + '.png')
+        return result, index

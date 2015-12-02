@@ -22,6 +22,14 @@ class TOOLS(object):
     def tools_init(self):
         pass
 
+    def gen_md5(self, data):
+        """Generate md5 hash for a data structure"""
+
+        import hashlib
+        import pickle
+        _data = pickle.dumps(data)
+        return hashlib.md5(_data).hexdigest()
+
     def print_time(self, t0, s):
         """Print how much time has been spent
 
@@ -51,6 +59,17 @@ class TOOLS(object):
         from itertools import combinations_with_replacement
         return combinations_with_replacement(input_list, n)
 
+    def check_exist(self, path):
+        """Check if the path exists
+
+        @param path: path to check
+
+        """
+        if os.path.exists(path):
+            return True
+        else:
+            raise Exception("%s does not exist" % path)
+
     def check_ext(self, file_name, extensions):
         """Check the file extension
 
@@ -71,12 +90,22 @@ class TOOLS(object):
         return False
 
     def dir_check(self, dirpath):
+        self.check_dir(dirpath)
+
+    def check_dir(self, dirpath):
         """Check if a directory exists.
            create it if doean't"""
 
         if not os.path.exists(dirpath):
             print("Creating %s" % dirpath)
             os.makedirs(dirpath)
+
+    def check_parent(self, fpath):
+        """Check if the parent directory exists.
+           create it if doean't"""
+
+        dirname = os.path.dirname(fpath)
+        self.check_dir(dirname)
 
     def move_file(self, fpath, newhome, ask=True):
         """Move a file
@@ -90,7 +119,7 @@ class TOOLS(object):
         """
         import shutil
         dirname = os.path.dirname(fpath)
-        self.dir_check(newhome)
+        self.check_dir(newhome)
         newpath = fpath.replace(dirname, newhome)
         if ask:
             yn = self.check_yes(raw_input('Do you want to move %s to %s?'
@@ -213,6 +242,14 @@ class MLIO(TOOLS):
 
 
 class DATA(TOOLS):
+    def cal_vector_length(self, array):
+        """Calculate the length of an input array"""
+
+        import math
+        array = self.conv_to_np(array)
+        mean = np.square(array).mean()
+        return math.sqrt(mean)
+
     def cal_standard_error(self, array):
         """Calculate standard error"""
 
