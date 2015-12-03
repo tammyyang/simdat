@@ -128,7 +128,27 @@ class SVMArgs(MLArgs):
                 self.grids[i]['C'] = deepcopy(self.C)
 
 
-class MLRun():
+class MLTools():
+    def __init__(self):
+        return
+
+    def get_class_from_path(self, opath, keyword):
+        """Get object class from the file path
+
+        @param opath: path of the object
+        @param keyword: keyword of the classes to search
+
+        """
+        _dirname = os.path.dirname(opath)
+        while len(_dirname) > 1:
+            base = os.path.basename(_dirname)
+            if base.find(keyword) > -1:
+                return base
+            _dirname = os.path.dirname(_dirname)
+        return None
+
+
+class MLRun(MLTools):
     def __init__(self, pfs=['ml.json']):
         """Init function of MLRun class
 
