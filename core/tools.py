@@ -151,6 +151,20 @@ class MLIO(TOOLS):
                 output.append(list(row))
         return output
 
+    def read_json_to_df(self, fname, orient='columns'):
+        """Read json file as pandas DataFrame
+
+        @param fname: input filename
+
+        Keyword arguments:
+        orient -- split/records/index/columns/values (default: 'columns')
+        @return pandas DataFranm
+
+        """
+        import pandas as pd
+        self.check_exist(fname)
+        return pd.read_json(fname, orient=orient)
+
     def read_csv_to_np(self, fname='data.csv'):
         """Read CSV file as numpy array
 
@@ -160,6 +174,7 @@ class MLIO(TOOLS):
         @return numpy array
 
         """
+        self.check_exist(fname)
         content = self.read_csv(fname=fname, ftype=float)
         return DATA().conv_to_np(content)
 
@@ -277,6 +292,14 @@ class DATA(TOOLS):
                 fields[target] = 'target'
             return pd.DataFrame(array, columns=fields)
         return pd.DataFrame(array)
+
+    def df_header(self, df):
+        """Get the header of the DataFrame as a list"""
+
+        header = df.columns.values.tolist()
+        print('DataFrame header:')
+        print(header)
+        return header
 
     def check_len(self, a, b):
         """Check if two arrays have the same length"""
