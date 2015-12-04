@@ -151,19 +151,20 @@ class MLIO(TOOLS):
                 output.append(list(row))
         return output
 
-    def read_json_to_df(self, fname, orient='columns'):
+    def read_json_to_df(self, fname, orient='columns', np=False):
         """Read json file as pandas DataFrame
 
         @param fname: input filename
 
         Keyword arguments:
         orient -- split/records/index/columns/values (default: 'columns')
+        np     -- true to direct decoding to numpy arrays (default: False)
         @return pandas DataFranm
 
         """
         import pandas as pd
         self.check_exist(fname)
-        return pd.read_json(fname, orient=orient)
+        return pd.read_json(fname, orient=orient, numpy=np)
 
     def read_csv_to_np(self, fname='data.csv'):
         """Read CSV file as numpy array

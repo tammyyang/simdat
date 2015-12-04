@@ -7,12 +7,16 @@ from simdat.core import ml
 
 io = tools.MLIO()
 pl = plot.PLOT()
-mltl = ml.MLTools()
 
 
-class OFArgs(ml.Args):
+class OFArgs(ml.SVMArgs):
     def _add_args(self):
         """Init arguments of openface"""
+        self._add_svm_args()
+        self._add_of_args()
+
+    def _add_of_args(self):
+        """Add additional arguments for OpenFace"""
 
         self.pathOF = os.path.join(os.getenv("HOME"), 'openface')
         self.pathdlib = os.path.join(os.getenv("HOME"),
@@ -33,11 +37,11 @@ class OFArgs(ml.Args):
         self.pathModel = None
 
 
-class OpenFace(object):
-    def __init__(self):
+class OpenFace(ml.SVMRun):
+    def ml_init(self, pfs):
         """Init function of OpenFace"""
 
-        self.args = OFArgs(pfs=['openface.json'])
+        self.args = OFArgs(pfs=pfs)
         self.set_paths()
 
     def set_paths(self):
@@ -64,6 +68,41 @@ class OpenFace(object):
         sys.path.append(self.args.pathdlib)
         return
 
+    def read_df(self, inf, dtype='train'):
+        """Read results as Pandas DataFrame
+
+        @param inf: input file to be read
+
+        Keyword arguments:
+        dtype -- data type, train or test (default: train)
+
+        """
+        df = io.read_json_to_df(inf, orient='index', np=False)
+        target = 'class'
+        fname = './mapping.json'
+        if dtype == 'train':
+            mapping = self.map_cats_int(df, groupby=target)
+            print("Map of target - int is written to %s" % fname)
+            io.write_json(mapping, fname=fname)
+        elif dtype == 'test':
+            mapping = io.parse_json(fname)
+        df[target] = df[target].apply(lambda x: mapping[x])
+        data = df['rep'].tolist()
+        target = df[target].tolist()
+        return data, target
+
+    def map_cats_int(self, df, groupby='class'):
+        """Create a mapping for the categories to integers
+
+        @param df: dataframe to map
+
+        Keyword arguments:
+        groupby -- keyword of the class to be mapped
+
+        """
+        cats = df.groupby(groupby).count().index.tolist()
+        return dict(zip(cats, range(0, len(cats))))
+
     def get_rep(self, imgPath, net=None,
                 output=False, class_kwd='person-'):
         """Get facenet representation of a image
@@ -88,7 +127,7 @@ class OpenFace(object):
         key = io.gen_md5(rep)
         result = {key: {'path': imgPath, 'rep': rep,
                         'dim': self.args.imgDim,
-                        'class': mltl.get_class_from_path(imgPath,
+                        'class': self.get_class_from_path(imgPath,
                                                           class_kwd)}}
         if output:
             io.check_parent(self.args.outf)

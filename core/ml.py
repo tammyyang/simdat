@@ -80,12 +80,12 @@ class SVMArgs(MLArgs):
     def _add_args(self):
         """Function to add additional arguments"""
 
-        self._add_ml_args()
         self._add_svm_args()
 
     def _add_svm_args(self):
         """Add additional arguments for SVM class"""
 
+        self._add_ml_args()
         self.kernel = 'rbf'
         self.degree = 3
         self.C = [0.1, 1, 10, 100, 1000]
@@ -172,6 +172,8 @@ class MLRun(MLTools):
         method -- machine learning method to be used (default: svm.SVC)
 
         """
+        data = dt.conv_to_np(data)
+        target = dt.conv_to_np(target)
         length = dt.check_len(data, target)
         train_d, test_d, train_t, test_t = \
             self.split_samples(data, target)
