@@ -126,6 +126,8 @@ class SVMArgs(MLArgs):
 
 class MLTools():
     def __init__(self):
+        """Init if MLTools, don't do anything here"""
+
         return
 
     def get_class_from_path(self, opath, keyword):
@@ -288,9 +290,11 @@ class MLRun(MLTools):
         outf -- path of the output file (default: no output)
 
         """
+        t0 = time.time()
         result = {'Result': trained_model.predict(data)}
         if outf is not None:
             io.write_json(result, fname=outf)
+        t0 = dt.print_time(t0, 'predict %i data entries' % len(data))
         return result
 
     def test(self, data, target, trained_model):
@@ -303,6 +307,7 @@ class MLRun(MLTools):
         @return a dictionary of accuracy, std error and predicted output
 
         """
+        t0 = time.time()
         from sklearn import metrics
         print_len = 50
         predicted = trained_model.predict(data)
@@ -318,6 +323,7 @@ class MLRun(MLTools):
         logging.debug(str(predicted[:print_len]))
         logging.debug('First %i results from the testing target' % print_len)
         logging.debug(str(target[:print_len]))
+        t0 = dt.print_time(t0, 'test %i data entries' % len(data))
 
         return result
 
