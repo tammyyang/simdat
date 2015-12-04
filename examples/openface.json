@@ -1,0 +1,12 @@
+{
+    "pathOF": "/tammy/openface/",
+    "parentModel": "models",
+    "parentdlibModel": "dlib",
+    "fdlibFaceMean": "mean.csv",
+    "fdlibPredictor": "shape_predictor_68_face_landmarks.dat",
+    "fmodel": "nn4.v1.t7",
+    "imgDim": 96,
+    "outf": "./result.json",
+    "cuda": false,
+    "outd": "/tammy/openface_rep.json"
+}
