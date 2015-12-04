@@ -262,7 +262,7 @@ class MLRun(MLTools):
         io.dir_check(self.args.outd)
         outf = ''.join([self.args.outd, fprefix, '.pkl'])
 
-        with open(outf, 'w') as f:
+        with open(outf, 'wb') as f:
             pickle.dump(model, f)
         print("Model is saved to %s" % outf)
 
@@ -276,7 +276,7 @@ class MLRun(MLTools):
             raise Exception("Model file %s does not exist." % fmodel)
 
         import pickle
-        with open(fmodel, 'r') as f:
+        with open(fmodel, 'rb') as f:
             model = pickle.load(f)
         return model
 
