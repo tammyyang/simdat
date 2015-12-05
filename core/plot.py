@@ -304,7 +304,7 @@ class PLOT(tools.DATA, COLORS):
         ax = plt.axes([0.1, 0.1, 0.8, 0.8])
         fracs = data if bfrac else self.get_perc(data)
         if pie_labels is None:
-            pie_labels = map(str, range(1, len(data)+1))
+            pie_labels = list(map(str, range(1, len(data)+1)))
         color_class = getattr(self, cg)
 
         args = {'labels': pie_labels,
@@ -356,7 +356,7 @@ class PLOT(tools.DATA, COLORS):
         ind = np.arange(_len)
         stack_colors = getattr(self, cg)
         if xticks is None:
-            xticks = map(str, range(1, _len+1))
+            xticks = list(map(str, range(1, _len+1)))
 
         ymax = 0
         ymin = 0
@@ -408,7 +408,7 @@ class PLOT(tools.DATA, COLORS):
 
         data = self.conv_to_np(data)
         if xticks is None:
-            xticks = map(str, range(1, len(data)+1))
+            xticks = list(map(str, range(1, len(data)+1)))
 
         args = {'color': color, 'ecolor': ecolor}
         if err is not None:

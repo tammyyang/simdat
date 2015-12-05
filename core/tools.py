@@ -328,7 +328,7 @@ class DATA(TOOLS):
     def is_np(self, array):
         """Check if the input array is in type of np.ndarray"""
 
-        if type(array) is np.ndarray:
+        if type(array) in [np.ndarray, np.int64]:
             return True
         return False
 
