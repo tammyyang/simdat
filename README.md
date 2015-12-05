@@ -9,6 +9,7 @@ simdat states for "simple data analysis toolset" and is a simple tool for data a
 ```shell
 $cp simdat/setdevenv . && source setdevenv
 ```
+* To use the plotting methods with ssh or docker, copy core/matplotlibrc to ~/.config/matplotlib/
 
 ## Setup
 * Include simdat in your python scripts
