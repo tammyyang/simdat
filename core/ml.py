@@ -297,7 +297,7 @@ class MLRun(MLTools):
         t0 = dt.print_time(t0, 'predict %i data entries' % len(data))
         return result
 
-    def test(self, data, target, trained_model):
+    def test(self, data, target, trained_model, target_names=None):
         """Test the existing model
 
         @param data: Input testing data array (multi-dimensional np array)
@@ -314,10 +314,13 @@ class MLRun(MLTools):
         accuracy = metrics.accuracy_score(target, predicted)
         error = dt.cal_standard_error(predicted)
 
+        print(metrics.classification_report(target, predicted,
+                                            target_names=target_names))
         print("Accuracy: %0.5f (+/- %0.5f)" % (accuracy, error))
 
         result = {'accuracy': accuracy, 'error': error,
-                  'predicted': predicted}
+                  'predicted': predicted,
+                  'cm': sklearn.metrics.confusion_matrix(target, predicted)}
 
         logging.debug('First %i results from the predicted' % print_len)
         logging.debug(str(predicted[:print_len]))

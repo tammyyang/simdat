@@ -68,28 +68,36 @@ class OpenFace(ml.SVMRun):
         sys.path.append(self.args.pathdlib)
         return
 
-    def read_df(self, inf, dtype='train'):
+    def read_df(self, inf, dtype='train', mpf='./mapping.json'):
         """Read results as Pandas DataFrame
 
         @param inf: input file to be read
 
         Keyword arguments:
         dtype -- data type, train or test (default: train)
+        mpf   -- file name of the mapping (default: ./mapping.json)
 
         """
         df = io.read_json_to_df(inf, orient='index', np=False)
         target = 'class'
-        fname = './mapping.json'
         if dtype == 'train':
             mapping = self.map_cats_int(df, groupby=target)
             print("Map of target - int is written to %s" % fname)
-            io.write_json(mapping, fname=fname)
+            io.write_json(mapping, fname=mpf)
         elif dtype == 'test':
-            mapping = io.parse_json(fname)
+            mapping = io.parse_json(mpf)
         df[target] = df[target].apply(lambda x: mapping[x])
         data = df['rep'].tolist()
         target = df[target].tolist()
-        return data, target
+        target_names = self.mapping_keys(mapping)
+        return data, target, target_names
+
+    def mapping_keys(self, mapping):
+        """Sort mapping dictionaty and get the keys"""
+
+        from operator import itemgetter
+        _labels = sorted(mapping.items(), key=itemgetter(1))
+        return [i[0] for i in _labels]
 
     def map_cats_int(self, df, groupby='class'):
         """Create a mapping for the categories to integers
