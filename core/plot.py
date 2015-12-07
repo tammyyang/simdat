@@ -772,6 +772,8 @@ class PLOT(tools.DATA, COLORS):
         """Pick ticks to be shown"""
 
         N = len(ticks)
+        if N < at:
+            return ticks
         r = N/at
         out_ticks = []
         for i in range(0, N):

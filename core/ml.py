@@ -320,7 +320,7 @@ class MLRun(MLTools):
 
         result = {'accuracy': accuracy, 'error': error,
                   'predicted': predicted,
-                  'cm': sklearn.metrics.confusion_matrix(target, predicted)}
+                  'cm': metrics.confusion_matrix(target, predicted)}
 
         logging.debug('First %i results from the predicted' % print_len)
         logging.debug(str(predicted[:print_len]))
