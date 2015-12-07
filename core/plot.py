@@ -754,10 +754,10 @@ class PLOT(tools.DATA, COLORS):
             xticks = xtick_marks
         if yticks is None:
             yticks = ytick_marks
-        xticks = self.pick_ticks(xticks)
-        yticks = self.pick_ticks(yticks)
         plt.xticks(xtick_marks, xticks, rotation=xrotation)
         plt.yticks(ytick_marks, yticks)
+        if len(xticks) > 20 or len(yticks) > 20:
+            plt.locator_params(nbins=20)
         plt.tight_layout()
         plt.ylabel(ylabel, color='#504A4B')
         plt.xlabel(xlabel, color='#504A4B')
@@ -767,19 +767,4 @@ class PLOT(tools.DATA, COLORS):
             plt.savefig(fname)
         if clear:
             plt.cla()
-
-    def pick_ticks(self, ticks, at=20):
-        """Pick ticks to be shown"""
-
-        N = len(ticks)
-        if N < at:
-            return ticks
-        r = N/at
-        out_ticks = []
-        for i in range(0, N):
-            if N % r == 0:
-                out_ticks.append(ticks[i])
-            else:
-                out_ticks.append('')
-        return out_ticks
 
