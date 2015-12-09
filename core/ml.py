@@ -317,9 +317,9 @@ class MLRun(MLTools):
         accuracy = metrics.accuracy_score(target, predicted)
         error = dt.cal_standard_error(predicted)
 
-        print(metrics.classification_report(target, predicted,
-                                            target_names=target_names))
-        print("Accuracy: %0.5f (+/- %0.5f)" % (accuracy, error))
+        logging.debug(metrics.classification_report(target, predicted,
+                                                    target_names=target_names))
+        logging.debug("Accuracy: %0.5f (+/- %0.5f)" % (accuracy, error))
 
         result = {'accuracy': accuracy, 'error': error,
                   'predicted': predicted, 'prob': prob,
@@ -329,7 +329,6 @@ class MLRun(MLTools):
         logging.debug(str(predicted[:print_len]))
         logging.debug('First %i results from the testing target' % print_len)
         logging.debug(str(target[:print_len]))
-        t0 = dt.print_time(t0, 'test %i data entries' % len(data))
 
         return result
 
