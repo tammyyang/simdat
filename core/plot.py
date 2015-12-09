@@ -276,6 +276,26 @@ class PLOT(tools.DATA, COLORS):
         if clear:
             plt.cla()
 
+    def patch_rectangle_img(self, img_path, pos, new_name=None):
+        """Open an image and patch a rectangle to it
+
+        @param img_path: path of the image
+        @param pos: position list, [left, top, right, bottom]
+
+        Keyword parameters:
+        new_name -- path of the patched image
+                    (default: ori_name.replace('.jpg', '_patch.jpg'))
+
+        """
+        import cv2
+        img = cv2.imread(img_path)
+        if new_name is None:
+            new_name = img_path.replace('.jpg', '_patch.jpg')
+            new_name = new_name.replace('png', '_patch.png')
+        cv2.rectangle(img, (pos[0], pos[1]),
+                      (pos[2], pos[3]), (0, 255, 0), 2)
+        cv2.imwrite(new_name, img)
+
     def plot_pie(self, data, bfrac=False, shadow=False, clear=True,
                  title='Pie Chart', cg='pink', radius=1.1,
                  pie_labels=None, expl=None, fname='./pie.png'):
