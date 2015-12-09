@@ -6,6 +6,7 @@
     "fdlibPredictor": "shape_predictor_68_face_landmarks.dat",
     "fmodel": "nn4.v1.t7",
     "imgDim": 96,
+    "align_method": "perspective",
     "outf": "./result.json",
     "cuda": false,
     "outd": "/tammy/openface_rep.json"

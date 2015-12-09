@@ -29,6 +29,8 @@ class OFArgs(ml.SVMArgs):
         self.parentOFModel = 'openface'
         self.fmodel = 'nn4.v1.t7'
         self.imgDim = 96
+        # tightcrop/affine/perspective/homography
+        self.align_method = 'affine'
         self.cuda = True
         self.outf = './result.json'
 
@@ -220,8 +222,11 @@ class OpenFace(ml.SVMRun):
             return None
 
         alignedFaces = []
+        logging.debug("Align the face using %s method"
+                      % self.args.align_method)
         for bb in bbs:
-            alignedFace = align.alignImg("affine", self.args.imgDim, img, bb)
+            alignedFace = align.alignImg(self.args.align_method,
+                                         self.args.imgDim, img, bb)
             if alignedFace is None:
                 continue
             alignedFaces.append([alignedFace, [bb.left(), bb.top(),
