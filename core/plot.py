@@ -767,4 +767,3 @@ class PLOT(tools.DATA, COLORS):
             plt.savefig(fname)
         if clear:
             plt.cla()
-
