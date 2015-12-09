@@ -291,7 +291,7 @@ class PLOT(tools.DATA, COLORS):
         img = cv2.imread(img_path)
         if new_name is None:
             new_name = img_path.replace('.jpg', '_patch.jpg')
-            new_name = new_name.replace('png', '_patch.png')
+            new_name = new_name.replace('.png', '_patch.png')
         cv2.rectangle(img, (pos[0], pos[1]),
                       (pos[2], pos[3]), (0, 255, 0), 2)
         cv2.imwrite(new_name, img)
