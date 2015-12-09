@@ -179,11 +179,12 @@ class MLRun(MLTools):
         length = dt.check_len(data, target)
         train_d, test_d, train_t, test_t = \
             self.split_samples(data, target)
-        model = self.train_with_grids(train_d, train_t, method)
+        model, mf = self.train_with_grids(train_d, train_t, method)
         if len(test_t) > 0:
             result = self.test(test_d, test_t, model)
         else:
             print('No additional testing is performed')
+        return mf
 
     def split_samples(self, data, target):
         """Split samples
@@ -206,7 +207,7 @@ class MLRun(MLTools):
         @param target: Input training target array (1D np array)
         @param method: machine learning method to be used
 
-        @return clf model trained
+        @return clf model trained, path of the output model
 
         """
 
@@ -230,10 +231,10 @@ class MLRun(MLTools):
                                     n_folds=self.args.nfolds)
         if method == 'SVC':
             from sklearn import svm
-            model = svm.SVC()
+            model = svm.SVC(probability=True)
         else:
             from sklearn import svm
-            model = sklearn.svm.SVC()
+            model = sklearn.svm.SVC(probability=True)
         clf = GridSearchCV(model, self.args.grids,
                            n_jobs=self.args.njobs,
                            cv=cv, verbose=verbose)
@@ -247,9 +248,9 @@ class MLRun(MLTools):
         best_parms = clf.best_params_
         t0 = dt.print_time(t0, 'find best parameters - train_with_grids')
         print ('Best parameters are: %s' % str(best_parms))
-        self.save_model(method, clf)
+        mf = self.save_model(method, clf)
 
-        return clf
+        return clf, mf
 
     def save_model(self, fprefix, model):
         """Save model to a file for future use
@@ -265,6 +266,7 @@ class MLRun(MLTools):
         with open(outf, 'wb') as f:
             pickle.dump(model, f)
         print("Model is saved to %s" % outf)
+        return outf
 
     def read_model(self, fmodel):
         """Read model from a file
@@ -311,6 +313,7 @@ class MLRun(MLTools):
         from sklearn import metrics
         print_len = 50
         predicted = trained_model.predict(data)
+        prob = trained_model.predict_proba(data)
         accuracy = metrics.accuracy_score(target, predicted)
         error = dt.cal_standard_error(predicted)
 
@@ -319,7 +322,7 @@ class MLRun(MLTools):
         print("Accuracy: %0.5f (+/- %0.5f)" % (accuracy, error))
 
         result = {'accuracy': accuracy, 'error': error,
-                  'predicted': predicted,
+                  'predicted': predicted, 'prob': prob,
                   'cm': metrics.confusion_matrix(target, predicted)}
 
         logging.debug('First %i results from the predicted' % print_len)
