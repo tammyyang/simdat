@@ -78,6 +78,17 @@ class OpenFace(ml.SVMRun):
         mpf   -- file name of the mapping (default: ./mapping.json)
         group -- true to group data by path (default: False)
 
+        @return results after reading the input db file
+                if group:
+                    result['data'] = [list[data_from_image_1],
+                                      list[data_from_image_2],.. etc]
+                else:
+                    result['data'] = [data_from_image_1,
+                                      data_from_image_2, .. etc]
+                same for 'pos' and 'target'
+                result['path'] = list[paths of images]
+                result['target_names'] = keys of the mapping file
+
         """
         df = io.read_json_to_df(inf, orient='index', np=False)
         _target = 'class'
