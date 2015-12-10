@@ -10,9 +10,13 @@ pl = plot.PLOT()
 
 
 class OFArgs(ml.SVMArgs):
+# class OFArgs(ml.RFArgs):
+# class OFArgs(ml.NeighborsArgs):
     def _add_args(self):
         """Init arguments of openface"""
         self._add_svm_args()
+        # self._add_rf_args()
+        # self._add_neighbors_args()
         self._add_of_args()
 
     def _add_of_args(self):
@@ -40,6 +44,8 @@ class OFArgs(ml.SVMArgs):
 
 
 class OpenFace(ml.SVMRun):
+# class OpenFace(ml.RFRun):
+# class OpenFace(ml.NeighborsRun):
     def ml_init(self, pfs):
         """Init function of OpenFace"""
 
