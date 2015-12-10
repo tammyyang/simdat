@@ -1,5 +1,6 @@
 import os
 import time
+import math
 import logging
 from simdat.core import tools
 
@@ -86,11 +87,12 @@ class NeighborsArgs(MLArgs):
         """Add additional arguments for SVM class"""
 
         self._add_ml_args()
-        self.grids = [{'n_neighbors': [3, 4, 5, 6],
+        self.grids = [{'n_neighbors': 0,
                        'weights': ['uniform', 'distance'],
                        'algorithm': ['ball_tree', 'kd_tree', 'brute'],
                        'leaf_size': [20, 30, 40],
                        'p': [1, 2, 3, 4]}]
+        self.more = False
 
 
 class RFArgs(MLArgs):
@@ -252,7 +254,6 @@ class MLRun(MLTools):
 
         print_len = 50
         logging.debug('Splitting the jobs into %i' % self.args.njobs)
-        print('GridSearchCV for: %s' % str(self.args.grids))
         log_level = logging.getLogger().getEffectiveLevel()
 
         def _verbose_level(log_level):
@@ -269,10 +270,17 @@ class MLRun(MLTools):
             model = ensemble.RandomForestClassifier()
         elif method == 'Neighbors':
             from sklearn import neighbors
-            model = neighbors.KNeighborsClassifier()
+            if self.args.grids[0]['n_neighbors'] == 0:
+                if self.args.more:
+                    n_neighbors = int(len(data)/2)
+                else:
+                    n_neighbors = int(math.sqrt(len(data)))
+                self.args.grids[0]['n_neighbors'] = [n_neighbors]
+                model = neighbors.KNeighborsClassifier()
         else:
             from sklearn import svm
             model = sklearn.svm.SVC(probability=True)
+        print('GridSearchCV for: %s' % str(self.args.grids))
         clf = GridSearchCV(model, self.args.grids,
                            n_jobs=self.args.njobs,
                            cv=cv, verbose=verbose)
