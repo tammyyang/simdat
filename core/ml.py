@@ -76,6 +76,38 @@ class MLArgs(Args):
         self.outd = './'
 
 
+class NeighborsArgs(MLArgs):
+    def _add_args(self):
+        """Function to add additional arguments"""
+
+        self._add_neighbors_args()
+
+    def _add_neighbors_args(self):
+        """Add additional arguments for SVM class"""
+
+        self._add_ml_args()
+        self.grids = [{'n_neighbors': [3, 4, 5, 6],
+                       'weights': ['uniform', 'distance'],
+                       'algorithm': ['ball_tree', 'kd_tree', 'brute'],
+                       'leaf_size': [20, 30, 40],
+                       'p': [1, 2, 3, 4]}]
+
+
+class RFArgs(MLArgs):
+    def _add_args(self):
+        """Function to add additional arguments"""
+
+        self._add_rf_args()
+
+    def _add_rf_args(self):
+        """Add additional arguments for SVM class"""
+
+        self._add_ml_args()
+        self.grids = [{'max_depth': [3, 4, 5, 6, 7],
+                       'n_estimators': [5, 10, 15],
+                       'max_features': [1, 2, 'sqrt', 'log2']}]
+
+
 class SVMArgs(MLArgs):
     def _add_args(self):
         """Function to add additional arguments"""
@@ -232,6 +264,12 @@ class MLRun(MLTools):
         if method == 'SVC':
             from sklearn import svm
             model = svm.SVC(probability=True)
+        elif method == 'RF':
+            from sklearn import ensemble
+            model = ensemble.RandomForestClassifier()
+        elif method == 'Neighbors':
+            from sklearn import neighbors
+            model = neighbors.KNeighborsClassifier()
         else:
             from sklearn import svm
             model = sklearn.svm.SVC(probability=True)
@@ -331,6 +369,46 @@ class MLRun(MLTools):
         logging.debug(str(target[:print_len]))
 
         return result
+
+
+class NeighborsRun(MLRun):
+    def ml_init(self, pfs):
+        """Initialize arguments needed
+
+        @param pfs: profiles to be read (used by SVMArgs)
+
+        """
+        self.args = NeighborsArgs(pfs=pfs)
+
+    def run(self, data, target):
+        """Run spliting sample, training and testing
+
+        @param data: Input full data array (multi-dimensional np array)
+        @param target: Input full target array (1D np array)
+
+        """
+
+        return self._run(data, target, method='Neighbors')
+
+
+class RFRun(MLRun):
+    def ml_init(self, pfs):
+        """Initialize arguments needed
+
+        @param pfs: profiles to be read (used by SVMArgs)
+
+        """
+        self.args = RFArgs(pfs=pfs)
+
+    def run(self, data, target):
+        """Run spliting sample, training and testing
+
+        @param data: Input full data array (multi-dimensional np array)
+        @param target: Input full target array (1D np array)
+
+        """
+
+        return self._run(data, target, method='RF')
 
 
 class SVMRun(MLRun):
