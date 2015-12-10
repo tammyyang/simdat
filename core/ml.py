@@ -269,13 +269,15 @@ class MLRun(MLTools):
             from sklearn import ensemble
             model = ensemble.RandomForestClassifier()
         elif method == 'Neighbors':
+            import numpy as np
             from sklearn import neighbors
             if self.args.grids[0]['n_neighbors'] == 0:
                 if self.args.more:
-                    n_neighbors = int(len(data)/2)
+                    k = int(len(data)/2)
                 else:
-                    n_neighbors = int(math.sqrt(len(data)))
-                self.args.grids[0]['n_neighbors'] = [n_neighbors]
+                    k = int(math.sqrt(len(data)))
+                vec = np.arange(k - k/2, k + k/2, int(k/4), dtype=int)
+                self.args.grids[0]['n_neighbors'] = list(vec)
                 model = neighbors.KNeighborsClassifier()
         else:
             from sklearn import svm
