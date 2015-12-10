@@ -131,6 +131,20 @@ class TOOLS(object):
 
 
 class MLIO(TOOLS):
+    def write_csv(self, data, fname='output.csv'):
+        """Write data to csv
+
+        @param data: object to be written
+
+        Keyword arguments:
+        fname  -- output filename (default './output.csv')
+
+        """
+        import csv
+        f = open(fname, 'wb')
+        wr = csv.writer(f, dialect='excel')
+        wr.writerows(data)
+
     def read_csv(self, fname, ftype=None):
         """Read CSV file as list
 
