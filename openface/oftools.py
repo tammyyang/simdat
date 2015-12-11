@@ -9,14 +9,9 @@ io = tools.MLIO()
 pl = plot.PLOT()
 
 
-class OFArgs(ml.SVMArgs):
-# class OFArgs(ml.RFArgs):
-# class OFArgs(ml.NeighborsArgs):
+class OFArgs(ml.Args):
     def _add_args(self):
         """Init arguments of openface"""
-        self._add_svm_args()
-        # self._add_rf_args()
-        # self._add_neighbors_args()
         self._add_of_args()
 
     def _add_of_args(self):
@@ -43,10 +38,8 @@ class OFArgs(ml.SVMArgs):
         self.pathModel = None
 
 
-class OpenFace(ml.SVMRun):
-# class OpenFace(ml.RFRun):
-# class OpenFace(ml.NeighborsRun):
-    def ml_init(self, pfs):
+class OpenFace:
+    def __init__(self, pfs, method='SVC'):
         """Init function of OpenFace"""
 
         self.args = OFArgs(pfs=pfs)
