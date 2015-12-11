@@ -1,3 +1,4 @@
+from os import path
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
@@ -276,25 +277,31 @@ class PLOT(tools.DATA, COLORS):
         if clear:
             plt.cla()
 
-    def patch_rectangle_img(self, img_path, pos, new_name=None):
+    def patch_rectangle_img(self, img_path, pos, new_home=None):
         """Open an image and patch a rectangle to it
 
         @param img_path: path of the image
         @param pos: position list, [left, top, right, bottom]
 
         Keyword parameters:
-        new_name -- path of the patched image
+        new_home -- parent directory of the patched image
                     (default: ori_name.replace('.jpg', '_patch.jpg'))
 
         """
         import cv2
         img = cv2.imread(img_path)
-        if new_name is None:
-            new_name = img_path.replace('.jpg', '_patch.jpg')
-            new_name = new_name.replace('.png', '_patch.png')
+        if new_home is None:
+            new_path = img_path.replace('.jpg', '_patch.jpg')
+            new_path = new_path.replace('.png', '_patch.png')
+        else:
+            base = path.basename(img_path)
+            dirname = path.basename(path.dirname(img_path))
+            new_path = path.join(new_home, dirname)
+            self.dir_check(new_path)
+            new_path = path.join(new_path, base)
         cv2.rectangle(img, (pos[0], pos[1]),
                       (pos[2], pos[3]), (0, 255, 0), 2)
-        cv2.imwrite(new_name, img)
+        cv2.imwrite(new_path, img)
 
     def plot_pie(self, data, bfrac=False, shadow=False, clear=True,
                  title='Pie Chart', cg='pink', radius=1.1,
