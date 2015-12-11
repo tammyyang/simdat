@@ -50,21 +50,27 @@ elif act == 'train':
     mf = ml.run(res['data'], res['target'])
 
 elif act == 'test':
+    from datetime import date
     thre = 0.4
     if len(args) > 2:
         thre = float(args[2])
     print('Threshold applied %.2f' % thre)
     root = '/tammy/viscovery/demo/db/'
     mf = root + 'models/train_homography/' + method + '.pkl'
+    # mf = "/tammy/viscovery/demo/20151126/full/outDir/classifier.pkl"
     inf = root + 'tests/tests_homography.json'
     mpf = root + 'models/train_affine/mapping.json'
+    # mpf = '/tammy/viscovery/demo/20151126/full/outDir/mapping.json'
     print('Reading model from %s' % mf)
     print('Reading db from %s' % inf)
     print('Reading mappings from %s' % mpf)
     res = of.read_df(inf, dtype='test', mpf=mpf, group=True)
     model = ml.read_model(mf)
+    # model = model[1]
     match = 0
     nwrong = 0
+    today = date.today().strftime("%Y%m%d")
+    new_home = '/tammy/viscovery/demo/images/matched/' + today
     for i in range(0, len(res['data'])):
         r1 = ml.test(res['data'][i], res['target'][i], model,
                      target_names=res['target_names'])
@@ -88,7 +94,7 @@ elif act == 'test':
                         path = res['path'][i]
                         pl.patch_rectangle_img(res['path'][i],
                                                res['pos'][i][p],
-                                               new_name=None)
+                                               new_home=new_home)
                         found = True
                     else:
                         mis_match = True
