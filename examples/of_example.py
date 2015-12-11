@@ -50,7 +50,7 @@ elif act == 'train':
     mf = ml.run(res['data'], res['target'])
 
 elif act == 'test':
-    thre = 0.0
+    thre = 0.4
     if len(args) > 2:
         thre = float(args[2])
     print('Threshold applied %.2f' % thre)
@@ -64,11 +64,13 @@ elif act == 'test':
     res = of.read_df(inf, dtype='test', mpf=mpf, group=True)
     model = ml.read_model(mf)
     match = 0
+    nwrong = 0
     for i in range(0, len(res['data'])):
         r1 = ml.test(res['data'][i], res['target'][i], model,
                      target_names=res['target_names'])
         cat = res['target'][i][0]
         found = False
+        mis_match = False
         if r1['prob'] is None:
             for p in range(0, len(r1['predicted'])):
                 if cat == r1['predicted'][p]:
@@ -81,11 +83,18 @@ elif act == 'test':
                 prob = r1['prob'][p]
                 vmax = max(prob)
                 imax = prob.argmax()
-                if vmax > thre and imax == cat:
-                    path = res['path'][i]
-                    pl.patch_rectangle_img(res['path'][i],
-                                           res['pos'][i][p], new_name=None)
-                    found = True
+                if vmax > thre:
+                    if imax == cat:
+                        path = res['path'][i]
+                        pl.patch_rectangle_img(res['path'][i],
+                                               res['pos'][i][p],
+                                               new_name=None)
+                        found = True
+                    else:
+                        mis_match = True
         if found:
             match += 1
+        if mis_match:
+            nwrong += 1
     print('Matched rate %.2f' % (float(match)/float(len(res['data']))))
+    print('Mis-matched rate %.2f' % (float(nwrong)/float(len(res['data']))))
