@@ -7,6 +7,7 @@ from simdat.core import ml
 
 io = tools.MLIO()
 pl = plot.PLOT()
+mlr = ml.MLRun()
 
 
 class OFArgs(ml.Args):
@@ -165,8 +166,8 @@ class OpenFace:
             result[key] = {'path': imgPath, 'rep': rep,
                            'dim': self.args.imgDim,
                            'pos': face[1],
-                           'class': self.get_class_from_path(imgPath,
-                                                             class_kwd)}
+                           'class': mlr.get_class_from_path(imgPath,
+                                                            class_kwd)}
         if output:
             io.check_parent(self.args.outf)
             io.write_json(result, fname=self.args.outf)
