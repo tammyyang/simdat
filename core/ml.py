@@ -1,7 +1,7 @@
 import os
 import time
-import math
 import logging
+import numpy as np
 from simdat.core import tools
 
 io = tools.MLIO()
@@ -19,9 +19,14 @@ class Args(object):
         self._add_args()
         for f in pfs:
             self._set_args(f)
+        self._tune_args()
 
     def _add_args(self):
         """Called by __init__ of Args class"""
+        pass
+
+    def _tune_args(self):
+        """Called by __init__ of Args class (after _set_args)"""
         pass
 
     def _set_args(self, f):
@@ -72,9 +77,18 @@ class MLArgs(Args):
 
         self.njobs = 4
         self.nfolds = 5
+        self.get_prob = True
         self.test_size = 0.33
         self.random = 42
         self.outd = './'
+
+    def tune_args_for_data(self, N):
+        """Tunning args right before training is applied
+
+        @param N: number of total data entry
+
+        """
+        pass
 
 
 class NeighborsArgs(MLArgs):
@@ -87,12 +101,51 @@ class NeighborsArgs(MLArgs):
         """Add additional arguments for SVM class"""
 
         self._add_ml_args()
-        self.grids = [{'n_neighbors': 0,
-                       'weights': ['uniform', 'distance'],
-                       'algorithm': ['ball_tree', 'kd_tree', 'brute'],
-                       'leaf_size': [20, 30, 40],
-                       'p': [1, 2, 3, 4]}]
+        self.algorithm = 'brute'
+        self.radius = 0
         self.more = False
+        self.n_neighbors = None
+
+    def _tune_args(self):
+        """Tune args after running _set_srgs"""
+
+        self.grids = [{'radius': [0.5 * self.radius,
+                                  self.radius,
+                                  1.5 * self.radius],
+                       'weights': ['uniform', 'distance'],
+                       'algorithm': [self.algorithm],
+                       'leaf_size': [20, 30, 40],
+                       'p': [1, 2, 3]}]
+        if self.radius > 0:
+            self.get_prob = False
+        if self.n_neighbors is not None:
+            vec = np.arange(0.5 * self.n_neighbors,
+                            1.5 * self.n_neighbors,
+                            int(self.n_neighbors/4), dtype=int)
+            self.grids[0]['n_neighbors'] = vec
+
+    def tune_args_for_data(self, N):
+        """Tunning args right before training is applied
+
+        @param N: number of total data entry
+
+        """
+        import math
+        if self.radius == 0:
+            if self.n_neighbors is None:
+                if self.more:
+                    k = int(N/2)
+                else:
+                    k = int(math.sqrt(N))
+                vec = np.arange(0.5 * k, 1.5 * k, int(k/4), dtype=int)
+                self.grids[0]['n_neighbors'] = list(vec)
+            del self.grids[0]['radius']
+
+        else:
+            if self.radius == -1:
+                self.grids[0]['radius'] = int(math.sqrt(N))
+            del self.grids[0]['n_neighbors']
+            self.grids[0]['outlier_label'] = N
 
 
 class RFArgs(MLArgs):
@@ -123,6 +176,10 @@ class SVMArgs(MLArgs):
         self.kernel = 'rbf'
         self.degree = 3
         self.C = [0.1, 1, 10, 100, 1000]
+
+    def _tune_args(self):
+        """Tune args after running _set_srgs"""
+
         self.grids = self._set_grids()
         self._set_grids_C()
 
@@ -198,14 +255,16 @@ class MLRun(MLTools):
         """
         self.args = MLArgs(pfs=pfs)
 
-    def _run(self, data, target, method='SVC'):
+    def _set_model(self):
+        """Place holder for child class to set the ML model"""
+
+        return None
+
+    def run(self, data, target):
         """Run spliting sample, training and testing
 
         @param data: Input full data array (multi-dimensional np array)
         @param target: Input full target array (1D np array)
-
-        Keyword arguments:
-        method -- machine learning method to be used (default: svm.SVC)
 
         """
         data = dt.conv_to_np(data)
@@ -213,7 +272,7 @@ class MLRun(MLTools):
         length = dt.check_len(data, target)
         train_d, test_d, train_t, test_t = \
             self.split_samples(data, target)
-        model, mf = self.train_with_grids(train_d, train_t, method)
+        model, mf = self.train_with_grids(train_d, train_t)
         if len(test_t) > 0:
             result = self.test(test_d, test_t, model)
         else:
@@ -234,12 +293,11 @@ class MLRun(MLTools):
                                               random_state=self.args.random)
         return train_d, test_d, train_t, test_t
 
-    def train_with_grids(self, data, target, method):
+    def train_with_grids(self, data, target):
         """Train with GridSearchCV to Find the best parameters
 
         @param data: Input training data array (multi-dimensional np array)
         @param target: Input training target array (1D np array)
-        @param method: machine learning method to be used
 
         @return clf model trained, path of the output model
 
@@ -262,26 +320,11 @@ class MLRun(MLTools):
 
         cv = cross_validation.KFold(len(data),
                                     n_folds=self.args.nfolds)
-        if method == 'SVC':
-            from sklearn import svm
-            model = svm.SVC(probability=True)
-        elif method == 'RF':
-            from sklearn import ensemble
-            model = ensemble.RandomForestClassifier()
-        elif method == 'Neighbors':
-            import numpy as np
-            from sklearn import neighbors
-            if self.args.grids[0]['n_neighbors'] == 0:
-                if self.args.more:
-                    k = int(len(data)/2)
-                else:
-                    k = int(math.sqrt(len(data)))
-                vec = np.arange(k - k/2, k + k/2, int(k/4), dtype=int)
-                self.args.grids[0]['n_neighbors'] = list(vec)
-                model = neighbors.KNeighborsClassifier()
-        else:
-            from sklearn import svm
-            model = sklearn.svm.SVC(probability=True)
+        self.args.tune_args_for_data(len(data))
+        method, model = self._set_model()
+        if model is None:
+            print("Error: cannot set the model properly")
+            sys.exit(1)
         print('GridSearchCV for: %s' % str(self.args.grids))
         clf = GridSearchCV(model, self.args.grids,
                            n_jobs=self.args.njobs,
@@ -361,7 +404,10 @@ class MLRun(MLTools):
         from sklearn import metrics
         print_len = 50
         predicted = trained_model.predict(data)
-        prob = trained_model.predict_proba(data)
+        if self.args.get_prob:
+            prob = trained_model.predict_proba(data)
+        else:
+            prob = None
         accuracy = metrics.accuracy_score(target, predicted)
         error = dt.cal_standard_error(predicted)
 
@@ -390,15 +436,15 @@ class NeighborsRun(MLRun):
         """
         self.args = NeighborsArgs(pfs=pfs)
 
-    def run(self, data, target):
-        """Run spliting sample, training and testing
+    def _set_model(self):
+        """Set ML model"""
 
-        @param data: Input full data array (multi-dimensional np array)
-        @param target: Input full target array (1D np array)
+        from sklearn import neighbors
+        if self.args.radius == 0:
+            return 'Neighbors', neighbors.KNeighborsClassifier()
 
-        """
-
-        return self._run(data, target, method='Neighbors')
+        else:
+            return 'Neighbors', neighbors.RadiusNeighborsClassifier()
 
 
 class RFRun(MLRun):
@@ -410,15 +456,11 @@ class RFRun(MLRun):
         """
         self.args = RFArgs(pfs=pfs)
 
-    def run(self, data, target):
-        """Run spliting sample, training and testing
+    def _set_model(self):
+        """Set ML model"""
 
-        @param data: Input full data array (multi-dimensional np array)
-        @param target: Input full target array (1D np array)
-
-        """
-
-        return self._run(data, target, method='RF')
+        from sklearn import ensemble
+        return 'RF', ensemble.RandomForestClassifier()
 
 
 class SVMRun(MLRun):
@@ -430,12 +472,8 @@ class SVMRun(MLRun):
         """
         self.args = SVMArgs(pfs=pfs)
 
-    def run(self, data, target):
-        """Run spliting sample, training and testing
+    def _set_model(self):
+        """Set ML model"""
 
-        @param data: Input full data array (multi-dimensional np array)
-        @param target: Input full target array (1D np array)
-
-        """
-
-        return self._run(data, target, method='SVC')
+        from sklearn import svm
+        return 'SVC', svm.SVC(probability=True)
