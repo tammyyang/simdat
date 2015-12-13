@@ -158,9 +158,12 @@ class RFArgs(MLArgs):
         """Add additional arguments for SVM class"""
 
         self._add_ml_args()
-        self.grids = [{'max_depth': [3, 4, 5, 6, 7],
-                       'n_estimators': [5, 10, 15],
-                       'max_features': [1, 2, 'sqrt', 'log2']}]
+        self.extreme = True
+        self.grids = [{'criterion': ['gini', 'entropy'],
+                       'bootstrap': [True, False],
+                       'random_state': [None, 1, 64],
+                       'n_estimators': [64, 96, 128, 256],
+                       'max_features': [None, 'sqrt', 'log2']}]
 
 
 class SVMArgs(MLArgs):
@@ -460,7 +463,10 @@ class RFRun(MLRun):
         """Set ML model"""
 
         from sklearn import ensemble
-        return 'RF', ensemble.RandomForestClassifier()
+        if self.args.extreme:
+            return 'ExtremeRF', ensemble.ExtraTreesClassifier()
+        else:
+            return 'RF', ensemble.RandomForestClassifier()
 
 
 class SVMRun(MLRun):
