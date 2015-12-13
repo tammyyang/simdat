@@ -7,12 +7,16 @@ from simdat.core import ml
 
 io = tools.MLIO()
 pl = plot.PLOT()
-mltl = ml.MLTools()
+mlr = ml.MLRun()
 
 
 class OFArgs(ml.Args):
     def _add_args(self):
         """Init arguments of openface"""
+        self._add_of_args()
+
+    def _add_of_args(self):
+        """Add additional arguments for OpenFace"""
 
         self.pathOF = os.path.join(os.getenv("HOME"), 'openface')
         self.pathdlib = os.path.join(os.getenv("HOME"),
@@ -25,6 +29,8 @@ class OFArgs(ml.Args):
         self.parentOFModel = 'openface'
         self.fmodel = 'nn4.v1.t7'
         self.imgDim = 96
+        # tightcrop/affine/perspective/homography
+        self.align_method = 'affine'
         self.cuda = True
         self.outf = './result.json'
 
@@ -33,11 +39,11 @@ class OFArgs(ml.Args):
         self.pathModel = None
 
 
-class OpenFace(object):
-    def __init__(self):
+class OpenFace:
+    def __init__(self, pfs, method='SVC'):
         """Init function of OpenFace"""
 
-        self.args = OFArgs(pfs=['openface.json'])
+        self.args = OFArgs(pfs=pfs)
         self.set_paths()
 
     def set_paths(self):
@@ -64,6 +70,75 @@ class OpenFace(object):
         sys.path.append(self.args.pathdlib)
         return
 
+    def read_df(self, inf, dtype='test', mpf='./mapping.json', group=False):
+        """Read results as Pandas DataFrame
+
+        @param inf: input file to be read
+
+        Keyword arguments:
+        dtype -- data type, train or test (default: test)
+        mpf   -- file name of the mapping (default: ./mapping.json)
+        group -- true to group data by path (default: False)
+
+        @return results after reading the input db file
+                if group:
+                    result['data'] = [list[data_from_image_1],
+                                      list[data_from_image_2],.. etc]
+                else:
+                    result['data'] = [data_from_image_1,
+                                      data_from_image_2, .. etc]
+                same for 'pos' and 'target'
+                result['path'] = list[paths of images]
+                result['target_names'] = keys of the mapping file
+
+        """
+        df = io.read_json_to_df(inf, orient='index', np=False)
+        _target = 'class'
+
+        if dtype == 'train':
+            mapping = self.map_cats_int(df, groupby=_target)
+            print("Map of target - int is written to %s" % mpf)
+            io.write_json(mapping, fname=mpf)
+        elif dtype == 'test':
+            mapping = io.parse_json(mpf)
+
+        df[_target] = df[_target].apply(lambda x: mapping[x])
+        res = {'data': [], 'target': [], 'pos': [], 'path': []}
+        if group:
+            grouped = df.groupby('path')
+            for name, group in grouped:
+                gdf = grouped.get_group(name)
+                res['data'].append(gdf['rep'].tolist())
+                res['pos'].append(gdf['pos'].tolist())
+                res['target'].append(gdf[_target].tolist())
+                res['path'].append(gdf['path'][0])
+        else:
+            res['data'] = df['rep'].tolist()
+            res['pos'] = df['pos'].tolist()
+            res['target'] = df[_target].tolist()
+            res['path'] = df['path'].tolist()
+        res['target_names'] = self.mapping_keys(mapping)
+        return res
+
+    def mapping_keys(self, mapping):
+        """Sort mapping dictionaty and get the keys"""
+
+        from operator import itemgetter
+        _labels = sorted(mapping.items(), key=itemgetter(1))
+        return [i[0] for i in _labels]
+
+    def map_cats_int(self, df, groupby='class'):
+        """Create a mapping for the categories to integers
+
+        @param df: dataframe to map
+
+        Keyword arguments:
+        groupby -- keyword of the class to be mapped
+
+        """
+        cats = df.groupby(groupby).count().index.tolist()
+        return dict(zip(cats, range(0, len(cats))))
+
     def get_rep(self, imgPath, net=None,
                 output=False, class_kwd='person-'):
         """Get facenet representation of a image
@@ -81,15 +156,18 @@ class OpenFace(object):
         """
         print("Processing %s" % imgPath)
         io.check_exist(imgPath)
-        alignedFace = self.align(imgPath)
-        if alignedFace is None:
-            return alignedFace
-        rep = self.cal_rep(alignedFace, net=net)
-        key = io.gen_md5(rep)
-        result = {key: {'path': imgPath, 'rep': rep,
-                        'dim': self.args.imgDim,
-                        'class': mltl.get_class_from_path(imgPath,
-                                                          class_kwd)}}
+        alignedFaces = self.align(imgPath)
+        if alignedFaces is None:
+            return alignedFaces
+        result = {}
+        for face in alignedFaces:
+            rep = self.cal_rep(face[0], net=net)
+            key = io.gen_md5(rep)
+            result[key] = {'path': imgPath, 'rep': rep,
+                           'dim': self.args.imgDim,
+                           'pos': face[1],
+                           'class': mlr.get_class_from_path(imgPath,
+                                                            class_kwd)}
         if output:
             io.check_parent(self.args.outf)
             io.write_json(result, fname=self.args.outf)
@@ -122,7 +200,7 @@ class OpenFace(object):
         return results
 
     def align(self, imgPath):
-        """Get aligned face of a image
+        """Get aligned face(s) of a image
 
         @param imgPath: input image path
 
@@ -134,21 +212,31 @@ class OpenFace(object):
         align = NaiveDlib(self.args.pathdlibMean, self.args.pathPredictor)
         img = cv2.imread(imgPath)
         if img is None:
-            print("WARNING: Unable to load image: {}".format(imgPath))
+            print("Fail to read image: {}".format(imgPath))
             return None
 
         logging.debug("  + Original size: {}".format(img.shape))
-        bb = align.getLargestFaceBoundingBox(img)
-        if bb is None:
-            print("Unable to find a face: {}".format(imgPath))
+        bbs = align.getAllFaceBoundingBoxes(img)
+        if bbs is None:
+            print("Fail to detect faces in image: {}".format(imgPath))
             return None
 
-        alignedFace = align.alignImg("affine", self.args.imgDim, img, bb)
-        if alignedFace is None:
-            print("Unable to align image: {}".format(imgPath))
-            return None
+        alignedFaces = []
+        logging.debug("Align the face using %s method"
+                      % self.args.align_method)
+        for bb in bbs:
+            alignedFace = align.alignImg(self.args.align_method,
+                                         self.args.imgDim, img, bb)
+            if alignedFace is None:
+                continue
+            alignedFaces.append([alignedFace, [bb.left(), bb.top(),
+                                               bb.right(), bb.bottom()]])
 
-        return alignedFace
+            if len(alignedFace) < 1:
+                print("Fail to align image: {}".format(imgPath))
+                return None
+
+        return alignedFaces
 
     def get_net(self):
         """Open the pre-trained net"""

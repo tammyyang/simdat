@@ -1,3 +1,4 @@
+from os import path
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
@@ -276,6 +277,32 @@ class PLOT(tools.DATA, COLORS):
         if clear:
             plt.cla()
 
+    def patch_rectangle_img(self, img_path, pos, new_home=None):
+        """Open an image and patch a rectangle to it
+
+        @param img_path: path of the image
+        @param pos: position list, [left, top, right, bottom]
+
+        Keyword parameters:
+        new_home -- parent directory of the patched image
+                    (default: ori_name.replace('.jpg', '_patch.jpg'))
+
+        """
+        import cv2
+        img = cv2.imread(img_path)
+        if new_home is None:
+            new_path = img_path.replace('.jpg', '_patch.jpg')
+            new_path = new_path.replace('.png', '_patch.png')
+        else:
+            base = path.basename(img_path)
+            dirname = path.basename(path.dirname(img_path))
+            new_path = path.join(new_home, dirname)
+            self.dir_check(new_path)
+            new_path = path.join(new_path, base)
+        cv2.rectangle(img, (pos[0], pos[1]),
+                      (pos[2], pos[3]), (0, 255, 0), 2)
+        cv2.imwrite(new_path, img)
+
     def plot_pie(self, data, bfrac=False, shadow=False, clear=True,
                  title='Pie Chart', cg='pink', radius=1.1,
                  pie_labels=None, expl=None, fname='./pie.png'):
@@ -304,7 +331,7 @@ class PLOT(tools.DATA, COLORS):
         ax = plt.axes([0.1, 0.1, 0.8, 0.8])
         fracs = data if bfrac else self.get_perc(data)
         if pie_labels is None:
-            pie_labels = map(str, range(1, len(data)+1))
+            pie_labels = list(map(str, range(1, len(data)+1)))
         color_class = getattr(self, cg)
 
         args = {'labels': pie_labels,
@@ -356,7 +383,7 @@ class PLOT(tools.DATA, COLORS):
         ind = np.arange(_len)
         stack_colors = getattr(self, cg)
         if xticks is None:
-            xticks = map(str, range(1, _len+1))
+            xticks = list(map(str, range(1, _len+1)))
 
         ymax = 0
         ymin = 0
@@ -408,7 +435,7 @@ class PLOT(tools.DATA, COLORS):
 
         data = self.conv_to_np(data)
         if xticks is None:
-            xticks = map(str, range(1, len(data)+1))
+            xticks = list(map(str, range(1, len(data)+1)))
 
         args = {'color': color, 'ecolor': ecolor}
         if err is not None:
@@ -754,10 +781,10 @@ class PLOT(tools.DATA, COLORS):
             xticks = xtick_marks
         if yticks is None:
             yticks = ytick_marks
-        xticks = self.pick_ticks(xticks)
-        yticks = self.pick_ticks(yticks)
         plt.xticks(xtick_marks, xticks, rotation=xrotation)
         plt.yticks(ytick_marks, yticks)
+        if len(xticks) > 20 or len(yticks) > 20:
+            plt.locator_params(nbins=20)
         plt.tight_layout()
         plt.ylabel(ylabel, color='#504A4B')
         plt.xlabel(xlabel, color='#504A4B')
@@ -767,17 +794,3 @@ class PLOT(tools.DATA, COLORS):
             plt.savefig(fname)
         if clear:
             plt.cla()
-
-    def pick_ticks(self, ticks, at=20):
-        """Pick ticks to be shown"""
-
-        N = len(ticks)
-        r = N/at
-        out_ticks = []
-        for i in range(0, N):
-            if N % r == 0:
-                out_ticks.append(ticks[i])
-            else:
-                out_ticks.append('')
-        return out_ticks
-

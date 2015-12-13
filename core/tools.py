@@ -131,6 +131,20 @@ class TOOLS(object):
 
 
 class MLIO(TOOLS):
+    def write_csv(self, data, fname='output.csv'):
+        """Write data to csv
+
+        @param data: object to be written
+
+        Keyword arguments:
+        fname  -- output filename (default './output.csv')
+
+        """
+        import csv
+        f = open(fname, 'wb')
+        wr = csv.writer(f, dialect='excel')
+        wr.writerows(data)
+
     def read_csv(self, fname, ftype=None):
         """Read CSV file as list
 
@@ -151,6 +165,21 @@ class MLIO(TOOLS):
                 output.append(list(row))
         return output
 
+    def read_json_to_df(self, fname, orient='columns', np=False):
+        """Read json file as pandas DataFrame
+
+        @param fname: input filename
+
+        Keyword arguments:
+        orient -- split/records/index/columns/values (default: 'columns')
+        np     -- true to direct decoding to numpy arrays (default: False)
+        @return pandas DataFranm
+
+        """
+        import pandas as pd
+        self.check_exist(fname)
+        return pd.read_json(fname, orient=orient, numpy=np)
+
     def read_csv_to_np(self, fname='data.csv'):
         """Read CSV file as numpy array
 
@@ -160,6 +189,7 @@ class MLIO(TOOLS):
         @return numpy array
 
         """
+        self.check_exist(fname)
         content = self.read_csv(fname=fname, ftype=float)
         return DATA().conv_to_np(content)
 
@@ -278,6 +308,14 @@ class DATA(TOOLS):
             return pd.DataFrame(array, columns=fields)
         return pd.DataFrame(array)
 
+    def df_header(self, df):
+        """Get the header of the DataFrame as a list"""
+
+        header = df.columns.values.tolist()
+        print('DataFrame header:')
+        print(header)
+        return header
+
     def check_len(self, a, b):
         """Check if two arrays have the same length"""
 
@@ -304,7 +342,7 @@ class DATA(TOOLS):
     def is_np(self, array):
         """Check if the input array is in type of np.ndarray"""
 
-        if type(array) is np.ndarray:
+        if type(array) in [np.ndarray, np.int64]:
             return True
         return False
 
