@@ -180,6 +180,12 @@ class MLIO(TOOLS):
         self.check_exist(fname)
         return pd.read_json(fname, orient=orient, numpy=np)
 
+    def write_df_json(self, df, fname='df.json'):
+        """Wtite pandas.DataFrame to json output"""
+
+        df.to_json(fname)
+        print('DataFrame is written to %s' % fname)
+
     def read_csv_to_np(self, fname='data.csv'):
         """Read CSV file as numpy array
 

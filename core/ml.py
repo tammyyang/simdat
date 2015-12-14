@@ -280,7 +280,8 @@ class MLRun(MLTools):
             result = self.test(test_d, test_t, model)
         else:
             print('No additional testing is performed')
-        return mf
+            result = None
+        return result
 
     def split_samples(self, data, target):
         """Split samples
@@ -414,9 +415,9 @@ class MLRun(MLTools):
         accuracy = metrics.accuracy_score(target, predicted)
         error = dt.cal_standard_error(predicted)
 
-        logging.debug(metrics.classification_report(target, predicted,
-                                                    target_names=target_names))
-        logging.debug("Accuracy: %0.5f (+/- %0.5f)" % (accuracy, error))
+        print(metrics.classification_report(target, predicted,
+                                                   target_names=target_names))
+        print("Accuracy: %0.5f (+/- %0.5f)" % (accuracy, error))
 
         result = {'accuracy': accuracy, 'error': error,
                   'predicted': predicted, 'prob': prob,
