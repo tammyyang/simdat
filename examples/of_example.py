@@ -21,6 +21,7 @@ pfs = ['openface.json', 'ml.json']
 im = tools.IMAGE()
 pl = plot.PLOT()
 of = oftools.OpenFace(pfs=pfs)
+mltl = ml.MLTools()
 
 args = sys.argv[1:]
 
@@ -42,6 +43,38 @@ else:
 if act == 'rep':
     images = im.find_images()
     of.get_reps(images, output=True)
+
+elif act == 'pca_multi':
+    import numpy as np
+    data = []
+    root = '/tammy/viscovery/demo/db/'
+    inf = root + 'train/train_homography.json'
+    res = of.read_df(inf, dtype='train', group=False)
+    pca_data = mltl.PCA(res['data'], method='Randomized')
+    pca_data = np.array(pca_data).T
+    data.append([pca_data[0], pca_data[1]])
+    inf = root + 'train/train_perspective.json'
+    res = of.read_df(inf, dtype='train', group=False)
+    pca_data = mltl.PCA(res['data'], method='Randomized')
+    pca_data = np.array(pca_data).T
+    data.append([pca_data[0], pca_data[1]])
+    pl.plot_classes(data)
+
+elif act == 'pca':
+    import numpy as np
+    root = '/tammy/viscovery/demo/db/'
+    inf = root + 'train/train_homography.json'
+    data = []
+    for i in range(0, 10):
+        res = of.read_df(inf, dtype='train', group=False, selclass=i)
+        p = [k for k, v in res['mapping'].iteritems() if v == i][0]
+        print('-- %s --' % p)
+        pca_data = mltl.PCA(res['data'], method='Randomized')
+        pca_data = np.array(pca_data).T
+        fname = p + '_pca.png'
+        pl.plot_points(pca_data[0], pca_data[1], fname=fname)
+        data.append([pca_data[0], pca_data[1]])
+    pl.plot_classes(data)
 
 elif act == 'train':
     root = '/tammy/viscovery/demo/db/'
