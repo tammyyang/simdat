@@ -31,6 +31,9 @@ class COLORS:
             '#38ACE7', '#659EC7', '#79BAE7',
             '#A0CFEC', '#C6DEFF', '#BDEDFF']
 
+    colors = ['red', 'grey', 'brown', 'green',
+              'pink', 'blue']
+
 
 class PLOT(tools.DATA, COLORS):
     def tools_init(self):
@@ -96,8 +99,8 @@ class PLOT(tools.DATA, COLORS):
                    fname='./patch_line.png'):
         """Patch a line to the existing panel
 
-        @param x: x data, should be a list with two elements
-        @param y: y data, should be a list with two elements
+        @param x: x data, [x1, x2] where x1 and x2 are x positions
+        @param y: y data, [y1, y2] where y1 and y2 are y positions
 
         Keyword arguments:
         color     -- line color (default: #7D0552)
@@ -126,8 +129,8 @@ class PLOT(tools.DATA, COLORS):
                     fname='./patch_arrow.png'):
         """Patch a arrow to the existing panel
 
-        @param x: the starting point of x axis
-        @param y: the starting point of y axis
+        @param x: the starting point of x axis, should be a single value
+        @param y: the starting point of y axis, should be a single value
 
         Keyword arguments:
         dx        -- delta x of the arrow
@@ -165,8 +168,8 @@ class PLOT(tools.DATA, COLORS):
                       clear=True, fname='./patch_textbox.png'):
         """Patch a textbox to the existing panel
 
-        @param x: the starting point of x axis
-        @param y: the starting point of y axis
+        @param x: the starting point of x axis, should be a single value
+        @param y: the starting point of y axis, should be a single value
         @param text: text to show
 
         Keyword arguments:
@@ -203,8 +206,8 @@ class PLOT(tools.DATA, COLORS):
                       fname='./patch_ellipse.png'):
         """Patch a ellipse to the existing panel
 
-        @param x: the starting point of x axis
-        @param y: the starting point of y axis
+        @param x: the starting point of x axis, should be a single value
+        @param y: the starting point of y axis, should be a single value
 
         Keyword arguments:
         w         -- width of the ellipse
@@ -243,8 +246,8 @@ class PLOT(tools.DATA, COLORS):
                         fname='./patch_rectangle.png'):
         """Patch a rectangle to the existing panel
 
-        @param x: the starting point of x axis
-        @param y: the starting point of y axis
+        @param x: the starting point of x axis, should be a single value
+        @param y: the starting point of y axis, should be a single value
 
         Keyword arguments:
         w         -- width of the rectangle (default: 3)
@@ -303,12 +306,47 @@ class PLOT(tools.DATA, COLORS):
                       (pos[2], pos[3]), (0, 255, 0), 2)
         cv2.imwrite(new_path, img)
 
+    def plot_classes(self, data, fname='./classes.png',
+                     xlabel='', ylabel='', labels=None,
+                     title='Classes', clear=True):
+        """Plot scatter figures for multiple classes
+
+        @param data: data [a1, a2, .., an] where a1, a2, an are 2D arrays
+                     a1 = [[x1, x2...xn], [y1, y2...yn]]
+
+        Keyword arguments:
+        xlabel    -- label of the X axis (default: '')
+        ylabel    -- label of the y axis (default: '')
+        clear     -- true to clear panel after output (default: True)
+        title     -- chart title (default: '')
+        fname     -- output filename (default: './points.png')
+
+        """
+        for i in range(0, len(data)):
+            color_idx = i % len(self.colors)
+            darkness = i % 10
+            color = getattr(self, self.colors[color_idx])[darkness]
+            args = {'c': color}
+            if labels is not None:
+                args['label'] = labels[i]
+            else:
+                args['label'] = str(i)
+            plt.scatter(data[i][0], data[i][1], **args)
+        plt.legend(loc="best")
+        plt.ylabel(ylabel, color='#504A4B')
+        plt.xlabel(xlabel, color='#504A4B')
+        plt.title(title, color='#504A4B', weight='bold')
+        if fname is not None:
+            plt.savefig(fname)
+        if clear:
+            plt.cla()
+
     def plot_pie(self, data, bfrac=False, shadow=False, clear=True,
                  title='Pie Chart', cg='pink', radius=1.1,
                  pie_labels=None, expl=None, fname='./pie.png'):
         """Draw a pie chart
 
-        @param data: a list of input data (1D)
+        @param data: a list of input data [x1, x2, x3,...,xn]
 
         Keyword arguments:
         bfrac      -- true if the input data already represents fractions
@@ -360,7 +398,9 @@ class PLOT(tools.DATA, COLORS):
                          log=False, fname='stack_bar.png'):
         """Draw a bar chart with errors
 
-        @param data: a list of input data (2D)
+        @param data: a list of input data
+                     [[x1, x2..xn], [y1, y2..yn], [z1, z2..zn],..]
+                     where x1, y1, z1 are quantities at the first position
 
         Keyword arguments:
         xticks    -- ticks of the x axis (default: array index of the elements)
@@ -415,7 +455,9 @@ class PLOT(tools.DATA, COLORS):
                         log=False, fname='bar.png', ecolor='#009966'):
         """Draw a bar chart with errors
 
-        @param data: a list of input data (1D)
+        @param data: a list of input data
+                     [x1, x2, x3...]
+                     where x1, x2, x3 are quantities at the every position
 
         Keyword arguments:
         xticks    -- ticks of the x axis (default: array index of the elements)
@@ -463,6 +505,8 @@ class PLOT(tools.DATA, COLORS):
         """Draw the dist of multiple 2D arrays.
 
         @param data: list of 2D arrays
+                     [a1, a2, .., an] where a1, a2, an are 2D arrays
+                     a1 = [[x1, x2...xn], [y1, y2...yn]]
 
         Keyword arguments:
         scale     -- true to scale the distributions (default: False)
@@ -521,6 +565,8 @@ class PLOT(tools.DATA, COLORS):
         """Draw the dist of multiple 1D arrays.
 
         @param data: list of 1D arrays
+                     [a1, a2, .., an] where a1, a2, an are 1D arrays
+                     a1 = [x1, x2...xn]
 
         Keyword arguments:
         scale     -- true to scale the distributions (default: False)
@@ -577,6 +623,7 @@ class PLOT(tools.DATA, COLORS):
         """Draw histogram of the numpy array
 
         @param data: input array (1D)
+                     [x1, x2...xn] where xi are raw values
 
         Keyword arguments:
         xlabel -- label of the X axis (default: '')
@@ -623,11 +670,12 @@ class PLOT(tools.DATA, COLORS):
                     ecolor='#3399FF', color='#CC6600'):
         """Plot points with (asymmetry) errors
 
-        @param x: x array
-        @param y: y array
+        @param x: x array [x1, x2,...xn]
+        @param y: y array [y1, y2,...yn]
 
         Keyword arguments:
         err       -- upper error array (default: None)
+                     [e1, e2,...en]
         err_low   -- lower error array (default: None or err if err is set)
         connected -- true to draw line between dots (default: False)
         xlabel    -- label of the X axis (default: '')
@@ -678,8 +726,8 @@ class PLOT(tools.DATA, COLORS):
                           ylabel='', fname='./bubble.png'):
         """Plot bubble chart
 
-        @param x: x array
-        @param y: y array
+        @param x: x array, x positions of the bubbles
+        @param y: y array, y positions of the bubbles
 
         Keyword arguments:
         z      -- z array to determine the size of bubbles (default [3]*N)
@@ -741,7 +789,9 @@ class PLOT(tools.DATA, COLORS):
                     cmap=plt.cm.Blues, norm=True):
         """Plot (confusion) matrix
 
-        @param cm: input matrix
+        @param cm: input matrix (2D)
+                   [a1, a2...an]
+                   a = [x1, x2...xn]
 
         Keyword arguments:
         title      -- chart title (default: '')

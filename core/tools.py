@@ -19,6 +19,25 @@ class TOOLS(object):
         self.tools_init()
         return
 
+    def read_template(self, fname, temp_vars):
+        """Read jinja template
+
+        @param fname: Inpur file name
+        @temp_vars: Variable dictionary to be used for the template
+
+        @return: Rendered template
+
+        """
+        from jinja2 import FileSystemLoader, Environment
+        templateLoader = FileSystemLoader(searchpath="/")
+        templateEnv = Environment(loader=templateLoader)
+        try:
+            template = templateEnv.get_template(fname)
+            return template.render(temp_vars)
+        except Exception, e:
+            print >> sys.stderr, "Exception: %s" % str(e)
+            sys.exit(1)
+
     def tools_init(self):
         pass
 

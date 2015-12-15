@@ -236,6 +236,29 @@ class MLTools():
             _dirname = os.path.dirname(_dirname)
         return None
 
+    def PCA(self, X, Y=None, ncomp=2, method='PCA'):
+        """ decompose a multivariate dataset in an orthogonal
+            set that explain a maximum amount of the variance
+
+        @param X: Input dataset
+
+        Keyword Arguments:
+        ncomp  -- number or components to be kept (Default: 2)
+        method -- method to be used
+                  PCA(default)/Randomized/Incremental
+
+        """
+        from sklearn import decomposition
+        from sklearn import cross_decomposition
+        if method == 'PCA':
+            pca = decomposition.PCA(n_components=ncomp)
+        elif method == 'Randomized':
+            pca = decomposition.RandomizedPCA(n_components=ncomp)
+        elif method == 'Incremental':
+            pca = decomposition.IncrementalPCA(n_components=ncomp)
+        pca.fit(X)
+        return pca.transform(X)
+
 
 class MLRun(MLTools):
     def __init__(self, pfs=['ml.json']):

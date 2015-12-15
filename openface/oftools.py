@@ -70,7 +70,8 @@ class OpenFace:
         sys.path.append(self.args.pathdlib)
         return
 
-    def read_df(self, inf, dtype='test', mpf='./mapping.json', group=False):
+    def read_df(self, inf, dtype='test', mpf='./mapping.json',
+                group=False, selclass=None):
         """Read results as Pandas DataFrame
 
         @param inf: input file to be read
@@ -103,7 +104,10 @@ class OpenFace:
             mapping = io.parse_json(mpf)
 
         df[_target] = df[_target].apply(lambda x: mapping[x])
-        res = {'data': [], 'target': [], 'pos': [], 'path': []}
+        if type(selclass) is int:
+            df = df[df['class'] == selclass]
+        res = {'data': [], 'target': [], 'pos': [],
+               'path': [], 'mapping': mapping}
         if group:
             grouped = df.groupby('path')
             for name, group in grouped:
