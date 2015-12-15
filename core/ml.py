@@ -158,9 +158,12 @@ class RFArgs(MLArgs):
         """Add additional arguments for SVM class"""
 
         self._add_ml_args()
-        self.grids = [{'max_depth': [3, 4, 5, 6, 7],
-                       'n_estimators': [5, 10, 15],
-                       'max_features': [1, 2, 'sqrt', 'log2']}]
+        self.extreme = True
+        self.grids = [{'criterion': ['gini', 'entropy'],
+                       'bootstrap': [True, False],
+                       'random_state': [None, 1, 64],
+                       'n_estimators': [64, 96, 128, 256],
+                       'max_features': [None, 'sqrt', 'log2']}]
 
 
 class SVMArgs(MLArgs):
@@ -300,7 +303,8 @@ class MLRun(MLTools):
             result = self.test(test_d, test_t, model)
         else:
             print('No additional testing is performed')
-        return mf
+            result = None
+        return result
 
     def split_samples(self, data, target):
         """Split samples
@@ -434,9 +438,9 @@ class MLRun(MLTools):
         accuracy = metrics.accuracy_score(target, predicted)
         error = dt.cal_standard_error(predicted)
 
-        logging.debug(metrics.classification_report(target, predicted,
-                                                    target_names=target_names))
-        logging.debug("Accuracy: %0.5f (+/- %0.5f)" % (accuracy, error))
+        print(metrics.classification_report(target, predicted,
+                                                   target_names=target_names))
+        print("Accuracy: %0.5f (+/- %0.5f)" % (accuracy, error))
 
         result = {'accuracy': accuracy, 'error': error,
                   'predicted': predicted, 'prob': prob,
@@ -483,7 +487,10 @@ class RFRun(MLRun):
         """Set ML model"""
 
         from sklearn import ensemble
-        return 'RF', ensemble.RandomForestClassifier()
+        if self.args.extreme:
+            return 'ExtremeRF', ensemble.ExtraTreesClassifier()
+        else:
+            return 'RF', ensemble.RandomForestClassifier()
 
 
 class SVMRun(MLRun):
