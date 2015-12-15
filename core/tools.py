@@ -34,9 +34,9 @@ class TOOLS(object):
         try:
             template = templateEnv.get_template(fname)
             return template.render(temp_vars)
-        except Exception, e:
-            print >> sys.stderr, "Exception: %s" % str(e)
-            sys.exit(1)
+        except:
+            print("Exception:", sys.exc_info()[0])
+            raise
 
     def tools_init(self):
         pass
