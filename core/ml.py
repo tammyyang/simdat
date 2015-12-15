@@ -257,10 +257,14 @@ class MLTools():
             pca = decomposition.RandomizedPCA(n_components=ncomp)
         elif method == 'Sparse':
             pca = decomposition.SparsePCA(n_components=ncomp)
-        elif method == 'kpca':
+        elif method == 'rbf':
             pca = decomposition.KernelPCA(n_components=ncomp,
                                           fit_inverse_transform=True,
                                           gamma=10, kernel="rbf")
+        elif method == 'sigmoid':
+            pca = decomposition.KernelPCA(n_components=ncomp,
+                                          fit_inverse_transform=True,
+                                          gamma=10, kernel="sigmoid")
         else:
             pca = decomposition.PCA(n_components=ncomp)
             method = 'PCA'
