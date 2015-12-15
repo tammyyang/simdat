@@ -248,17 +248,19 @@ class MLTools():
         Keyword Arguments:
         ncomp  -- number or components to be kept (Default: 2)
         method -- method to be used
-                  PCA(default)/Randomized/Incremental
+                  PCA(default)/Randomized/Sparse
 
         """
         from sklearn import decomposition
         from sklearn import cross_decomposition
-        if method == 'PCA':
-            pca = decomposition.PCA(n_components=ncomp)
-        elif method == 'Randomized':
+        if method == 'Randomized':
             pca = decomposition.RandomizedPCA(n_components=ncomp)
-        elif method == 'Incremental':
-            pca = decomposition.IncrementalPCA(n_components=ncomp)
+        elif method == 'Sparse':
+            pca = decomposition.SparsePCA(n_components=ncomp)
+        else:
+            pca = decomposition.PCA(n_components=ncomp)
+            method = 'PCA'
+        print('Using %s PCA method' % method)
         pca.fit(X)
         return pca.transform(X)
 
