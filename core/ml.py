@@ -257,6 +257,10 @@ class MLTools():
             pca = decomposition.RandomizedPCA(n_components=ncomp)
         elif method == 'Sparse':
             pca = decomposition.SparsePCA(n_components=ncomp)
+        elif method == 'kpca':
+            pca = decomposition.KernelPCA(n_components=ncomp,
+                                          fit_inverse_transform=True,
+                                          gamma=10, kernel="rbf")
         else:
             pca = decomposition.PCA(n_components=ncomp)
             method = 'PCA'
@@ -441,7 +445,7 @@ class MLRun(MLTools):
         error = dt.cal_standard_error(predicted)
 
         print(metrics.classification_report(target, predicted,
-                                                   target_names=target_names))
+                                            target_names=target_names))
         print("Accuracy: %0.5f (+/- %0.5f)" % (accuracy, error))
 
         result = {'accuracy': accuracy, 'error': error,
