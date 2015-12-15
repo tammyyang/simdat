@@ -7,12 +7,19 @@ from simdat.core import ml
 """
 This is an example to run openface and classify the results.
 
-$python of_example ACTION ACTION THRESHOLD
+$python of_example ACTION METHOD/PCAMETHOD THRESHOLD/NCOMP
 
-ACTION: action to do, rep/train(default)/test
-METHOD: method of classifier, SVC(default)/RF/Neighbors
-THRESHOLD: only needed if test is chosen as ACTION
-           float between 0 to 1 (default: 0.4)
+ACTION: action to do
+    1. rep
+    2. train(default)
+       METHOD: method of classifier, SVC(default)/RF/Neighbors
+    3. test
+       METHOD: method of classifier, SVC(default)/RF/Neighbors
+       THRESHOLD: throshold of testing accuracy
+                  should be a float between 0-1 (default: 0.4)
+    4. pca
+       PCAMETHOD: method of PCA, PCA(default)/Randomized/Sparse
+       NCOMP: n_components, 1 or 2 (default: 2)
 
 Tune other parameters in openface.json and ml.json
 """
@@ -49,18 +56,23 @@ elif act == 'pca':
     pca_method = 'PCA'
     if len(args) > 1:
         pca_method = args[1]
+    ncomp = 2
+    if len(args) > 2:
+        ncomp = int(args[2])
+    print('ncomp = %i' % ncomp)
     import numpy as np
     root = '/tammy/viscovery/demo/db/'
     inf = root + 'train/train_homography.json'
     data = []
+    labels = []
     for i in range(0, 10):
         res = of.read_df(inf, dtype='train', group=False, selclass=i)
         p = [k for k, v in res['mapping'].iteritems() if v == i][0]
-        print('-- %s --' % p)
+        labels.append(p)
         fname = p + '_pca.png'
-        if pca_method == 'Sparse':
+        if ncomp == 1:
             pca_data = mltl.PCA(res['data'], ncomp=1,
-                                method='Sparse')
+                                method=pca_method)
             pca_data = np.array(pca_data).T[0]
             pl.histogram(pca_data, fname=fname)
             data.append(pca_data)
@@ -69,10 +81,10 @@ elif act == 'pca':
             pca_data = np.array(pca_data).T
             pl.plot_points(pca_data[0], pca_data[1], fname=fname)
             data.append([pca_data[0], pca_data[1]])
-    if pca_method == 'Sparse':
-        pl.plot_1D_dists(data)
+    if ncomp == 1:
+        pl.plot_1D_dists(data, legend=labels)
     else:
-        pl.plot_classes(data)
+        pl.plot_classes(data, legend=labels)
 
 elif act == 'train':
     root = '/tammy/viscovery/demo/db/'

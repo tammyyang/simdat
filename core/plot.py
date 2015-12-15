@@ -308,7 +308,7 @@ class PLOT(tools.DATA, COLORS):
         cv2.imwrite(new_path, img)
 
     def plot_classes(self, data, fname='./classes.png',
-                     xlabel='', ylabel='', labels=None,
+                     xlabel='', ylabel='', legend=None,
                      title='Classes', clear=True):
         """Plot scatter figures for multiple classes
 
@@ -316,6 +316,8 @@ class PLOT(tools.DATA, COLORS):
                      a1 = [[x1, x2...xn], [y1, y2...yn]]
 
         Keyword arguments:
+        legend    -- a list of the legend, must match len(data)
+                     (default: index of the list to be drawn)
         xlabel    -- label of the X axis (default: '')
         ylabel    -- label of the y axis (default: '')
         clear     -- true to clear panel after output (default: True)
@@ -328,10 +330,7 @@ class PLOT(tools.DATA, COLORS):
             dks = i % 10
             color = getattr(self, self.colors[color_idx])[dks]
             args = {'c': color}
-            if labels is not None:
-                args['label'] = labels[i]
-            else:
-                args['label'] = str(i)
+            args['label'] = legend[i] if legend is not None else str(i)
             plt.scatter(data[i][0], data[i][1], **args)
         plt.legend(loc="best")
         plt.ylabel(ylabel, color='#504A4B')
