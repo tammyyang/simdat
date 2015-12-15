@@ -260,7 +260,7 @@ class MLTools():
         else:
             pca = decomposition.PCA(n_components=ncomp)
             method = 'PCA'
-        print('Using %s PCA method' % method)
+        print('Using %s method' % method)
         pca.fit(X)
         return pca.transform(X)
 

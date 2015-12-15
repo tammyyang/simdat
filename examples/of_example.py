@@ -33,6 +33,7 @@ print("Action: %s" % act)
 method = 'SVC'
 if len(args) > 1:
     method = args[1]
+
 if method == 'RF':
     ml = ml.RFRun(pfs=pfs)
 elif method == 'Neighbors':
@@ -44,23 +45,10 @@ if act == 'rep':
     images = im.find_images()
     of.get_reps(images, output=True)
 
-elif act == 'pca_multi':
-    import numpy as np
-    data = []
-    root = '/tammy/viscovery/demo/db/'
-    inf = root + 'train/train_homography.json'
-    res = of.read_df(inf, dtype='train', group=False)
-    pca_data = mltl.PCA(res['data'], method='Randomized')
-    pca_data = np.array(pca_data).T
-    data.append([pca_data[0], pca_data[1]])
-    inf = root + 'train/train_perspective.json'
-    res = of.read_df(inf, dtype='train', group=False)
-    pca_data = mltl.PCA(res['data'], method='Randomized')
-    pca_data = np.array(pca_data).T
-    data.append([pca_data[0], pca_data[1]])
-    pl.plot_classes(data)
-
 elif act == 'pca':
+    pca_method = 'PCA'
+    if len(args) > 1:
+        pca_method = args[1]
     import numpy as np
     root = '/tammy/viscovery/demo/db/'
     inf = root + 'train/train_homography.json'
@@ -69,12 +57,22 @@ elif act == 'pca':
         res = of.read_df(inf, dtype='train', group=False, selclass=i)
         p = [k for k, v in res['mapping'].iteritems() if v == i][0]
         print('-- %s --' % p)
-        pca_data = mltl.PCA(res['data'], method='Randomized')
-        pca_data = np.array(pca_data).T
         fname = p + '_pca.png'
-        pl.plot_points(pca_data[0], pca_data[1], fname=fname)
-        data.append([pca_data[0], pca_data[1]])
-    pl.plot_classes(data)
+        if pca_method == 'Sparse':
+            pca_data = mltl.PCA(res['data'], ncomp=1,
+                                method='Sparse')
+            pca_data = np.array(pca_data).T[0]
+            pl.histogram(pca_data, fname=fname)
+            data.append(pca_data)
+        else:
+            pca_data = mltl.PCA(res['data'], method=pca_method)
+            pca_data = np.array(pca_data).T
+            pl.plot_points(pca_data[0], pca_data[1], fname=fname)
+            data.append([pca_data[0], pca_data[1]])
+    if pca_method == 'Sparse':
+        pl.plot_1D_dists(data)
+    else:
+        pl.plot_classes(data)
 
 elif act == 'train':
     root = '/tammy/viscovery/demo/db/'
