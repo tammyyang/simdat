@@ -261,10 +261,12 @@ class MLTools():
             pca = decomposition.KernelPCA(n_components=ncomp,
                                           fit_inverse_transform=True,
                                           gamma=10, kernel="rbf")
+        elif method == 'linear':
+            pca = decomposition.KernelPCA(n_components=ncomp,
+                                          kernel="linear")
         elif method == 'sigmoid':
             pca = decomposition.KernelPCA(n_components=ncomp,
-                                          fit_inverse_transform=True,
-                                          gamma=10, kernel="sigmoid")
+                                          kernel="sigmoid")
         else:
             pca = decomposition.PCA(n_components=ncomp)
             method = 'PCA'
