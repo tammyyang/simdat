@@ -23,6 +23,7 @@ if len(args) > 1:
 outf = parent + '/images.html'
 title = 'Images'
 imgs = imtl.find_images(dir_path=parent)
+imgs.sort()
 args = {'TITLE': 'Images',
         'imgs': imgs}
 content = imtl.read_template(temp, args)

@@ -8,7 +8,7 @@
 {% for img in imgs %}
 {% set f = img.split('/')[-1].split('.')[0] %}
 {% if loop.index %3 == 1 %}<tr>{% endif %}
-    <th>{{ f }}
+    <th>{{ f }}<br>
     <img src ='{{ img }}'
     width ='320' height ='240'
     usemap =#{{ f }} border=0 /></th>
