@@ -1,4 +1,5 @@
 from os import path
+import sys
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
@@ -51,7 +52,7 @@ class PLOT(tools.DATA, COLORS):
         for a in arrays[1:]:
             if len(a) != length:
                 print('ERROR: array lengths are not equal')
-                sys.exti()
+                sys.exit(1)
         return length
 
     def find_axis_max_min(self, values, s_up=0.1, s_down=0.1):
@@ -324,8 +325,8 @@ class PLOT(tools.DATA, COLORS):
         """
         for i in range(0, len(data)):
             color_idx = i % len(self.colors)
-            darkness = i % 10
-            color = getattr(self, self.colors[color_idx])[darkness]
+            dks = i % 10
+            color = getattr(self, self.colors[color_idx])[dks]
             args = {'c': color}
             if labels is not None:
                 args['label'] = labels[i]
@@ -596,7 +597,11 @@ class PLOT(tools.DATA, COLORS):
                 a = np.array(a)
             if scale:
                 a = self.scale(a)
-            plt.plot(a, fmt, label=label)
+
+            color_idx = i % len(self.colors)
+            dks = i % 10
+            color = getattr(self, self.colors[color_idx])[dks]
+            plt.plot(a, fmt, label=label, color=color)
 
             _ymax, _ymin = self.find_axis_max_min(a)
             _xmax = 1.1*(len(a)-1)
