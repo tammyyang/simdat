@@ -35,12 +35,14 @@ of = oftools.OFTools()
 
 args = sys.argv[1:]
 
+
 def pick_images():
     root = '/home/tammy/viscovery/demo/db/'
     dbs = [root + 'train/train_homography.json',
            root + 'tests/tests_homography.json',
            root + 'tests/tests_20151216_homography.json']
     return of.pick_reps(dbs)
+
 
 def _pca(df, ncomp=2, pca_method='PCA'):
     res = of.read_df(df, dtype='train', group=False, conv=False)
@@ -99,6 +101,8 @@ elif act == 'pick':
     labels = []
     for p in mapping.keys():
         _df = df[df['class'] == p]
+        if _df.empty:
+            continue
         p, data = _pca(_df, ncomp=ncomp, pca_method=pca_method)
         all_data.append(data)
         labels.append(p)
@@ -167,5 +171,3 @@ elif act == 'test':
             nwrong += 1
     print('Matched rate %.2f' % (float(match)/float(len(res['data']))))
     print('Mis-matched rate %.2f' % (float(nwrong)/float(len(res['data']))))
-
-
