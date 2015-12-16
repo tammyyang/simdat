@@ -39,36 +39,9 @@ class OFArgs(ml.Args):
         self.pathModel = None
 
 
-class OpenFace:
-    def __init__(self, pfs, method='SVC'):
-        """Init function of OpenFace"""
-
-        self.args = OFArgs(pfs=pfs)
-        self.set_paths()
-
-    def set_paths(self):
-        """Check paths used by openface"""
-
-        _model_parent = os.path.join(self.args.pathOF,
-                                     self.args.parentModel)
-        if self.args.pathdlibMean is None:
-            self.args.pathdlibMean = os.path.join(self.args.pathOF,
-                                                  "./models/dlib/",
-                                                  self.args.fdlibFaceMean)
-        if self.args.pathPredictor is None:
-            self.args.pathPredictor = os.path.join(_model_parent,
-                                                   self.args.parentdlibModel,
-                                                   self.args.fdlibPredictor)
-            self.args.pathPredictor = str(self.args.pathPredictor)
-        if self.args.pathModel is None:
-            self.args.pathModel = os.path.join(_model_parent,
-                                               self.args.parentOFModel,
-                                               self.args.fmodel)
-        for attr in self.args.__dict__.keys():
-            if attr[:4] == 'path':
-                io.check_exist(getattr(self.args, attr))
-        sys.path.append(self.args.pathdlib)
-        return
+class OFTools(object):
+    def __init__(self):
+        pass
 
     def read_df(self, inf, dtype='test', mpf='./mapping.json',
                 group=False, selclass=None):
@@ -142,6 +115,38 @@ class OpenFace:
         """
         cats = df.groupby(groupby).count().index.tolist()
         return dict(zip(cats, range(0, len(cats))))
+
+
+class OpenFace(OFTools):
+    def __init__(self, pfs, method='SVC'):
+        """Init function of OpenFace"""
+
+        self.args = OFArgs(pfs=pfs)
+        self.set_paths()
+
+    def set_paths(self):
+        """Check paths used by openface"""
+
+        _model_parent = os.path.join(self.args.pathOF,
+                                     self.args.parentModel)
+        if self.args.pathdlibMean is None:
+            self.args.pathdlibMean = os.path.join(self.args.pathOF,
+                                                  "./models/dlib/",
+                                                  self.args.fdlibFaceMean)
+        if self.args.pathPredictor is None:
+            self.args.pathPredictor = os.path.join(_model_parent,
+                                                   self.args.parentdlibModel,
+                                                   self.args.fdlibPredictor)
+            self.args.pathPredictor = str(self.args.pathPredictor)
+        if self.args.pathModel is None:
+            self.args.pathModel = os.path.join(_model_parent,
+                                               self.args.parentOFModel,
+                                               self.args.fmodel)
+        for attr in self.args.__dict__.keys():
+            if attr[:4] == 'path':
+                io.check_exist(getattr(self.args, attr))
+        sys.path.append(self.args.pathdlib)
+        return
 
     def get_rep(self, imgPath, net=None,
                 output=False, class_kwd='person-'):

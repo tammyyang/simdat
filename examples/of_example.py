@@ -27,7 +27,6 @@ Tune other parameters in openface.json and ml.json
 pfs = ['openface.json', 'ml.json']
 im = tools.IMAGE()
 pl = plot.PLOT()
-of = oftools.OpenFace(pfs=pfs)
 mltl = ml.MLTools()
 
 args = sys.argv[1:]
@@ -37,22 +36,25 @@ if len(args) > 0:
     act = args[0]
 print("Action: %s" % act)
 
-method = 'SVC'
-if len(args) > 1:
-    method = args[1]
+if act in ['train', 'test']:
+    of = oftools.OpenFace(pfs=pfs)
+    method = 'SVC'
+    if len(args) > 1:
+        method = args[1]
 
-if method == 'RF':
-    ml = ml.RFRun(pfs=pfs)
-elif method == 'Neighbors':
-    ml = ml.NeighborsRun(pfs=pfs)
-else:
-    ml = ml.SVMRun(pfs=pfs)
+    if method == 'RF':
+        ml = ml.RFRun(pfs=pfs)
+    elif method == 'Neighbors':
+        ml = ml.NeighborsRun(pfs=pfs)
+    else:
+        ml = ml.SVMRun(pfs=pfs)
 
 if act == 'rep':
     images = im.find_images()
     of.get_reps(images, output=True)
 
 elif act == 'pca':
+    of = oftools.OFTools()
     pca_method = 'PCA'
     if len(args) > 1:
         pca_method = args[1]
@@ -61,7 +63,7 @@ elif act == 'pca':
         ncomp = int(args[2])
     print('ncomp = %i' % ncomp)
     import numpy as np
-    root = '/tammy/viscovery/demo/db/'
+    root = '/home/tammy/viscovery/demo/db/'
     inf = root + 'train/train_homography.json'
     data = []
     labels = []
