@@ -43,16 +43,37 @@ class OFTools(object):
     def __init__(self):
         pass
 
+    def pick_reps(self, dbs, dir_path=None):
+        """Pick entries which matched the images existing in
+           a specified directory from multiple db json files
+
+        @param dbs: list of the input db
+
+        Keyword arguments:
+        dir_path: parent directory of the images
+
+        """
+        import pandas as pd
+        im = tools.IMAGE()
+        img_sufs = im.find_images(dir_path=dir_path)
+        img_sufs = [im.path_suffix(x) for x in img_sufs]
+        df = io.read_jsons_to_df(dbs, orient='index')
+        df['path_suf'] = df['path'].apply(lambda x: im.path_suffix(x))
+        df = df[df['path_suf'].isin(img_sufs)]
+        io.write_df_json(df, fname='./picked_rep.json')
+        return df
+
     def read_df(self, inf, dtype='test', mpf='./mapping.json',
-                group=False, selclass=None):
+                group=False, selclass=None, conv=True):
         """Read results as Pandas DataFrame
 
-        @param inf: input file to be read
+        @param inf: input file path to be read or a read df
 
         Keyword arguments:
         dtype -- data type, train or test (default: test)
         mpf   -- file name of the mapping (default: ./mapping.json)
         group -- true to group data by path (default: False)
+        conv  -- true to convert class to int according to mpf
 
         @return results after reading the input db file
                 if group:
@@ -66,7 +87,10 @@ class OFTools(object):
                 result['target_names'] = keys of the mapping file
 
         """
-        df = io.read_json_to_df(inf, orient='index', np=False)
+        if type(inf) is str:
+            df = io.read_json_to_df(inf, orient='index', np=False)
+        else:
+            df = inf
         _target = 'class'
 
         if dtype == 'train':
@@ -76,8 +100,9 @@ class OFTools(object):
         elif dtype == 'test':
             mapping = io.parse_json(mpf)
 
-        df[_target] = df[_target].apply(lambda x: mapping[x])
-        if type(selclass) is int:
+        if conv:
+            df[_target] = df[_target].apply(lambda x: mapping[x])
+        if conv and type(selclass) is int:
             df = df[df['class'] == selclass]
         res = {'data': [], 'target': [], 'pos': [],
                'path': [], 'mapping': mapping}
