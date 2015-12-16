@@ -675,7 +675,7 @@ class PLOT(tools.DATA, COLORS):
     def plot_points(self, x, y, err=None, err_low=None, clear=True,
                     connected=False, xlabel='', ylabel='', xticks=None,
                     fname='./points.png', title='', ymax=None, ymin=None,
-                    ecolor='#3399FF', color='#CC6600'):
+                    xmax=None, xmin=None, ecolor='#3399FF', color='#CC6600'):
         """Plot points with (asymmetry) errors
 
         @param x: x array [x1, x2,...xn]
@@ -691,6 +691,8 @@ class PLOT(tools.DATA, COLORS):
         clear     -- true to clear panel after output (default: True)
         title     -- chart title (default: '')
         fname     -- output filename (default: './points.png')
+        xmax      -- maximum of x axis (default: max(data)+0.1)
+        xmin      -- minimum of x axis (default: max(data)-0.1)
         ymax      -- maximum of y axis (default: max(data)+0.1)
         ymin      -- minimum of y axis (default: max(data)-0.1)
         ecolor    -- color of the errors (default: '#3399FF')
@@ -709,13 +711,13 @@ class PLOT(tools.DATA, COLORS):
                 args['yerr'] = [err, err]
         self.ax.errorbar(x, y, **args)
         self.ax.set_title(title)
-        xmax, xmin = self.find_axis_max_min(x)
+        _xmax, _xmin = self.find_axis_max_min(x)
+        xmax = _xmax if xmax is None else xmax
+        xmin = _xmin if xmin is None else xmin
         plt.xlim(xmin, xmax)
         _ymax, _ymin = self.find_axis_max_min(y)
-        if ymax is None:
-            ymax = _ymax
-        if ymin is None:
-            ymin = _ymin
+        ymax = _ymax if ymax is None else ymax
+        ymin = _ymin if ymin is None else ymin
         plt.ylim(ymin, ymax)
         self.ax.set_xlabel(xlabel)
         self.ax.set_ylabel(ylabel)
