@@ -19,6 +19,15 @@ class TOOLS(object):
         self.tools_init()
         return
 
+    def path_suffix(self, path, level=2):
+        """Return the last parts of the path with a given level"""
+
+        splits = path.split('/')
+        suf = splits[-1]
+        for i in range(2, level+1):
+            suf = os.path.join(splits[0-i], suf)
+        return suf
+
     def read_template(self, fname, temp_vars):
         """Read jinja template
 
@@ -198,6 +207,23 @@ class MLIO(TOOLS):
         import pandas as pd
         self.check_exist(fname)
         return pd.read_json(fname, orient=orient, numpy=np)
+
+    def read_jsons_to_df(self, flist, orient='columns', np=False):
+        """Read json files as one pandas DataFrame
+
+        @param fname: input file list
+
+        Keyword arguments:
+        orient -- split/records/index/columns/values (default: 'columns')
+        np     -- true to direct decoding to numpy arrays (default: False)
+        @return concated pandas DataFranm
+
+        """
+        import pandas as pd
+        dfs = []
+        for f in flist:
+            dfs.append(self.read_json_to_df(f, orient=orient, np=np))
+        return pd.concat(dfs)
 
     def write_df_json(self, df, fname='df.json'):
         """Wtite pandas.DataFrame to json output"""
