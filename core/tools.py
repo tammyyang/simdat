@@ -96,7 +96,8 @@ class TOOLS(object):
         if os.path.exists(path):
             return True
         else:
-            raise Exception("%s does not exist" % path)
+            print("%s does not exist" % path)
+            return False
 
     def check_ext(self, file_name, extensions):
         """Check the file extension

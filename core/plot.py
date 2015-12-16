@@ -293,6 +293,8 @@ class PLOT(tools.DATA, COLORS):
 
         """
         import cv2
+        if not self.check_exist(img_path):
+            return
         img = cv2.imread(img_path)
         if new_home is None:
             new_path = img_path.replace('.jpg', '_patch.jpg')
