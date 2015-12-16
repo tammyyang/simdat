@@ -267,6 +267,8 @@ class MLTools():
         elif method == 'sigmoid':
             pca = decomposition.KernelPCA(n_components=ncomp,
                                           kernel="sigmoid")
+        elif method == 'SVD':
+            pca = decomposition.TruncatedSVD(n_components=ncomp)
         else:
             pca = decomposition.PCA(n_components=ncomp)
             method = 'PCA'

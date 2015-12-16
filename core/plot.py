@@ -332,7 +332,7 @@ class PLOT(tools.DATA, COLORS):
             args = {'c': color}
             args['label'] = legend[i] if legend is not None else str(i)
             plt.scatter(data[i][0], data[i][1], **args)
-        plt.legend(loc="best")
+        plt.legend(bbox_to_anchor=(1.12, 1.12), loc=1, borderaxespad=0.)
         plt.ylabel(ylabel, color='#504A4B')
         plt.xlabel(xlabel, color='#504A4B')
         plt.title(title, color='#504A4B', weight='bold')
