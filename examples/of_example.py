@@ -112,9 +112,8 @@ elif act == 'pick':
         pl.plot_classes(all_data, legend=labels)
 
 elif act == 'train':
-    root = '/tammy/viscovery/demo/db/'
-    inf = root + 'train/train_homography.json'
-    res = of.read_df(inf, dtype='train', group=False)
+    df = pick_images()
+    res = of.read_df(df, dtype='train', group=False)
     mf = ml.run(res['data'], res['target'])
 
 elif act == 'test':
@@ -124,11 +123,9 @@ elif act == 'test':
         thre = float(args[2])
     print('Threshold applied %.2f' % thre)
     root = '/home/tammy/viscovery/demo/db/'
-    mf = root + 'models/train_homography/' + method + '.pkl'
+    mf = root + 'models/train_20151216/' + method + '.pkl'
     # mf = "/tammy/viscovery/demo/20151126/full/outDir/classifier.pkl"
-    inf = root + 'tests/tests_homography.json'
     print('Reading model from %s' % mf)
-    print('Reading db from %s' % inf)
     print('Reading mappings from %s' % mpf)
     # res = of.read_df(inf, dtype='test', mpf=mpf, group=True)
     df = pick_images()

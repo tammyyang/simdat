@@ -206,8 +206,8 @@ class MLIO(TOOLS):
 
         """
         import pandas as pd
-        self.check_exist(fname)
-        return pd.read_json(fname, orient=orient, numpy=np)
+        if self.check_exist(fname):
+            return pd.read_json(fname, orient=orient, numpy=np)
 
     def read_jsons_to_df(self, flist, orient='columns', np=False):
         """Read json files as one pandas DataFrame
@@ -338,6 +338,24 @@ class DATA(TOOLS):
         import math
         array = self.conv_to_np(array)
         return np.std(array)/math.sqrt(len(array))
+
+    def norm_df(self, raw_df, exclude=None):
+        """Normalize pandas DataFrame
+
+        @param raw_df: raw input dataframe
+
+        Keyword arguments:
+        exclude -- a list of columns to be excluded
+
+        """
+
+        if exclude is not None:
+            excluded = raw_df[exclude]
+            _r = raw_df.drop(exclude, axis=1)
+            _r = (_r - _r.mean()) / (_r.max() - _r.min())
+            return pd.merge(excluded, _r)
+        else:
+            return (raw_df - raw_df.mean()) / (raw_df.max() - raw_df.min())
 
     def conv_to_df(self, array, ffields=None, target=None):
         """Convert array to pandas.DataFrame
