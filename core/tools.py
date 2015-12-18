@@ -324,6 +324,14 @@ class MLIO(TOOLS):
 
 
 class DATA(TOOLS):
+    def tools_init(self):
+        """Called by __init__ of TOOLS class"""
+        self.data_init()
+
+    def data_init(self):
+        """Called during the init of TOOLS class"""
+        pass
+
     def _cond_wd(self, x):
         """Conditions to select entries for sign_diff"""
         return x.weekday()
