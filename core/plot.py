@@ -451,6 +451,65 @@ class PLOT(tools.DATA, COLORS):
         if clear:
             plt.cla()
 
+    def plot_multi_bars(self, data, xticks=None, xlabel='', legend=None,
+                        ylabel='', err=None, xrotation=45, clear=True,
+                        color='grey', title='Bar Chart', ecolor='brown',
+                        log=False, fname='multi_bars.png'):
+        """Draw a bar chart with errors
+
+        @param data: a 2D list of input data
+                     [a1, a2, a3...]
+                     a1 is a 1D array, a1 = [x1, x2, ...]
+                     where the length of a1, a2, a3 should be the same
+
+        Keyword arguments:
+        xticks    -- ticks of the x axis (default: array index of the elements)
+        xlabel    -- label of the X axis (default: '')
+        ylabel    -- label of the y axis (default: '')
+        legend    -- legend of the items (default: data index)
+        err       -- upper error array (default: None)
+        xrotation -- rotation angle of xticks (default: 45)
+        clear     -- true to clear panel after output (default: True)
+        color     -- color group (default: 'grey')
+        title     -- chart title (default: 'Bar Chart')
+        log       -- true to draw log scale (default: False)
+        fname     -- output filename (default: './multi_bars.png')
+        ecolor    -- color group of the error bars (default: 'brown')
+
+        """
+
+        data = self.conv_to_np(data)
+        if xticks is None:
+            xticks = list(map(str, range(1, len(data)+1)))
+
+        ind = np.arange(len(xticks))
+        N = len(data)
+        width = 1.0/N
+        recs = []
+        for i in range(0, N):
+            args = {'color': getattr(self, color)[i]}
+            if err is not None:
+                args['ecolor'] = getattr(self, ecolor)[i]
+                args['yerr'] = err[i]
+            _ind = ind + width * i
+            _rec = self.ax.bar(_ind, data[i], width, **args)
+            recs.append(_rec[0])
+
+        if legend is None:
+            legend = range(0, N)
+        self.ax.legend(recs, legend)
+        plt.title(title, color='#504A4B', weight='bold')
+        self.ax.set_ylabel(ylabel, color='#504A4B')
+        self.ax.set_xlabel(xlabel, color='#504A4B')
+        self.ax.set_xticks(ind+width/2)
+        self.ax.set_xticklabels(xticks, rotation=xrotation)
+        if log:
+            self.ax.set_yscale('log')
+        if fname is not None:
+            plt.savefig(fname)
+        if clear:
+            plt.cla()
+
     def plot_single_bar(self, data, xticks=None, xlabel='',
                         ylabel='', err=None, xrotation=45, clear=True,
                         width=0.6, color='#FFCCCC', title='Bar Chart',
