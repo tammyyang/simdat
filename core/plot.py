@@ -561,9 +561,9 @@ class PLOT(tools.DATA, COLORS):
             plt.cla()
 
     def plot_1D_dists(self, data, scale=False, legend=None, clear=True,
-                      title='Distrubitions', connected=True, amax=None,
-                      amin=None, xlabel='Index', ylabel='',
-                      fname='./dist_1d.png'):
+                      title='Distrubitions', connected=True, ymax=None,
+                      ymin=None, xlabel='Index', ylabel='',
+                      fname='./dist_1d.png', xmax=None):
         """Draw the dist of multiple 1D arrays.
 
         @param data: list of 1D arrays
@@ -579,17 +579,15 @@ class PLOT(tools.DATA, COLORS):
         ylabel    -- label of the y axis (default: '')
         title     -- chart title (default: 'Distributions')
         connected -- true to draw line between dots (default: True)
-        amax      -- maximum of y axis (default: max(data)+0.1)
-        amin      -- minimum of y axis (default: max(data)-0.1)
+        xmax      -- maximum of x axis (default: max(data)+0.1)
+        ymax      -- maximum of y axis (default: max(data)+0.1)
+        ymin      -- minimum of y axis (default: max(data)-0.1)
         fname     -- output filename (default: './dist_1d.png')
 
         """
 
         data = self.conv_to_np(data)
 
-        ymax = amax
-        ymin = amin
-        xmax = None
         fmt = '-o' if connected else 'o'
         for i in range(0, len(data)):
             label = legend[i] if legend is not None else str(i)
@@ -606,10 +604,8 @@ class PLOT(tools.DATA, COLORS):
 
             _ymax, _ymin = self.find_axis_max_min(a)
             _xmax = 1.1*(len(a)-1)
-            if amax is None:
-                ymax = _ymax if ymax is None else max(ymax, _ymax)
-            if amin is None:
-                ymin = _ymin if ymin is None else min(ymin, _ymin)
+            ymax = _ymax if ymax is None else max(ymax, _ymax)
+            ymin = _ymin if ymin is None else min(ymin, _ymin)
             xmax = _xmax if xmax is None else max(xmax, _xmax)
 
         plt.axis([-0.1, xmax, ymin, ymax])
