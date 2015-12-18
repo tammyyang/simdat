@@ -79,6 +79,7 @@ class MLArgs(Args):
         self.nfolds = 5
         self.get_prob = True
         self.test_size = 0.33
+        self.retrain = True
         self.random = 42
         self.outd = './'
 
@@ -312,12 +313,16 @@ class MLRun(MLTools):
         length = dt.check_len(data, target)
         train_d, test_d, train_t, test_t = \
             self.split_samples(data, target)
-        model, mf = self.train_with_grids(train_d, train_t)
-        if len(test_t) > 0:
+        model, method = self.train_with_grids(train_d, train_t)
+        if len(test_t) > 0 and self.args.retrain:
             result = self.test(test_d, test_t, model)
+            if self.args.retrain:
+                print("Re-fit model with the full dataset")
+                model.fit(data, target)
         else:
             print('No additional testing is performed')
             result = None
+        mf = self.save_model(method, model)
         return result
 
     def split_samples(self, data, target):
@@ -382,7 +387,7 @@ class MLRun(MLTools):
         print ('Best parameters are: %s' % str(best_parms))
         mf = self.save_model(method, clf)
 
-        return clf, mf
+        return clf, method
 
     def save_model(self, fprefix, model):
         """Save model to a file for future use
