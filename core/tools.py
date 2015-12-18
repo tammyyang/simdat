@@ -19,6 +19,9 @@ class TOOLS(object):
         self.tools_init()
         return
 
+    def tools_init(self):
+        pass
+
     def path_suffix(self, path, level=2):
         """Return the last parts of the path with a given level"""
 
@@ -46,9 +49,6 @@ class TOOLS(object):
         except:
             print("Exception:", sys.exc_info()[0])
             raise
-
-    def tools_init(self):
-        pass
 
     def gen_md5(self, data):
         """Generate md5 hash for a data structure"""
@@ -324,6 +324,25 @@ class MLIO(TOOLS):
 
 
 class DATA(TOOLS):
+    def _cond_wd(self, x):
+        """Conditions to select entries for sign_diff"""
+        return x.weekday()
+
+    def get_wd_series(self, date_series, fm='%Y-%m-%d'):
+        """Convert Date string series to pd.DatetimeIndex
+           and return a weekday series.
+
+        @param date_series: Raw string series
+
+        Keyword arguments:
+        fm -- format of the input date (default: '%Y-%m-%d'
+
+        """
+        import pandas as pd
+        dates = pd.to_datetime(date_series, format=fm)
+        wd = dates.apply(lambda x: self._cond_wd(x))
+        return dates, wd
+
     def cal_vector_length(self, array):
         """Calculate the length of an input array"""
 
@@ -338,6 +357,11 @@ class DATA(TOOLS):
         import math
         array = self.conv_to_np(array)
         return np.std(array)/math.sqrt(len(array))
+
+    def rebin_df(self, df, nbins):
+        """Rebin DataFrame"""
+
+        return df.groupby(pd.qcut(df.index, nbins)).mean()
 
     def norm_df(self, raw_df, exclude=None):
         """Normalize pandas DataFrame
@@ -368,7 +392,6 @@ class DATA(TOOLS):
                    the target column to be used (default: None)
 
         """
-        import pandas as pd
         if ffields is not None:
             fields = MLIO().parse_json(ffields)
             if type(target) is int:
