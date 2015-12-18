@@ -32,7 +32,7 @@ class COLORS:
             '#38ACE7', '#659EC7', '#79BAE7',
             '#A0CFEC', '#C6DEFF', '#BDEDFF']
 
-    colors = ['red', 'grey', 'brown', 'green',
+    colors = ['red', 'grey', 'green', 'brown',
               'pink', 'blue']
 
 
