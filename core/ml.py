@@ -314,7 +314,7 @@ class MLRun(MLTools):
         train_d, test_d, train_t, test_t = \
             self.split_samples(data, target)
         model, method = self.train_with_grids(train_d, train_t)
-        if len(test_t) > 0 and self.args.retrain:
+        if len(test_t) > 0:
             result = self.test(test_d, test_t, model)
             if self.args.retrain:
                 print("Re-fit model with the full dataset")
