@@ -7,10 +7,10 @@ a = [[2, 3, 3, 5, 2],
      [2, 3, 4, 1, 2],
      [3, 5, 2, 3, 3]]
 d = [30, 50, 15, 5]
-legend = ['0.002', '0.003', '0.004']
-xticks = ['down', 'flat', 'up']
-a = [[0.51, 0.04, 0.54], [0.64, 0, 0.41], [0.7, 0.05, 0.31]]
-title = 'flat_thre vs accuracy'
+xticks = [10, 15, 20, 25, 30]
+legend = ['down', 'flat', 'up']
+a = [[32, 15, 26.5, 20.5, 48.5], [15, 21, 12.5, 13, 11.5], [10.5, 7, 29, 46.5, -6]]
+title = 'Dates vs BT results'
 pl.plot_multi_bars(a, xticks=xticks, legend=legend, title=title)
 #a = [[[8,6,4,2,0], [5,6,7,3,4]], [[1,3,5,6,7], [2,4,2,4,2]]] 
 #pl.plot_2D_dists(a, clear=False, fname=None)

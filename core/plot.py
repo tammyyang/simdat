@@ -497,7 +497,7 @@ class PLOT(tools.DATA, COLORS):
 
         if legend is None:
             legend = range(0, N)
-        self.ax.legend(recs, legend)
+        self.ax.legend(recs, legend, loc=1, bbox_to_anchor=(1.12, 1.0))
         plt.title(title, color='#504A4B', weight='bold')
         self.ax.set_ylabel(ylabel, color='#504A4B')
         self.ax.set_xlabel(xlabel, color='#504A4B')
