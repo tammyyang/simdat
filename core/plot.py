@@ -453,7 +453,7 @@ class PLOT(tools.DATA, COLORS):
 
     def plot_multi_bars(self, data, xticks=None, xlabel='', legend=None,
                         ylabel='', err=None, xrotation=45, clear=True,
-                        color='grey', title='Bar Chart', ecolor='brown',
+                        color='green', title='Bar Chart', ecolor='brown',
                         log=False, fname='multi_bars.png'):
         """Draw a bar chart with errors
 
