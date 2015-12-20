@@ -22,6 +22,11 @@ class TOOLS(object):
     def tools_init(self):
         pass
 
+    def sign(self, x):
+        if x >= 0:
+            return 1
+        else:
+            return -1
     def path_suffix(self, path, level=2):
         """Return the last parts of the path with a given level"""
 

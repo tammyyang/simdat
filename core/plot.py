@@ -62,10 +62,15 @@ class PLOT(tools.DATA, COLORS):
         values = self.conv_to_np(values)
 
         axis_max = np.amax(values)
-        axis_max = axis_max + s_up
         axis_min = np.amin(values)
-        axis_min = axis_min - s_down
-
+        if axis_max < 1 and axis_max > 0:
+            axis_max = axis_max + s_up
+        else:
+            axis_max = axis_max * (1 + self.sign(axis_max) * s_up)
+        if axis_min > -1 and axis_min < 0:
+            axis_min = axis_min - s_down
+        else:
+            axis_min = axis_min * (1 - self.sign(axis_min) * s_down)
         return axis_max, axis_min
 
     def scale(self, a):
@@ -491,8 +496,8 @@ class PLOT(tools.DATA, COLORS):
             if err is not None:
                 args['ecolor'] = getattr(self, ecolor)[i]
                 args['yerr'] = err[i]
-            _ind = ind + width * i
-            _rec = self.ax.bar(_ind, data[i], width, **args)
+            _ind = ind + width * i * 0.9
+            _rec = self.ax.bar(_ind, data[i], width*0.9, **args)
             recs.append(_rec[0])
 
         if legend is None:
@@ -621,8 +626,8 @@ class PLOT(tools.DATA, COLORS):
 
     def plot_1D_dists(self, data, scale=False, legend=None, clear=True,
                       title='Distrubitions', connected=True, ymax=None,
-                      ymin=None, xlabel='Index', ylabel='',
-                      fname='./dist_1d.png', xmax=None):
+                      ymin=None, xlabel='Index', ylabel='', xticks=None,
+                      xrotation=45, fname='./dist_1d.png', xmax=None):
         """Draw the dist of multiple 1D arrays.
 
         @param data: list of 1D arrays
@@ -668,6 +673,10 @@ class PLOT(tools.DATA, COLORS):
             xmax = _xmax if xmax is None else max(xmax, _xmax)
 
         plt.axis([-0.1, xmax, ymin, ymax])
+        xtick_marks = np.arange(len(data[0]))
+        if xticks is None:
+            xticks = xtick_marks
+        plt.xticks(xtick_marks, xticks, rotation=xrotation)
         plt.title(title, color='#504A4B', weight='bold')
         plt.xlabel(xlabel, color='#504A4B')
         plt.ylabel(ylabel, color='#504A4B')
@@ -743,6 +752,7 @@ class PLOT(tools.DATA, COLORS):
                      [e1, e2,...en]
         err_low   -- lower error array (default: None or err if err is set)
         connected -- true to draw line between dots (default: False)
+        xticks     -- ticks of the x axis (default: array index)
         xlabel    -- label of the X axis (default: '')
         ylabel    -- label of the y axis (default: '')
         clear     -- true to clear panel after output (default: True)
