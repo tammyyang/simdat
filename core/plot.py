@@ -459,7 +459,7 @@ class PLOT(tools.DATA, COLORS):
     def plot_multi_bars(self, data, xticks=None, xlabel='', legend=None,
                         ylabel='', err=None, xrotation=45, clear=True,
                         color='green', title='Bar Chart', ecolor='brown',
-                        log=False, fname='multi_bars.png'):
+                        log=False, fname='multi_bars.png', leg_up=True):
         """Draw a bar chart with errors
 
         @param data: a 2D list of input data
@@ -480,6 +480,8 @@ class PLOT(tools.DATA, COLORS):
         log       -- true to draw log scale (default: False)
         fname     -- output filename (default: './multi_bars.png')
         ecolor    -- color group of the error bars (default: 'brown')
+        leg_up    -- true to put the legend at the right-top of the figure
+                     false to put it at the bottom-right (default: true)
 
         """
 
@@ -502,7 +504,10 @@ class PLOT(tools.DATA, COLORS):
 
         if legend is None:
             legend = range(0, N)
-        self.ax.legend(recs, legend, loc=1, bbox_to_anchor=(1.12, 1.0))
+        if leg_up:
+            self.ax.legend(recs, legend, loc=1, bbox_to_anchor=(1.12, 1.0))
+        else:
+            self.ax.legend(recs, legend, loc=4)
         plt.title(title, color='#504A4B', weight='bold')
         self.ax.set_ylabel(ylabel, color='#504A4B')
         self.ax.set_xlabel(xlabel, color='#504A4B')
