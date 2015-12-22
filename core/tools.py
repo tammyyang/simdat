@@ -374,6 +374,7 @@ class DATA(TOOLS):
     def rebin_df(self, df, nbins):
         """Rebin DataFrame"""
 
+        import pandas as pd
         return df.groupby(pd.qcut(df.index, nbins)).mean()
 
     def norm_df(self, raw_df, exclude=None):
