@@ -39,6 +39,8 @@ class COLORS:
 class PLOT(tools.DATA, COLORS):
     def tools_init(self):
         self.ax = plt.axes()
+        self.loc_map = {'rt': 1, 'rb': 4, 'lb': 3,
+                        'lt': 2, 'c': 9}
 
     def check_array_length(self, arrays):
         """Check if lengths of all arrays are equal
@@ -118,8 +120,7 @@ class PLOT(tools.DATA, COLORS):
                     c  - central top
 
         """
-        loc_map = {'rt': 1, 'rb': 4, 'lb': 3, 'lt': 2, 'c': 9}
-        args = {'loc': loc_map[loc]}
+        args = {'loc': self.loc_map[loc]}
         if loc == 'rt':
             args['bbox_to_anchor'] = (1.12, 1.0)
         elif loc in ['rb', 'lb', 'lt']:
@@ -705,6 +706,64 @@ class PLOT(tools.DATA, COLORS):
         plt.xticks(xtick_marks, xticks, rotation=xrotation)
         self._add_legend(leg_loc)
         self._add_titles(title, xlabel, ylabel)
+        if fname is not None:
+            plt.savefig(fname)
+        if clear:
+            plt.cla()
+
+    def diff_axis_1D(self, data, legend=None, c1=None, c2=None,
+                     xrotation=45, connected=True, xticks=None,
+                     clear=True, xmax=None, leg_loc='rt',
+                     xlabel='', ylabel='', title='Distrubitions',
+                     fname='./diff_axis_1D.png'):
+        """Draw two dists with different axis
+
+        @param data: [a1, a2] where a1 and a2 are 1D arrays
+                     a1 = [x1, x2, .., xn]
+                     a2 = [y1, y2..., yn]
+
+        Keyword arguments:
+        legend    -- a list of the legend, must match len(data)
+                     (default: index of the list to be drawn)
+        clear     -- true to clear panel after output (default: True)
+        xrotation -- rotation angle of the xticks( default: 45)
+        connected -- true to draw line between dots (default: True)
+        xticks    -- xticks (default: data index)
+        xlabel    -- label of the X axis (default: 'Index')
+        ylabel    -- label of the y axis (default: '')
+        title     -- chart title (default: 'Distributions')
+        fname     -- output filename (default: './dist_two.png')
+
+        """
+
+        c1 = self.red[4] if c1 is None else c1
+        c2 = self.green[4] if c2 is None else c2
+        legend = ['dist 1', 'dist 2'] if legend is None else legend
+        fm = 'o-' if connected else 'o'
+        xmax = len(data[0]) if xmax is None else xmax
+
+        p1, = self.ax.plot(data[0], fm, color=c1, alpha=0.8, label=legend[0])
+        for tl in self.ax.get_yticklabels():
+            tl.set_color(c1)
+        ymax1, ymin1 = self.find_axis_max_min(data[0])
+        self.ax.set_ylim([ymin1, ymax1])
+        self.ax.set_xlim([-0.5, xmax])
+
+        ax2 = self.ax.twinx()
+        p2, = ax2.plot(data[1], fm, color=c2, alpha=0.8, label=legend[1])
+        for tl in ax2.get_yticklabels():
+            tl.set_color(c2)
+        ymax2, ymin2 = self.find_axis_max_min(data[1])
+        ax2.set_ylim([ymin2, ymax2])
+        ax2.set_xlim([-0.5, xmax])
+
+        xtick_marks = np.arange(len(data[0]))
+        if xticks is None:
+            xticks = xtick_marks
+        plt.xticks(xtick_marks, xticks, rotation=xrotation)
+        self._add_titles(title, xlabel, ylabel)
+
+        plt.legend([p1, p2], legend, loc=self.loc_map[leg_loc])
         if fname is not None:
             plt.savefig(fname)
         if clear:

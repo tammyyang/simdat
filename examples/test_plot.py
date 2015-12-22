@@ -9,17 +9,21 @@ a = [[1, 2, 3, 4, 5],
 b = [[[1, 2, 3, 4, 5], [2, 2, 2, 2, 2]],
      [[-1, -1, -1, -1, -1],[5, 4, 3, 2, 1]]]
 
+c = [[1, 2, 3, 4, 5], [2, 2, 2, 2, 2]]
 d = [30, 50, 15, 5]
 # Example to draw multiple bars
 
 # xticks = [2007, 2008, 2009, 2010, 2011,
 #           2012, 2013, 2014, 2015]
-# legend = ['Average Return(%)', 'Accuuracy(%)']
-# a = [[-22.74,  27.52, -43.52, -13.71,  -46.11,  42.58, 16.84, 25.53, 1.97],
-#      [64.4,  63,  63.7,  66.6,  65.8,  67,  66,  61,  62]]
-# title = 'TW 2498 Average Revenue vs Accuracy'
-# pl.plot_multi_bars(a, xticks=xticks, legend=legend, title=title,
-#                    color='brown', leg_loc='c')
+# legend = ['Average Return(%)', 'Accuracy(%)']
+# c = [[57.17,2.57, -30.52,  51.59,45.83,35.57,49.57,75.92,17.42],
+#      [64.7, 62.9, 67.9, 67,  63.3, 64.1, 64.3, 63,  64]]
+# title = 'TW 3231 Average Revenue vs Accuracy'
+# pl.plot_multi_bars(c, xticks=xticks, legend=legend, title=title,
+#                    color='blue', leg_loc='rb')
+
+# Example to draw two 1D distributions with different axises
+# pl.diff_axis_1D(c, legend=legend, leg_loc='lt', xticks=xticks)
 
 # Example to draw 1D distributions
 # pl.plot_1D_dists(a, leg_loc='rt')
