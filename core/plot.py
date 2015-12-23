@@ -65,11 +65,11 @@ class PLOT(tools.DATA, COLORS):
 
         axis_max = np.amax(values)
         axis_min = np.amin(values)
-        if axis_max < 1 and axis_max > 0:
+        if axis_max < 1 and axis_max >= 0:
             axis_max = axis_max + s_up
         else:
             axis_max = axis_max * (1 + self.sign(axis_max) * s_up)
-        if axis_min > -1 and axis_min < 0:
+        if axis_min > -1 and axis_min <= 0:
             axis_min = axis_min - s_down
         else:
             axis_min = axis_min * (1 - self.sign(axis_min) * s_down)
@@ -343,6 +343,48 @@ class PLOT(tools.DATA, COLORS):
                       (pos[2], pos[3]), (0, 255, 0), 2)
         cv2.imwrite(new_path, img)
 
+    def plot(self, data, clear=True, fname='./plot.png',
+             title='', connected=True, ymax=None,
+             ymin=None, xlabel='', ylabel='', xticks=None,
+             xrotation=45, color=None, xmax=None):
+        """Draw the very basic 1D plot
+
+        @param data: an 1D array [y1, y2, y3...yn]
+
+        Keyword arguments:
+        clear     -- true to clear panel after output (default: True)
+        xlabel    -- label of the X axis (default: '')
+        ylabel    -- label of the y axis (default: '')
+        title     -- chart title (default: 'Distributions')
+        connected -- true to draw line between dots (default: True)
+        xmax      -- maximum of x axis (default: max(data)+0.1)
+        ymax      -- maximum of y axis (default: max(data)+0.1)
+        ymin      -- minimum of y axis (default: max(data)-0.1)
+        fname     -- output filename (default: './dist_1d.png')
+
+        """
+
+        data = self.conv_to_np(data)
+
+        fmt = '-o' if connected else 'o'
+        color = self.blue[2] if color is None else color
+        plt.plot(data, fmt, color=color)
+        _ymax, _ymin = self.find_axis_max_min(data)
+        ymax = _ymax if ymax is None else max(ymax, _ymax)
+        ymin = _ymin if ymin is None else min(ymin, _ymin)
+        xmax = 1.1*(len(data)-1) if xmax is None else xmax
+
+        plt.axis([-0.1, xmax, ymin, ymax])
+        xtick_marks = np.arange(len(data))
+        if xticks is None:
+            xticks = xtick_marks
+        plt.xticks(xtick_marks, xticks, rotation=xrotation)
+        self._add_titles(title, xlabel, ylabel)
+        if fname is not None:
+            plt.savefig(fname)
+        if clear:
+            plt.cla()
+
     def plot_classes(self, data, fname='./classes.png',
                      xlabel='', ylabel='', legend=None, marker_size=40,
                      title='Classes', clear=True, leg_loc='rt'):
@@ -594,7 +636,7 @@ class PLOT(tools.DATA, COLORS):
 
     def plot_2D_dists(self, data, scale=False, legend=None, clear=True,
                       title='Distrubitions', connected=True, amin=None,
-                      amax=None, xlabel='Index', ylabel='',
+                      amax=None, xlabel='', ylabel='',
                       fname='./dist_2d.png', leg_loc='rt'):
         """Draw the dist of multiple 2D arrays.
 
@@ -606,7 +648,7 @@ class PLOT(tools.DATA, COLORS):
         scale     -- true to scale the distributions (default: False)
         legend    -- a list of the legend, must match len(data)
                      (default: index of the list to be drawn)
-        xlabel    -- label of the X axis (default: 'Index')
+        xlabel    -- label of the X axis (default: '')
         ylabel    -- label of the y axis (default: '')
         clear     -- true to clear panel after output (default: True)
         title     -- chart title (default: 'Distributions')
@@ -652,7 +694,7 @@ class PLOT(tools.DATA, COLORS):
 
     def plot_1D_dists(self, data, scale=False, legend=None, clear=True,
                       title='Distrubitions', connected=True, ymax=None,
-                      ymin=None, xlabel='Index', ylabel='', xticks=None,
+                      ymin=None, xlabel='', ylabel='', xticks=None,
                       xrotation=45, leg_loc='rt', xmax=None,
                       fname='./dist_1d.png'):
         """Draw the dist of multiple 1D arrays.
@@ -666,7 +708,7 @@ class PLOT(tools.DATA, COLORS):
         legend    -- a list of the legend, must match len(data)
                      (default: index of the list to be drawn)
         clear     -- true to clear panel after output (default: True)
-        xlabel    -- label of the X axis (default: 'Index')
+        xlabel    -- label of the X axis (default: '')
         ylabel    -- label of the y axis (default: '')
         title     -- chart title (default: 'Distributions')
         connected -- true to draw line between dots (default: True)
@@ -729,7 +771,7 @@ class PLOT(tools.DATA, COLORS):
         xrotation -- rotation angle of the xticks( default: 45)
         connected -- true to draw line between dots (default: True)
         xticks    -- xticks (default: data index)
-        xlabel    -- label of the X axis (default: 'Index')
+        xlabel    -- label of the X axis (default: '')
         ylabel    -- label of the y axis (default: '')
         title     -- chart title (default: 'Distributions')
         fname     -- output filename (default: './dist_two.png')
