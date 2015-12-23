@@ -37,7 +37,7 @@ class Args(object):
         """
 
         if not os.path.isfile(f):
-            print("WARNING: File %s does not exist" % f)
+            print("[ML] WARNING: File %s does not exist" % f)
             return
         inparm = io.parse_json(f)
         cinst = self.__dict__.keys()
@@ -82,6 +82,7 @@ class MLArgs(Args):
         self.retrain = True
         self.random = 42
         self.outd = './'
+        self.adv_method = 'grid'
 
     def tune_args_for_data(self, N):
         """Tunning args right before training is applied
@@ -273,7 +274,7 @@ class MLTools():
         else:
             pca = decomposition.PCA(n_components=ncomp)
             method = 'PCA'
-        print('Using %s method' % method)
+        print('[ML] Using %s method' % method)
         pca.fit(X)
         return pca.transform(X)
 
@@ -317,10 +318,10 @@ class MLRun(MLTools):
         if len(test_t) > 0:
             result = self.test(test_d, test_t, model)
             if self.args.retrain:
-                print("Re-fit model with the full dataset")
+                print("[ML] Re-fit model with the full dataset")
                 model.fit(data, target)
         else:
-            print('No additional testing is performed')
+            print('[ML] No additional testing is performed')
             result = None
         mf = self.save_model(method, model)
         return result
@@ -349,14 +350,20 @@ class MLRun(MLTools):
 
         """
 
+        from sklearn import cross_validation
+        cv = cross_validation.KFold(len(data),
+                                    n_folds=self.args.nfolds)
+        self.args.tune_args_for_data(len(data))
+        method, model = self._set_model()
+        if model is None:
+            print("[ML] Error: cannot set the model properly")
+            sys.exit(1)
+
+        from sklearn.grid_search import GridSearchCV
         t0 = time.time()
         if 'grids' not in self.args.__dict__.keys():
             raise Exception("grids are not set properly")
 
-        from sklearn import cross_validation
-        from sklearn.grid_search import GridSearchCV
-
-        print_len = 50
         logging.debug('Splitting the jobs into %i' % self.args.njobs)
         log_level = logging.getLogger().getEffectiveLevel()
 
@@ -364,28 +371,24 @@ class MLRun(MLTools):
             return int(log_level * (-0.1) + 3)
         verbose = 0 if log_level == 30 else _verbose_level(log_level)
 
-        cv = cross_validation.KFold(len(data),
-                                    n_folds=self.args.nfolds)
-        self.args.tune_args_for_data(len(data))
-        method, model = self._set_model()
         if model is None:
-            print("Error: cannot set the model properly")
+            print("[ML] Error: cannot set the model properly")
             sys.exit(1)
-        print('GridSearchCV for: %s' % str(self.args.grids))
+        print('[ML] GridSearchCV for: %s' % str(self.args.grids))
+
         clf = GridSearchCV(model, self.args.grids,
                            n_jobs=self.args.njobs,
                            cv=cv, verbose=verbose)
-
-        logging.debug('First %i samples of training data' % print_len)
-        logging.debug(str(data[:print_len]))
-        logging.debug('First %i samples of training target' % print_len)
-        logging.debug(str(target[:print_len]))
-
         clf.fit(data, target)
         best_parms = clf.best_params_
         t0 = dt.print_time(t0, 'find best parameters - train_with_grids')
-        print ('Best parameters are: %s' % str(best_parms))
-        mf = self.save_model(method, clf)
+        print ('[ML] Best parameters are: %s' % str(best_parms))
+
+        if self.args.adv_method == 'one-vs-rest':
+            from sklearn.multiclass import OneVsRestClassifier
+            print('[ML] Using one-vs-rest method to re-train')
+            clf = OneVsRestClassifier(clf)
+            clf.fit(data, target)
 
         return clf, method
 
@@ -402,7 +405,7 @@ class MLRun(MLTools):
 
         with open(outf, 'wb') as f:
             pickle.dump(model, f)
-        print("Model is saved to %s" % outf)
+        print("[ML] Model is saved to %s" % outf)
         return outf
 
     def read_model(self, fmodel):
@@ -448,7 +451,6 @@ class MLRun(MLTools):
         """
         t0 = time.time()
         from sklearn import metrics
-        print_len = 50
         predicted = trained_model.predict(data)
         if self.args.get_prob:
             prob = trained_model.predict_proba(data)
@@ -459,16 +461,11 @@ class MLRun(MLTools):
 
         print(metrics.classification_report(target, predicted,
                                             target_names=target_names))
-        print("Accuracy: %0.5f (+/- %0.5f)" % (accuracy, error))
+        print("[ML] Accuracy: %0.5f (+/- %0.5f)" % (accuracy, error))
 
         result = {'accuracy': accuracy, 'error': error,
                   'predicted': predicted, 'prob': prob,
                   'cm': metrics.confusion_matrix(target, predicted)}
-
-        logging.debug('First %i results from the predicted' % print_len)
-        logging.debug(str(predicted[:print_len]))
-        logging.debug('First %i results from the testing target' % print_len)
-        logging.debug(str(target[:print_len]))
 
         return result
 

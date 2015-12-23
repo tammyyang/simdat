@@ -27,6 +27,7 @@ class TOOLS(object):
             return 1
         else:
             return -1
+
     def path_suffix(self, path, level=2):
         """Return the last parts of the path with a given level"""
 
@@ -52,7 +53,7 @@ class TOOLS(object):
             template = templateEnv.get_template(fname)
             return template.render(temp_vars)
         except:
-            print("Exception:", sys.exc_info()[0])
+            print("[TOOLS] Exception:", sys.exc_info()[0])
             raise
 
     def gen_md5(self, data):
@@ -101,7 +102,7 @@ class TOOLS(object):
         if os.path.exists(path):
             return True
         else:
-            print("%s does not exist" % path)
+            print("[TOOLS] %s does not exist" % path)
             return False
 
     def check_ext(self, file_name, extensions):
@@ -131,7 +132,7 @@ class TOOLS(object):
            create it if doean't"""
 
         if not os.path.exists(dirpath):
-            print("Creating %s" % dirpath)
+            print("[TOOLS] Creating %s" % dirpath)
             os.makedirs(dirpath)
 
     def check_parent(self, fpath):
@@ -235,7 +236,7 @@ class MLIO(TOOLS):
         """Wtite pandas.DataFrame to json output"""
 
         df.to_json(fname)
-        print('DataFrame is written to %s' % fname)
+        print('[TOOLS] DataFrame is written to %s' % fname)
 
     def read_csv_to_np(self, fname='data.csv'):
         """Read CSV file as numpy array
@@ -408,7 +409,7 @@ class DATA(TOOLS):
         if ffields is not None:
             fields = MLIO().parse_json(ffields)
             if type(target) is int:
-                print('Converting field from %s to target'
+                print('[TOOLS] Converting field from %s to target'
                       % fields[target])
                 fields[target] = 'target'
             return pd.DataFrame(array, columns=fields)
@@ -418,7 +419,7 @@ class DATA(TOOLS):
         """Get the header of the DataFrame as a list"""
 
         header = df.columns.values.tolist()
-        print('DataFrame header:')
+        print('[TOOLS] DataFrame header:')
         print(header)
         return header
 
@@ -429,7 +430,8 @@ class DATA(TOOLS):
         lb = len(b)
         if la == lb:
             return la
-        print("ERROR: length of a (%i) and b (%i) are different" % (la, lb))
+        print("[TOOLS] ERROR: length of a (%i) and b (%i) are different"
+              % (la, lb))
         sys.exit(1)
 
     def get_perc(self, data):
@@ -465,7 +467,7 @@ class DATA(TOOLS):
         if self.is_np(array):
             return array
 
-        print("WARNING: the type of input array is not correct!")
+        print("[TOOLS] WARNING: the type of input array is not correct!")
         print(type(array))
         return array
 

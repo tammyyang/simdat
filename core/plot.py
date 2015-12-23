@@ -53,7 +53,7 @@ class PLOT(tools.DATA, COLORS):
         length = len(arrays[0])
         for a in arrays[1:]:
             if len(a) != length:
-                print('ERROR: array lengths are not equal')
+                print('[PLOT] ERROR: array lengths are not equal')
                 sys.exit(1)
         return length
 
@@ -96,7 +96,7 @@ class PLOT(tools.DATA, COLORS):
         img = mpimg.imread(imgpath)
         xmax = len(img[0])
         ymax = len(img)
-        print('x max = %i, y max = %i' % (xmax, ymax))
+        print('[PLOT] x max = %i, y max = %i' % (xmax, ymax))
         plt.imshow(img)
         if clear:
             plt.cla()
