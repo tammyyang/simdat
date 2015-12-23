@@ -384,11 +384,12 @@ class MLRun(MLTools):
         t0 = dt.print_time(t0, 'find best parameters - train_with_grids')
         print ('[ML] Best parameters are: %s' % str(best_parms))
 
+        best_model = clf.best_estimator_
         if self.args.multiclass is not None:
-            clf = self._multiclass_refit(clf)
+            clf = self._multiclass_refit(best_model)
             clf.fit(data, target)
 
-        return clf, method
+        return best_model, method
 
     def _multiclass_refit(self, clf):
         """Return advanced choices of the classification method"""
@@ -400,13 +401,16 @@ class MLRun(MLTools):
 
         elif self.args.multiclass == 'one-vs-one':
             from sklearn.multiclass import OneVsOneClassifier
+            self.args.get_prob = False
             print('[ML] Using one-vs-one method to re-train')
+            print('[ML] WARNING: Set get_prob to False')
             clf = OneVsOneClassifier(clf)
 
         elif self.args.multiclass == 'error-correcting':
-            from sklearn.multiclass import OneVsOneClassifier
+            from sklearn.multiclass import OutputCodeClassifier
             print('[ML] Using error-correcting method to re-train')
-            clf = OneVsOneClassifier(clf)
+            clf = OutputCodeClassifier(clf, code_size=2)
+
         return clf
 
     def save_model(self, fprefix, model):
@@ -496,15 +500,22 @@ class NeighborsRun(MLRun):
         """
         self.args = NeighborsArgs(pfs=pfs)
 
-    def _set_model(self):
+    def _set_model(self, parms=None):
         """Set ML model"""
 
         from sklearn import neighbors
         if self.args.radius == 0:
-            return 'Neighbors', neighbors.KNeighborsClassifier()
+            if parms is not None:
+                model = neighbors.KNeighborsClassifier(**parms)
+            else:
+                model = neighbors.KNeighborsClassifier()
 
         else:
-            return 'Neighbors', neighbors.RadiusNeighborsClassifier()
+            if parms is not None:
+                model = neighbors.RadiusNeighborsClassifier(**parms)
+            else:
+                model = neighbors.RadiusNeighborsClassifier()
+        return 'Neighbors', model
 
 
 class RFRun(MLRun):
@@ -516,13 +527,17 @@ class RFRun(MLRun):
         """
         self.args = RFArgs(pfs=pfs)
 
-    def _set_model(self):
+    def _set_model(self, parms=None):
         """Set ML model"""
 
         from sklearn import ensemble
         if self.args.extreme:
+            if parms is not None:
+                return 'ExtremeRF', ensemble.ExtraTreesClassifier(**parms)
             return 'ExtremeRF', ensemble.ExtraTreesClassifier()
         else:
+            if parms is not None:
+                return 'RF', ensemble.RandomForestClassifier(**parms)
             return 'RF', ensemble.RandomForestClassifier()
 
 
@@ -535,8 +550,12 @@ class SVMRun(MLRun):
         """
         self.args = SVMArgs(pfs=pfs)
 
-    def _set_model(self):
+    def _set_model(self, parms=None):
         """Set ML model"""
 
         from sklearn import svm
-        return 'SVC', svm.SVC(probability=True)
+        if parms is None:
+            parms = {'probability': True}
+        else:
+            parms['probability'] = True
+        return 'SVC', svm.SVC(**parms)
