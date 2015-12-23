@@ -82,7 +82,7 @@ class MLArgs(Args):
         self.retrain = True
         self.random = 42
         self.outd = './'
-        self.adv_method = 'grid'
+        self.multiclass = None
 
     def tune_args_for_data(self, N):
         """Tunning args right before training is applied
@@ -384,19 +384,30 @@ class MLRun(MLTools):
         t0 = dt.print_time(t0, 'find best parameters - train_with_grids')
         print ('[ML] Best parameters are: %s' % str(best_parms))
 
-        if self.args.adv_method == 'one-vs-rest':
-            from sklearn.multiclass import OneVsRestClassifier
-            print('[ML] Using one-vs-rest method to re-train')
-            clf = OneVsRestClassifier(clf)
-            clf.fit(data, target)
-
-        elif self.args.adv_method == 'one-vs-one':
-            from sklearn.multiclass import OneVsOneClassifier
-            print('[ML] Using one-vs-one method to re-train')
-            clf = OneVsOneClassifier(clf)
+        if self.args.multiclass is not None:
+            clf = self._multiclass_refit(clf)
             clf.fit(data, target)
 
         return clf, method
+
+    def _multiclass_refit(self, clf):
+        """Return advanced choices of the classification method"""
+
+        if self.args.multiclass == 'one-vs-rest':
+            from sklearn.multiclass import OneVsRestClassifier
+            print('[ML] Using one-vs-rest method to re-train')
+            clf = OneVsRestClassifier(clf)
+
+        elif self.args.multiclass == 'one-vs-one':
+            from sklearn.multiclass import OneVsOneClassifier
+            print('[ML] Using one-vs-one method to re-train')
+            clf = OneVsOneClassifier(clf)
+
+        elif self.args.multiclass == 'error-correcting':
+            from sklearn.multiclass import OneVsOneClassifier
+            print('[ML] Using error-correcting method to re-train')
+            clf = OneVsOneClassifier(clf)
+        return clf
 
     def save_model(self, fprefix, model):
         """Save model to a file for future use
