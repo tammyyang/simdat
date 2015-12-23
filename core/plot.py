@@ -40,7 +40,7 @@ class PLOT(tools.DATA, COLORS):
     def tools_init(self):
         self.ax = plt.axes()
         self.loc_map = {'rt': 1, 'rb': 4, 'lb': 3,
-                        'lt': 2, 'c': 9}
+                        'lt': 2, 'c': 9, 'cb': 8, 'ct': 9}
 
     def check_array_length(self, arrays):
         """Check if lengths of all arrays are equal
@@ -113,11 +113,12 @@ class PLOT(tools.DATA, COLORS):
         """Add Legend to the figure
 
         @param loc: location of the legend
-                    rt - right top
-                    rb - right bottom
-                    lt - left top
-                    lb - left bottom
-                    c  - central top
+                    rt   - right top
+                    rb   - right bottom
+                    lt   - left top
+                    lb   - left bottom
+                    c/ct - central top
+                    cb   - central bottom
 
         """
         args = {'loc': self.loc_map[loc]}
@@ -125,7 +126,7 @@ class PLOT(tools.DATA, COLORS):
             args['bbox_to_anchor'] = (1.12, 1.0)
         elif loc in ['rb', 'lb', 'lt']:
             args['borderaxespad'] = 1
-        elif loc == 'c':
+        elif loc in ['c', 'ct']:
             args['borderaxespad'] = -2.5
         self.ax.legend(**args)
 
