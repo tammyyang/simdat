@@ -390,6 +390,12 @@ class MLRun(MLTools):
             clf = OneVsRestClassifier(clf)
             clf.fit(data, target)
 
+        elif self.args.adv_method == 'one-vs-one':
+            from sklearn.multiclass import OneVsOneClassifier
+            print('[ML] Using one-vs-one method to re-train')
+            clf = OneVsOneClassifier(clf)
+            clf.fit(data, target)
+
         return clf, method
 
     def save_model(self, fprefix, model):
