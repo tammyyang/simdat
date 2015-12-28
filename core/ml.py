@@ -150,6 +150,23 @@ class NeighborsArgs(MLArgs):
             self.grids[0]['outlier_label'] = N
 
 
+class MLPArgs(MLArgs):
+    def _add_args(self):
+        """Function to add additional arguments"""
+
+        self._add_mlp_args()
+
+    def _add_mlp_args(self):
+        """Add additional arguments for SVM class"""
+
+        self._add_ml_args()
+        self.class_mode = 'categorical'
+        self.loss = 'mean_squared_error'
+        self.nb_epoch = 100
+        self.dropout = 0.5
+        self.bsize = 32
+
+
 class RFArgs(MLArgs):
     def _add_args(self):
         """Function to add additional arguments"""
@@ -297,7 +314,7 @@ class MLRun(MLTools):
         """
         self.args = MLArgs(pfs=pfs)
 
-    def _set_model(self):
+    def _init_model(self):
         """Place holder for child class to set the ML model"""
 
         return None
@@ -314,11 +331,13 @@ class MLRun(MLTools):
         length = dt.check_len(data, target)
         train_d, test_d, train_t, test_t = \
             self.split_samples(data, target)
-        model, method = self.train_with_grids(train_d, train_t)
+        model, method = self.train(train_d, train_t)
         if len(test_t) > 0:
             result = self.test(test_d, test_t, model)
             if self.args.retrain:
                 print("[ML] Re-fit model with the full dataset")
+                if method == 'MLP':
+                    target = dt.convert_cats(target)
                 model.fit(data, target)
         else:
             print('[ML] No additional testing is performed')
@@ -340,7 +359,7 @@ class MLRun(MLTools):
                                               random_state=self.args.random)
         return train_d, test_d, train_t, test_t
 
-    def train_with_grids(self, data, target):
+    def train(self, data, target):
         """Train with GridSearchCV to Find the best parameters
 
         @param data: Input training data array (multi-dimensional np array)
@@ -349,12 +368,11 @@ class MLRun(MLTools):
         @return clf model trained, path of the output model
 
         """
-
         from sklearn import cross_validation
         cv = cross_validation.KFold(len(data),
                                     n_folds=self.args.nfolds)
         self.args.tune_args_for_data(len(data))
-        method, model = self._set_model()
+        method, model = self._init_model()
         if model is None:
             print("[ML] Error: cannot set the model properly")
             sys.exit(1)
@@ -381,7 +399,7 @@ class MLRun(MLTools):
                            cv=cv, verbose=verbose)
         clf.fit(data, target)
         best_parms = clf.best_params_
-        t0 = dt.print_time(t0, 'find best parameters - train_with_grids')
+        t0 = dt.print_time(t0, 'find best parameters - train')
         print ('[ML] Best parameters are: %s' % str(best_parms))
 
         best_model = clf.best_estimator_
@@ -454,11 +472,15 @@ class MLRun(MLTools):
 
         """
         t0 = time.time()
-        result = {'Result': trained_model.predict(data)}
+        result = {'Result': self._get_predicted(data, trained_model)}
         if outf is not None:
             io.write_json(result, fname=outf)
         t0 = dt.print_time(t0, 'predict %i data entries' % len(data))
         return result
+
+    def _get_predicted(self, data, trained_model):
+        """Get predicted vector"""
+        return trained_model.predict(data)
 
     def test(self, data, target, trained_model, target_names=None):
         """Test the existing model
@@ -472,7 +494,7 @@ class MLRun(MLTools):
         """
         t0 = time.time()
         from sklearn import metrics
-        predicted = trained_model.predict(data)
+        predicted = self._get_predicted(data, trained_model)
         if self.args.get_prob:
             prob = trained_model.predict_proba(data)
         else:
@@ -491,6 +513,94 @@ class MLRun(MLTools):
         return result
 
 
+class MLPRun(MLRun):
+    def ml_init(self, pfs):
+        """Initialize arguments needed
+
+        @param pfs: profiles to be read (used by MLArgs)
+
+        """
+        self.args = MLPArgs(pfs=pfs)
+
+    def _init_model(self, parms=None):
+        """Create the MLP model"""
+
+        from keras.models import Sequential
+        from keras.layers.core import Dense, Dropout, Activation
+        from keras.optimizers import SGD
+
+        print("[ML] Setting MLP model...")
+        model = Sequential()
+        model.add(Dense(parms['indim'], init='uniform',
+                        input_dim=parms['indim']))
+        model.add(Activation('tanh'))
+        model.add(Dropout(self.args.dropout))
+        model.add(Dense(64, init='uniform'))
+        model.add(Activation('tanh'))
+        model.add(Dropout(self.args.dropout))
+        model.add(Dense(parms['ncat'], init='uniform'))
+        model.add(Activation('softmax'))
+
+        sgd = SGD(lr=0.1, decay=1e-6, momentum=0.9, nesterov=True)
+        model.compile(loss=self.args.loss,
+                      optimizer=sgd,
+                      class_mode=self.args.class_mode)
+        return 'MLP', model
+
+    def train(self, data, target):
+        """Train with the Keras MLP model
+
+        @param data: Input training data array (multi-dimensional np array)
+        @param target: Input training target array (1D np array)
+
+        @return clf model trained, training method
+
+        """
+        data = dt.conv_to_np(data)
+        target = dt.convert_cats(target)
+        parms = {'ncat': target.shape[1],
+                 'indim': data.shape[1]}
+        method, model = self._init_model(parms=parms)
+        print("[ML] Training MLP")
+        model.fit(data, target, nb_epoch=self.args.nb_epoch,
+                  batch_size=self.args.bsize,
+                  verbose=1, show_accuracy=True)
+        return model, method
+
+    def _get_predicted(self, data, trained_model):
+        """Get predicted vector"""
+        return trained_model.predict_classes(data, verbose=1,
+                                             batch_size=self.args.bsize)
+
+    def read_model(self, fmodel, parms):
+        """Read model from a file
+
+        @param fmodel: file path of the model weights
+        @param parms = {'ncat': target.shape[1],
+                        'indim': data.shape[1]}
+
+        """
+        if not os.path.isfile(fmodel):
+            raise Exception("Model file %s does not exist." % fmodel)
+
+        model = self._init_model(parms=parms)
+        model.load_weights(fmodel)
+        return model
+
+    def save_model(self, fprefix, model):
+        """Save model to a file for future use
+
+        @param fprefix: prefix of the output file
+        @param model: model to be saved
+
+        """
+        io.dir_check(self.args.outd)
+        outf = ''.join([self.args.outd, fprefix, '.pkl'])
+        model.save_weights(outf, overwrite=True)
+        print("[ML] Model is saved to %s" % outf)
+        return outf
+
+
 class NeighborsRun(MLRun):
     def ml_init(self, pfs):
         """Initialize arguments needed
@@ -500,7 +610,7 @@ class NeighborsRun(MLRun):
         """
         self.args = NeighborsArgs(pfs=pfs)
 
-    def _set_model(self, parms=None):
+    def _init_model(self, parms=None):
         """Set ML model"""
 
         from sklearn import neighbors
@@ -527,7 +637,7 @@ class RFRun(MLRun):
         """
         self.args = RFArgs(pfs=pfs)
 
-    def _set_model(self, parms=None):
+    def _init_model(self, parms=None):
         """Set ML model"""
 
         from sklearn import ensemble
@@ -550,7 +660,7 @@ class SVMRun(MLRun):
         """
         self.args = SVMArgs(pfs=pfs)
 
-    def _set_model(self, parms=None):
+    def _init_model(self, parms=None):
         """Set ML model"""
 
         from sklearn import svm

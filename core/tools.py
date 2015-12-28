@@ -342,6 +342,19 @@ class DATA(TOOLS):
         """Conditions to select entries for sign_diff"""
         return x.weekday()
 
+    def convert_cats(self, y):
+        """Convert target from [1,2,0...] to
+           [[0,1,0], [0,0,1], [1,0,0]...]"""
+
+        import pandas as pd
+        _y = pd.Series(y)
+        ncols = _y.value_counts().count()
+        nrows = _y.count()
+        new_y = np.zeros((nrows, ncols))
+        for i, v in _y.iteritems():
+            new_y[i][v - 1] = 1
+        return new_y
+
     def get_wd_series(self, date_series, fm='%Y-%m-%d'):
         """Convert Date string series to pd.DatetimeIndex
            and return a weekday series.
