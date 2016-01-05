@@ -26,7 +26,7 @@ Tune other parameters in openface.json and ml.json
 """
 
 pfs = ['openface.json', 'ml.json']
-mpf = '/home/tammy/viscovery/demo/db/models/train_homography/mapping.json'
+mpf = '/tammy/viscovery/demo/db/models/train_homography/mapping.json'
 im = tools.IMAGE()
 io = tools.MLIO()
 pl = plot.PLOT()
@@ -63,12 +63,18 @@ def _pca(df, ncomp=2, pca_method='PCA'):
         return p, [pca_data[0], pca_data[1]]
 
 
+def _rep():
+    of = oftools.OpenFace(pfs=pfs)
+    images = im.find_images()
+    return of.get_reps(images, output=True)
+
+
 act = 'pick'
 if len(args) > 0:
     act = args[0]
 print("Action: %s" % act)
 
-if act in ['train', 'test']:
+if act in ['train', 'test', 'predict']:
     method = 'SVC'
     if len(args) > 1:
         method = args[1]
@@ -81,9 +87,7 @@ if act in ['train', 'test']:
         ml = ml.SVMRun(pfs=pfs)
 
 if act == 'rep':
-    of = oftools.OpenFace(pfs=pfs)
-    images = im.find_images()
-    of.get_reps(images, output=True)
+    _rep()
 
 elif act == 'pick':
     pca_method = 'PCA'
@@ -115,6 +119,18 @@ elif act == 'train':
     df = pick_images()
     res = of.read_df(df, dtype='train', group=False)
     mf = ml.run(res['data'], res['target'])
+
+elif act == 'predict':
+    root = '/tammy/viscovery/demo/db/'
+    mf = root + 'models/train_homography/' + method + '.pkl'
+    model = ml.read_model(mf)
+    print('Reading model from %s' % mf)
+    res = _rep()
+    mapping = io.parse_json(mpf)
+    for item in res:
+        cl = ml.predict(res[item]['rep'], model)['Result'][0]
+        print 'Parsing %s' % res[item]['path']
+        print [c for c in mapping if mapping[c] == cl][0]
 
 elif act == 'test':
     from datetime import date
