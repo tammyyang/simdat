@@ -239,8 +239,9 @@ class SVMArgs(MLArgs):
 
 class MLTools():
     def __init__(self):
-        """Init if MLTools, don't do anything here"""
+        """Init function of MLTools class"""
 
+        self.args = MLArgs(pfs=[])
         return
 
     def get_class_from_path(self, opath, keyword):
@@ -294,6 +295,40 @@ class MLTools():
         print('[ML] Using %s method' % method)
         pca.fit(X)
         return pca.transform(X)
+
+    def save_model(self, fprefix, model, high=False):
+        """Save model to a file for future use
+
+        @param fprefix: prefix of the output file
+        @param model: model to be saved
+
+        """
+        import cPickle
+        io.dir_check(self.args.outd)
+        outf = ''.join([self.args.outd, fprefix, '.pkl'])
+
+        with open(outf, 'wb') as f:
+            if high:
+                cPickle.dump(model, f,
+                             protocol=cPickle.HIGHEST_PROTOCOL)
+            else:
+                cPickle.dump(model, f)
+        print("[ML] Model is saved to %s" % outf)
+        return outf
+
+    def read_model(self, fmodel):
+        """Read model from a file
+
+        @param fmodel: file path of the input model
+
+        """
+        if not os.path.isfile(fmodel):
+            raise Exception("Model file %s does not exist." % fmodel)
+
+        import pickle
+        with open(fmodel, 'rb') as f:
+            model = pickle.load(f)
+        return model
 
 
 class MLRun(MLTools):
@@ -430,36 +465,6 @@ class MLRun(MLTools):
             clf = OutputCodeClassifier(clf, code_size=2)
 
         return clf
-
-    def save_model(self, fprefix, model):
-        """Save model to a file for future use
-
-        @param fprefix: prefix of the output file
-        @param model: model to be saved
-
-        """
-        import pickle
-        io.dir_check(self.args.outd)
-        outf = ''.join([self.args.outd, fprefix, '.pkl'])
-
-        with open(outf, 'wb') as f:
-            pickle.dump(model, f)
-        print("[ML] Model is saved to %s" % outf)
-        return outf
-
-    def read_model(self, fmodel):
-        """Read model from a file
-
-        @param fmodel: file path of the input model
-
-        """
-        if not os.path.isfile(fmodel):
-            raise Exception("Model file %s does not exist." % fmodel)
-
-        import pickle
-        with open(fmodel, 'rb') as f:
-            model = pickle.load(f)
-        return model
 
     def predict(self, data, trained_model, outf=None):
         """Predict using the existing model
