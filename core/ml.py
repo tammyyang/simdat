@@ -45,6 +45,30 @@ class Args(object):
             if k in cinst:
                 setattr(self, k, inparm[k])
 
+    def _print_arg(self, arg, arg_dic):
+        """Print argument explanation"""
+        print('[ML] * %s *' % arg)
+        print('[ML]   Description: %s' % arg_dic['des'])
+        print('[ML]   Type: %s' % arg_dic['type'])
+        print('[ML]   Default: %s' % arg_dic['default'])
+
+    def explain_args(self, fname, arg=''):
+        """Print explanation for args
+
+        @param fname: The json file which includes the explanations
+
+        Keyword Arguments:
+        arg -- specify the argument to print (default: all)
+
+        """
+        intros = io.parse_json(fname)
+        print('[ML] === Reading explanations from %s.' % fname)
+        if len(arg) < 1:
+            for _arg in intros.keys():
+                self._print_arg(_arg, intros[_arg])
+        else:
+            self._print_arg(arg, intros[arg])
+
 
 class DataArgs(Args):
     def _add_args(self):
