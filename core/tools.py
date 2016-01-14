@@ -2,6 +2,7 @@ import os
 import sys
 import time
 import json
+import logging
 import numpy as np
 
 
@@ -535,6 +536,27 @@ class IMAGE(TOOLS):
                 return [path]
         elif os.path.isdir(path):
             return self.find_images(path)
+
+    def crop_black_bars(self, fimg, thre=1, save=True):
+        import cv2
+        name, ext = os.path.splitext(fimg)
+        img = cv2.imread(fimg)
+
+        _gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        _mean = np.array(_gray).mean(axis=1)
+        _selected = [i for i in range(0, len(_mean)) if _mean[i] > thre]
+
+        start = _selected[0]
+        end = _selected[-1]
+
+        logging.debug(_mean[100:])
+        logging.debug(_mean[:100])
+        logging.info('Selected image raws line %i to line %i' % (start, end))
+
+        if save:
+            fname = ''.join([name, '_crop', ext])
+            logging.info('Saving croped file as %s.' % fname)
+            cv2.imwrite(fname, img[start:end])
 
     def get_jpeg_quality(self, img_path):
         """Get the jpeg quality using identify tool"""

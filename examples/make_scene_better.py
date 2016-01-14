@@ -70,7 +70,7 @@ def main():
 
     for fimg in imgs:
         if args.action == 'black-bar':
-            crop_black_bars(fimg)
+            imgtl.crop_black_bars(fimg)
 
 
 if __name__ == '__main__':
