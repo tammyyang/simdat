@@ -697,7 +697,7 @@ class PLOT(tools.DATA, COLORS):
                       title='Distrubitions', connected=True, ymax=None,
                       ymin=None, xlabel='', ylabel='', xticks=None,
                       xrotation=45, leg_loc='rt', xmax=None,
-                      fname='./dist_1d.png'):
+                      fname='./dist_1d.png', rebin=None):
         """Draw the dist of multiple 1D arrays.
 
         @param data: list of 1D arrays
@@ -747,6 +747,11 @@ class PLOT(tools.DATA, COLORS):
         if xticks is None:
             xticks = xtick_marks
         plt.xticks(xtick_marks, xticks, rotation=xrotation)
+        if (len(xticks) > 25 or len(yticks)) > 25 and rebin is None:
+            rebin = 25
+        if rebin is not None:
+            plt.locator_params(nbins=rebin)
+
         self._add_legend(leg_loc)
         self._add_titles(title, xlabel, ylabel)
         if fname is not None:
@@ -985,7 +990,8 @@ class PLOT(tools.DATA, COLORS):
     def plot_matrix(self, cm, title='',
                     xticks=None, yticks=None, fname='./cm.png',
                     xlabel='Predicted label', ylabel='True label',
-                    xrotation=45, clear=True, color='YlOrRd',
+                    xrotation=45, clear=True,
+                    color='YlOrRd', rebin=None,
                     show_text=True, show_axis=True, norm=True):
         """Plot (confusion) matrix
 
@@ -1033,8 +1039,10 @@ class PLOT(tools.DATA, COLORS):
             yticks = ytick_marks
         plt.xticks(xtick_marks, xticks, rotation=xrotation)
         plt.yticks(ytick_marks, yticks)
-        if len(xticks) > 20 or len(yticks) > 20:
-            plt.locator_params(nbins=20)
+        if (len(xticks) > 25 or len(yticks)) > 25 and rebin is None:
+            rebin = 25
+        if rebin is not None:
+            plt.locator_params(nbins=rebin)
         plt.tight_layout()
         plt.ylabel(ylabel, color='#504A4B')
         plt.xlabel(xlabel, color='#504A4B')
