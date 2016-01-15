@@ -3,28 +3,7 @@ import os
 import argparse
 import logging
 import numpy as np
-from simdat.core import tools
-
-
-def crop_black_bars(fimg, thre=1, save=True):
-    name, ext = os.path.splitext(fimg)
-    img = cv2.imread(fimg)
-
-    _gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    _mean = np.array(_gray).mean(axis=1)
-    _selected = [i for i in range(0, len(_mean)) if _mean[i] > thre]
-
-    start = _selected[0]
-    end = _selected[-1]
-
-    logging.debug(_mean[100:])
-    logging.debug(_mean[:100])
-    logging.info('Selected image raws line %i to line %i' % (start, end))
-
-    if save:
-        fname = ''.join([name, '_crop', ext])
-        logging.info('Saving croped file as %s.' % fname)
-        cv2.imwrite(fname, img[start:end])
+from simdat.core import image
 
 
 def main():
@@ -43,7 +22,8 @@ def main():
                 )
     parser.add_argument(
                 "-a", "--action", type=str, default='black-bar',
-                help="Select action: black-bar/ (default: black-bar)."
+                help="Select action: black-bar/detect-text \
+                      (default: black-bar)."
                 )
     parser.add_argument(
                 "-v", "--verbosity", action="count",
@@ -59,7 +39,7 @@ def main():
     logging.basicConfig(level=log_level,
                         format='[MSB %(levelname)s] %(message)s')
 
-    imgtl = tools.IMAGE()
+    imgtl = image.IMAGE()
     if args.fname is not None:
         imgtl.check_exist(args.fname)
         imgs = [args.fname]
@@ -69,9 +49,16 @@ def main():
         imgs = imgtl.find_images()
 
     for fimg in imgs:
+        name, ext = os.path.splitext(fimg)
+        img = imgtl.read(fimg)
+        gray = imgtl.gray(img)
         if args.action == 'black-bar':
-            imgtl.crop_black_bars(fimg)
-
+            fname = ''.join([name, '_crop', ext])
+            imgtl.crop_black_bars(img, fname=fname)
+        elif args.action == 'detect-text':
+            fname = ''.join([name, '_contour', ext])
+            contours = imgtl.detect_text_area(gray, save=True)
+            imgtl.draw_contours(img, contours, fname=fname)
 
 if __name__ == '__main__':
     main()

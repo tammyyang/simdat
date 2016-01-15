@@ -465,7 +465,7 @@ class DATA(TOOLS):
     def is_np(self, array):
         """Check if the input array is in type of np.ndarray"""
 
-        if type(array) in [np.ndarray, np.int64]:
+        if type(array) in [np.ndarray, np.int64, np.float64]:
             return True
         return False
 
@@ -485,87 +485,3 @@ class DATA(TOOLS):
         print("[TOOLS] WARNING: the type of input array is not correct!")
         print(type(array))
         return array
-
-
-class IMAGE(TOOLS):
-    def find_images(self, dir_path=None, keyword=None):
-        """Find images under a directory
-
-
-        Keyword arguments:
-        dir_path -- path of the directory to check (default: '.')
-        keyword  -- keyword used to filter images (default: None)
-
-        @return output: a list of images found
-
-        """
-        if dir_path is None:
-            dir_path = os.getcwd()
-        output = []
-        for dirPath, dirNames, fileNames in os.walk(dir_path):
-            dirmatch = False
-            if keyword is not None and dirPath.find(keyword) > 0:
-                dirmatch = True
-            for f in fileNames:
-                if keyword is not None and dirPath.find(keyword) < 0:
-                    if not dirmatch:
-                        continue
-                if self.check_ext(f, ('.jpg', 'png')):
-                    output.append(os.path.join(dirPath, f))
-        return output
-
-    def get_img_info(self, img_path):
-        """Find image size and pixel array
-
-        @param img_path: path of the input image
-
-        @return image.size: tuple, size of the image
-        @return pix: pixel of the image
-
-        """
-        from PIL import Image
-        im = Image.open(img_path)
-        pix = im.load()
-        return im.size, pix
-
-    def get_images(self, path):
-        """Find images from the given path"""
-
-        if os.path.isfile(path):
-            if self.check_ext(path, ('.jpg', 'png')):
-                return [path]
-        elif os.path.isdir(path):
-            return self.find_images(path)
-
-    def crop_black_bars(self, fimg, thre=1, save=True):
-        import cv2
-        name, ext = os.path.splitext(fimg)
-        img = cv2.imread(fimg)
-
-        _gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        _mean = np.array(_gray).mean(axis=1)
-        _selected = [i for i in range(0, len(_mean)) if _mean[i] > thre]
-        _start = _selected[0]
-        _end = _selected[-1]
-        cut = max(_start, len(img) - _end)
-
-        logging.debug(_mean[100:])
-        logging.debug(_mean[:100])
-        logging.info('Cut %i lines' % cut)
-
-        if save:
-            fname = ''.join([name, '_crop', ext])
-            logging.info('Saving croped file as %s.' % fname)
-            cv2.imwrite(fname, img[cut:-cut])
-
-    def get_jpeg_quality(self, img_path):
-        """Get the jpeg quality using identify tool"""
-
-        import subprocess
-        try:
-            q = subprocess.check_output("identify -verbose %s | grep Quality"
-                                        % img_path, shell=True)
-            q = q.replace(' ', '').split('\n')[0].split(':')[1]
-            return int(q)
-        except subprocess.CalledProcessError:
-            return None

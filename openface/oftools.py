@@ -4,6 +4,7 @@ import logging
 from simdat.core import tools
 from simdat.core import plot
 from simdat.core import ml
+from simdat.core import image
 
 io = tools.MLIO()
 pl = plot.PLOT()
@@ -54,7 +55,7 @@ class OFTools(object):
 
         """
         import pandas as pd
-        im = tools.IMAGE()
+        im = image.IMAGE()
         img_sufs = im.find_images(dir_path=dir_path)
         img_sufs = [im.path_suffix(x) for x in img_sufs]
         df = io.read_jsons_to_df(dbs, orient='index')
