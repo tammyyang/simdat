@@ -717,6 +717,7 @@ class PLOT(tools.DATA, COLORS):
         ymax      -- maximum of y axis (default: max(data)+0.1)
         ymin      -- minimum of y axis (default: max(data)-0.1)
         fname     -- output filename (default: './dist_1d.png')
+        rebin     -- N bins to be grouped together
 
         """
 
@@ -746,11 +747,11 @@ class PLOT(tools.DATA, COLORS):
         xtick_marks = np.arange(len(data[0]))
         if xticks is None:
             xticks = xtick_marks
-        plt.xticks(xtick_marks, xticks, rotation=xrotation)
-        if (len(xticks) > 25 or len(yticks)) > 25 and rebin is None:
-            rebin = 25
+        if len(xticks) > 20 and rebin is None:
+            rebin = len(xticks)/20
         if rebin is not None:
-            plt.locator_params(nbins=rebin)
+            xtick_marks, xticks = self.red_ticks(xtick_marks, xticks, rebin)
+        plt.xticks(xtick_marks, xticks, rotation=xrotation)
 
         self._add_legend(leg_loc)
         self._add_titles(title, xlabel, ylabel)
@@ -1037,12 +1038,14 @@ class PLOT(tools.DATA, COLORS):
             xticks = xtick_marks
         if yticks is None:
             yticks = ytick_marks
+        if (len(xticks) > 20 or len(yticks)) > 20 and rebin is None:
+            rebin = max(len(xticks), len(yticks))/20
+        if rebin is not None:
+            xtick_marks, xticks = self.red_ticks(xtick_marks, xticks, rebin)
+            ytick_marks, yticks = self.red_ticks(ytick_marks, yticks, rebin)
         plt.xticks(xtick_marks, xticks, rotation=xrotation)
         plt.yticks(ytick_marks, yticks)
-        if (len(xticks) > 25 or len(yticks)) > 25 and rebin is None:
-            rebin = 25
-        if rebin is not None:
-            plt.locator_params(nbins=rebin)
+
         plt.tight_layout()
         plt.ylabel(ylabel, color='#504A4B')
         plt.xlabel(xlabel, color='#504A4B')
@@ -1052,3 +1055,19 @@ class PLOT(tools.DATA, COLORS):
             plt.savefig(fname)
         if clear:
             plt.cla()
+
+    def red_ticks(self, marks, ticks, interval):
+        orilen = len(ticks)
+        nbins = orilen/interval
+        if nbins < 1:
+            return 0
+        newmarks = [marks[0]]
+        newticks = [ticks[0]]
+        for i in range(0, len(marks)):
+            if (i+1) % interval == 0:
+                newmarks.append(marks[i])
+                newticks.append(ticks[i])
+        if orilen % nbins != 1:
+            newmarks.append(marks[-1])
+            newticks.append(ticks[-1])
+        return newmarks, newticks
