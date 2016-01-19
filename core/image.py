@@ -64,8 +64,7 @@ class IMAGE(tools.TOOLS):
             return self.find_images(path)
 
     def crop_black_bars(self, img, fname=None, thre=1):
-        from simdat.core import plot
-        pl = plot.PLOT()
+        """Crop symmetric black bars"""
 
         _gray = cvtColor(img, COLOR_BGR2GRAY)
         _mean = np.array(_gray).mean(axis=1)
@@ -81,15 +80,18 @@ class IMAGE(tools.TOOLS):
         if fname is not None:
             logging.info('Saving croped file as %s.' % fname)
             self.save(img[cut:-cut], fname)
-        pl.plot_1D_dists([_mean])
 
     def laplacian(self, img, fname=None):
+        """Laplacian transformation"""
+
         la = Laplacian(img, CV_64F)
         if fname is not None:
             self.save(la, fname)
         return la
 
     def sobel(self, img, axis=0):
+        """Sobel transformation"""
+
         if axis == 0:
             sobel = Sobel(img, CV_64F, 0, 1, ksize=5)
         elif axis == 1:
@@ -99,6 +101,8 @@ class IMAGE(tools.TOOLS):
         return sobel
 
     def detect_text_area(self, img, save=False):
+        """Detect text area using simple opencv methods"""
+
         blur = GaussianBlur(img, (5, 5), 0)
         thresh = adaptiveThreshold(blur, 255, 1, 1, 11, 2)
         se = np.ones((7, 7), dtype='uint8')
@@ -110,6 +114,15 @@ class IMAGE(tools.TOOLS):
         return contours
 
     def draw_contours(self, img, contours, fname=None):
+        """Draw contours
+
+        @param img: input image array
+        @param contours: contours to be drawn
+
+        Keyword arguments:
+        fname -- output file name
+
+        """
         for contour in contours:
             [x, y, w, h] = boundingRect(contour)
 
@@ -117,12 +130,20 @@ class IMAGE(tools.TOOLS):
                 continue
             if h < 4 or w < 4:
                 continue
-            rectangle(img,(x,y),(x+w,y+h),(255, 0, 255), 2)
+            rectangle(img, (x, y), (x+w, y+h), (255, 0, 255), 2)
         if fname is not None:
             self.save(img, fname)
         return img
 
     def satuation(self, img, fname=None):
+        """Get the image satuation
+
+        @param img: image array
+
+        Keyword arguments:
+        fname -- output file name
+
+        """
         if not self.is_rgb(img):
             print('ERROR: Cannot support grayscale images')
             sys.exit(0)
@@ -134,6 +155,14 @@ class IMAGE(tools.TOOLS):
         return sat
 
     def intensity(self, img, fname=None):
+        """Get the pixel intensity
+
+        @param img: image array
+
+        Keyword arguments:
+        fname -- output file name
+
+        """
         if self.is_rgb(img):
             intensity = self.gray(img)
         else:
@@ -145,11 +174,21 @@ class IMAGE(tools.TOOLS):
         return intensity
 
     def is_rgb(self, img):
+        """Check if the image is rgb or gray scale"""
+
         if len(img.shape) > 2 or img.shape[2] == 3:
             return True
         return False
 
     def gray(self, img, fname=None):
+        """Convert the image to gray scale
+
+        @param img: image array
+
+        Keyword arguments:
+        fname -- output file name
+
+        """
         gray = cvtColor(img, COLOR_BGR2GRAY)
         if fname is not None:
             self.save(gray, fname)
