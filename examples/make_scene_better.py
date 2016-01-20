@@ -1,9 +1,19 @@
 import cv2
 import os
+import sys
 import argparse
 import logging
 import numpy as np
 from simdat.core import image
+
+imgtl = image.IMAGE()
+
+
+def test(imgs):
+    for _img in imgs:
+        img = imgtl.read(_img).astype(float)
+        sat = imgtl.satuation(img)
+        intensity = imgtl.intensity(img)
 
 
 def main():
@@ -29,6 +39,9 @@ def main():
                 "-v", "--verbosity", action="count",
                 help="increase output verbosity"
                 )
+    parser.add_argument(
+                "-t", "--test", action='store_true'
+                )
     args = parser.parse_args()
 
     log_level = logging.WARNING
@@ -39,7 +52,6 @@ def main():
     logging.basicConfig(level=log_level,
                         format='[MSB %(levelname)s] %(message)s')
 
-    imgtl = image.IMAGE()
     if args.fname is not None:
         imgtl.check_exist(args.fname)
         imgs = [args.fname]
@@ -47,6 +59,10 @@ def main():
         imgs = imgtl.find_images(dir_path=args.dir)
     else:
         imgs = imgtl.find_images()
+
+    if args.test:
+        test(imgs)
+        sys.exit(1)
 
     for fimg in imgs:
         name, ext = os.path.splitext(fimg)
