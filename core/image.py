@@ -122,6 +122,10 @@ class IMAGE(tools.TOOLS):
                 continue
             if amax > 0 and area > amax:
                 continue
+            # if cnt[0][0][0] > 0.33*img.shape[1] and cnt[0][0][0] < 0.67*img.shape[1]:
+            #    continue
+            # if cnt[0][0][1] > 0.25*img.shape[0] and cnt[0][0][1] < 0.75*img.shape[0]:
+            #    continue
             if rect:
                 [x, y, w, h] = cv2.boundingRect(cnt)
                 cv2.rectangle(img, (x, y), (x+w, y+h), (255, 0, 255), 2)
