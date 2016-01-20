@@ -6,14 +6,23 @@ import logging
 import numpy as np
 from simdat.core import image
 
-imgtl = image.IMAGE()
+imgtl = image.OverlayTextDetection()
 
 
 def test(imgs):
     for _img in imgs:
-        img = imgtl.read(_img).astype(float)
-        sat = imgtl.satuation(img)
-        intensity = imgtl.intensity(img)
+        print('Processing %s' % _img)
+        img = imgtl.read(_img)
+        lbp = imgtl.linked_map_boundary(img, output=True)
+        cv2.convertTo(lbp, cv2.CV_8U)
+        gray = cv2.cvtColor(lbp,cv2.COLOR_BGR2GRAY)
+        blur = cv2.GaussianBlur(gray,(5,5),0)
+        thresh = cv2.adaptiveThreshold(blur,255,1,1,11,2)
+
+        contours,hierarchy = cv2.findContours(thresh,cv2.RETR_LIST,cv2.CHAIN_APPROX_SIMPLE)
+
+        # res = cv2.cvtColor(lbp, cv2.CV_8UC1)
+        # contours,hierarchy = cv2.findContours(res, 1, 2)
 
 
 def main():

@@ -9,7 +9,6 @@ from cv2 import Sobel, CV_64F, Laplacian
 from cv2 import cvtColor, COLOR_BGR2GRAY
 from cv2 import GaussianBlur
 from cv2 import adaptiveThreshold
-from cv2 import morphologyEx, MORPH_CLOSE
 from cv2 import boundingRect, rectangle
 from cv2 import findContours, RETR_EXTERNAL, CHAIN_APPROX_NONE
 
@@ -81,23 +80,23 @@ class IMAGE(tools.TOOLS):
             logging.info('Saving croped file as %s.' % fname)
             self.save(img[cut:-cut], fname)
 
-    def laplacian(self, img, fname=None):
+    def laplacian(self, img, output=False):
         """Laplacian transformation"""
 
         la = Laplacian(img, CV_64F)
-        if fname is not None:
-            self.save(la, fname)
+        if output:
+            self.save(la, 'laplacian.png')
         return la
 
-    def sobel(self, img, axis=0):
+    def sobel(self, img, axis=0, output=False):
         """Sobel transformation"""
 
         if axis == 0:
             sobel = Sobel(img, CV_64F, 0, 1, ksize=5)
         elif axis == 1:
             sobel = Sobel(img, CV_64F, 1, 0, ksize=5)
-        if fname is not None:
-            self.save(sobel, fname)
+        if output:
+            self.save(sobel, 'sobel.png')
         return sobel
 
     def detect_text_area(self, img, save=False):
@@ -120,7 +119,7 @@ class IMAGE(tools.TOOLS):
         @param contours: contours to be drawn
 
         Keyword arguments:
-        fname -- output file name
+        output -- True to output the image
 
         """
         for contour in contours:
@@ -135,32 +134,54 @@ class IMAGE(tools.TOOLS):
             self.save(img, fname)
         return img
 
-    def satuation(self, img, fname=None):
-        """Get the image satuation
+    def is_rgb(self, img):
+        """Check if the image is rgb or gray scale"""
+
+        if len(img.shape) > 2 or img.shape[2] == 3:
+            return True
+        return False
+
+    def gray(self, img, output=False):
+        """Convert the image to gray scale
 
         @param img: image array
 
         Keyword arguments:
-        fname -- output file name
+        output -- True to output the image
 
         """
-        if not self.is_rgb(img):
-            print('ERROR: Cannot support grayscale images')
-            sys.exit(0)
-        np.seterr(divide='ignore')
-        sat = 1 - np.divide(3, (img.sum(axis=2)*img.min(axis=2)))
-        sat[np.isneginf(sat)] = 0
-        if fname is not None:
-            self.save(sat, fname)
-        return sat
+        gray = cvtColor(img, COLOR_BGR2GRAY)
+        if output:
+            self.save(gray, 'gray.png')
+        return gray
 
-    def intensity(self, img, fname=None):
+    def LBP(self, img, output=False):
+        """Get the LBP image
+        (reference: http://goo.gl/aeADZd)
+
+        @param img: image array
+
+        Keyword arguments:
+        output -- True to output the image
+
+        """
+        from skimage.feature import local_binary_pattern
+        if self.is_rgb(img):
+            img = self.gray(img)
+        pts = 6
+        radius = 3
+        lbp = local_binary_pattern(img, pts, radius,  method='uniform')
+        if output:
+            self.save(lbp, 'lbp')
+        return lbp
+
+    def intensity(self, img, output=False):
         """Get the pixel intensity
 
         @param img: image array
 
         Keyword arguments:
-        fname -- output file name
+        output -- True to output the image
 
         """
         if self.is_rgb(img):
@@ -169,30 +190,9 @@ class IMAGE(tools.TOOLS):
             intensity = img
         intensity = intensity.astype(float)
         intensity *= (1.0/intensity.max())
-        if fname is not None:
-            self.save(intensity, fname)
+        if output:
+            self.save(intensity, 'intensity.png')
         return intensity
-
-    def is_rgb(self, img):
-        """Check if the image is rgb or gray scale"""
-
-        if len(img.shape) > 2 or img.shape[2] == 3:
-            return True
-        return False
-
-    def gray(self, img, fname=None):
-        """Convert the image to gray scale
-
-        @param img: image array
-
-        Keyword arguments:
-        fname -- output file name
-
-        """
-        gray = cvtColor(img, COLOR_BGR2GRAY)
-        if fname is not None:
-            self.save(gray, fname)
-        return gray
 
     def save(self, img, fname='cv2.img'):
         """Write images
@@ -225,3 +225,135 @@ class IMAGE(tools.TOOLS):
             return int(q)
         except subprocess.CalledProcessError:
             return None
+
+
+class OverlayTextDetection(IMAGE):
+    """This is the implementation of the paper
+
+        Overlay Text Detection in Complex Video Background
+
+    Link of the original paper: http://goo.gl/d3GQ3T
+
+    """
+    def satuation(self, img, output=False):
+        """Get the image satuation
+
+        @param img: image array
+
+        Keyword arguments:
+        output  -- True to output the image (default: False)
+
+        """
+        if not self.is_rgb(img):
+            print('ERROR: Cannot support grayscale images')
+            sys.exit(0)
+        np.seterr(divide='ignore')
+        sat = 1 - np.divide(3, (img.sum(axis=2)*img.min(axis=2)))
+        sat[np.isneginf(sat)] = 0
+        if output:
+            self.save(sat, 'sat.png')
+        return sat
+
+    def maxS(self, img, output=False):
+        """Get maxS, more details see http://goo.gl/d3GQ3T
+
+        @param img: image array
+
+        Keyword arguments:
+        output     -- True to output the image (default: False)
+
+        """
+        intensity = self.intensity(img, output=output)
+        maxS = np.where(intensity > 0.5, 2*(0.5-intensity), 2*intensity)
+        if output:
+            self.save(maxS, 'maxS.png')
+        return maxS
+
+    def tildeS(self, img, output=False, nan_to_num=True):
+        """Get tilde S, more details see http://goo.gl/d3GQ3T
+
+        @param img: image array
+
+        Keyword arguments:
+        output     -- True to output the image (default: False)
+        nan_to_num -- True to convert inf to numbers (default: True)
+
+        """
+        sat = self.satuation(img, output=output)
+        maxS = self.maxS(img, output=output)
+        tildeS = sat/maxS
+        if nan_to_num:
+            tildeS = np.nan_to_num(tildeS)
+        if output:
+            self.save(tildeS, 'tildeS.png')
+        return tildeS
+
+    def calD(self, diff_tildeS, diff_int, left=True):
+        """Get D, more details see http://goo.gl/d3GQ3T
+
+        @param diff_tildeS: difference of tilde S matrix
+        @param diff_int: difference of the intensity matrix
+
+        Keyword arguments:
+        left  -- True to make D_L, False for D_R
+
+        """
+        if left:
+            tildeS = np.insert(diff_tildeS, 0,
+                               diff_tildeS.T[0], axis=1)
+            intensity = np.insert(diff_int, 0,
+                                  diff_int.T[0], axis=1)
+
+        else:
+            tildeS = np.insert(diff_tildeS, diff_tildeS.shape[1],
+                               diff_tildeS.T[-1], axis=1)
+            intensity = np.insert(diff_int, diff_int.shape[1],
+                                  diff_int.T[-1], axis=1)
+        return (1 + tildeS)*intensity
+
+    def T(self, img, output=False, T_H=1):
+        """Get D, more details see http://goo.gl/d3GQ3T
+
+        @param img: image array
+
+        Keyword arguments:
+        T_H   -- threshold used for the transition map
+        output -- True to output the image
+
+        """
+        tildeS = self.tildeS(img, output=output)
+        intensity = self.intensity(img, output=output)
+        diff_tildeS = np.diff(tildeS)
+        diff_int = np.absolute(np.diff(intensity))
+        D_L = self.calD(diff_tildeS, diff_int) + 1
+        D_R = self.calD(diff_tildeS, diff_int, left=False)
+        T = np.where(D_R > D_L, 1, 0)
+        if output:
+            self.save(T, 'T.png')
+        return T
+
+    def linked_map_boundary(self, img, output=False,
+                            T_H=1, r=0.04):
+        """Get linked_map_boundary
+
+        @param img: image array
+
+        Keyword arguments:
+        r      -- ratio for setting threshold (default: 0.04)
+        T_H    -- threshold used for the transition map
+                  (used by self.T)
+        output -- True to output the image
+
+        """
+        T = self.T(img, output=output, T_H=T_H)
+        thre = int(T.shape[1]*r)
+        for rth in range(0, T.shape[0]):
+            non_zero = np.nonzero(T[rth])[0]
+            for i in range(0, len(non_zero) - 1):
+                s = non_zero[i]
+                e = non_zero[i+1]
+                if e - s < thre:
+                    T[rth][s:e+1] = 255
+        if output:
+            self.save(T, 'lmb.png')
+        return T
