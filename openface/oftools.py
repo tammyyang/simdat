@@ -39,46 +39,41 @@ class OFArgs(ml.Args):
         self.pathModel = None
 
 
-class OpenFace:
-    def __init__(self, pfs, method='SVC'):
-        """Init function of OpenFace"""
+class OFTools(object):
+    def __init__(self):
+        pass
 
-        self.args = OFArgs(pfs=pfs)
-        self.set_paths()
+    def pick_reps(self, dbs, dir_path=None):
+        """Pick entries which matched the images existing in
+           a specified directory from multiple db json files
 
-    def set_paths(self):
-        """Check paths used by openface"""
+        @param dbs: list of the input db
 
-        _model_parent = os.path.join(self.args.pathOF,
-                                     self.args.parentModel)
-        if self.args.pathdlibMean is None:
-            self.args.pathdlibMean = os.path.join(self.args.pathOF,
-                                                  "./models/dlib/",
-                                                  self.args.fdlibFaceMean)
-        if self.args.pathPredictor is None:
-            self.args.pathPredictor = os.path.join(_model_parent,
-                                                   self.args.parentdlibModel,
-                                                   self.args.fdlibPredictor)
-            self.args.pathPredictor = str(self.args.pathPredictor)
-        if self.args.pathModel is None:
-            self.args.pathModel = os.path.join(_model_parent,
-                                               self.args.parentOFModel,
-                                               self.args.fmodel)
-        for attr in self.args.__dict__.keys():
-            if attr[:4] == 'path':
-                io.check_exist(getattr(self.args, attr))
-        sys.path.append(self.args.pathdlib)
-        return
+        Keyword arguments:
+        dir_path: parent directory of the images
 
-    def read_df(self, inf, dtype='test', mpf='./mapping.json', group=False):
+        """
+        import pandas as pd
+        im = tools.IMAGE()
+        img_sufs = im.find_images(dir_path=dir_path)
+        img_sufs = [im.path_suffix(x) for x in img_sufs]
+        df = io.read_jsons_to_df(dbs, orient='index')
+        df['path_suf'] = df['path'].apply(lambda x: im.path_suffix(x))
+        df = df[df['path_suf'].isin(img_sufs)]
+        io.write_df_json(df, fname='./picked_rep.json')
+        return df
+
+    def read_df(self, inf, dtype='test', mpf='./mapping.json',
+                group=False, selclass=None, conv=True):
         """Read results as Pandas DataFrame
 
-        @param inf: input file to be read
+        @param inf: input file path to be read or a read df
 
         Keyword arguments:
         dtype -- data type, train or test (default: test)
         mpf   -- file name of the mapping (default: ./mapping.json)
         group -- true to group data by path (default: False)
+        conv  -- true to convert class to int according to mpf
 
         @return results after reading the input db file
                 if group:
@@ -92,7 +87,10 @@ class OpenFace:
                 result['target_names'] = keys of the mapping file
 
         """
-        df = io.read_json_to_df(inf, orient='index', np=False)
+        if type(inf) is str:
+            df = io.read_json_to_df(inf, orient='index', np=False)
+        else:
+            df = inf
         _target = 'class'
 
         if dtype == 'train':
@@ -102,8 +100,12 @@ class OpenFace:
         elif dtype == 'test':
             mapping = io.parse_json(mpf)
 
-        df[_target] = df[_target].apply(lambda x: mapping[x])
-        res = {'data': [], 'target': [], 'pos': [], 'path': []}
+        if conv:
+            df[_target] = df[_target].apply(lambda x: mapping[x])
+        if conv and type(selclass) is int:
+            df = df[df['class'] == selclass]
+        res = {'data': [], 'target': [], 'pos': [],
+               'path': [], 'mapping': mapping}
         if group:
             grouped = df.groupby('path')
             for name, group in grouped:
@@ -138,6 +140,38 @@ class OpenFace:
         """
         cats = df.groupby(groupby).count().index.tolist()
         return dict(zip(cats, range(0, len(cats))))
+
+
+class OpenFace(OFTools):
+    def __init__(self, pfs, method='SVC'):
+        """Init function of OpenFace"""
+
+        self.args = OFArgs(pfs=pfs)
+        self.set_paths()
+
+    def set_paths(self):
+        """Check paths used by openface"""
+
+        _model_parent = os.path.join(self.args.pathOF,
+                                     self.args.parentModel)
+        if self.args.pathdlibMean is None:
+            self.args.pathdlibMean = os.path.join(self.args.pathOF,
+                                                  "./models/dlib/",
+                                                  self.args.fdlibFaceMean)
+        if self.args.pathPredictor is None:
+            self.args.pathPredictor = os.path.join(_model_parent,
+                                                   self.args.parentdlibModel,
+                                                   self.args.fdlibPredictor)
+            self.args.pathPredictor = str(self.args.pathPredictor)
+        if self.args.pathModel is None:
+            self.args.pathModel = os.path.join(_model_parent,
+                                               self.args.parentOFModel,
+                                               self.args.fmodel)
+        for attr in self.args.__dict__.keys():
+            if attr[:4] == 'path':
+                io.check_exist(getattr(self.args, attr))
+        sys.path.append(self.args.pathdlib)
+        return
 
     def get_rep(self, imgPath, net=None,
                 output=False, class_kwd='person-'):

@@ -1,0 +1,25 @@
+<html>
+<head>
+<title>{{ TITLE }}</title>
+</head>
+<body>
+
+<table border=2 cellspacing=20>
+{% for img in imgs %}
+{% set f = img.split('/')[-1].split('.')[0] %}
+{% if loop.index %3 == 1 %}<tr>{% endif %}
+    <th>{{ f }}<br>
+    <img src ='{{ img }}'
+    width ='320' height ='240'
+    usemap =#{{ f }} border=0 /></th>
+{% if loop.index %3 == 3 %}</tr>{% endif %}
+{% endfor %}
+{% if imgs | length %3 != 3 %}</tr>{% endif %}
+</table>
+
+{% for img in imgs %}
+{% set f = img.split('/')[-1].split('.')[0] %}
+<map name='{{ f }}'>
+<area shape =rect coords =0,0,800,600 
+href ={{ img }} /></map>
+{% endfor %}

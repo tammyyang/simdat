@@ -1,4 +1,5 @@
 from os import path
+import sys
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
@@ -31,10 +32,15 @@ class COLORS:
             '#38ACE7', '#659EC7', '#79BAE7',
             '#A0CFEC', '#C6DEFF', '#BDEDFF']
 
+    colors = ['red', 'grey', 'green', 'brown',
+              'pink', 'blue']
+
 
 class PLOT(tools.DATA, COLORS):
     def tools_init(self):
         self.ax = plt.axes()
+        self.loc_map = {'rt': 1, 'rb': 4, 'lb': 3,
+                        'lt': 2, 'c': 9, 'cb': 8, 'ct': 9}
 
     def check_array_length(self, arrays):
         """Check if lengths of all arrays are equal
@@ -47,8 +53,8 @@ class PLOT(tools.DATA, COLORS):
         length = len(arrays[0])
         for a in arrays[1:]:
             if len(a) != length:
-                print('ERROR: array lengths are not equal')
-                sys.exti()
+                print('[PLOT] ERROR: array lengths are not equal')
+                sys.exit(1)
         return length
 
     def find_axis_max_min(self, values, s_up=0.1, s_down=0.1):
@@ -58,10 +64,15 @@ class PLOT(tools.DATA, COLORS):
         values = self.conv_to_np(values)
 
         axis_max = np.amax(values)
-        axis_max = axis_max + s_up
         axis_min = np.amin(values)
-        axis_min = axis_min - s_down
-
+        if axis_max < 1 and axis_max >= 0:
+            axis_max = axis_max + s_up
+        else:
+            axis_max = axis_max * (1 + self.sign(axis_max) * s_up)
+        if axis_min > -1 and axis_min <= 0:
+            axis_min = axis_min - s_down
+        else:
+            axis_min = axis_min * (1 - self.sign(axis_min) * s_down)
         return axis_max, axis_min
 
     def scale(self, a):
@@ -85,19 +96,47 @@ class PLOT(tools.DATA, COLORS):
         img = mpimg.imread(imgpath)
         xmax = len(img[0])
         ymax = len(img)
-        print('x max = %i, y max = %i' % (xmax, ymax))
+        print('[PLOT] x max = %i, y max = %i' % (xmax, ymax))
         plt.imshow(img)
         if clear:
             plt.cla()
         return img, (xmax, ymax)
+
+    def _add_titles(self, title, xlabel, ylabel):
+        """Add title, xlabel and ylabel to the figure"""
+
+        plt.title(title, color='#504A4B', weight='bold')
+        self.ax.set_ylabel(ylabel, color='#504A4B')
+        self.ax.set_xlabel(xlabel, color='#504A4B')
+
+    def _add_legend(self, loc):
+        """Add Legend to the figure
+
+        @param loc: location of the legend
+                    rt   - right top
+                    rb   - right bottom
+                    lt   - left top
+                    lb   - left bottom
+                    c/ct - central top
+                    cb   - central bottom
+
+        """
+        args = {'loc': self.loc_map[loc]}
+        if loc == 'rt':
+            args['bbox_to_anchor'] = (1.12, 1.0)
+        elif loc in ['rb', 'lb', 'lt']:
+            args['borderaxespad'] = 1
+        elif loc in ['c', 'ct']:
+            args['borderaxespad'] = -2.5
+        self.ax.legend(**args)
 
     def patch_line(self, x, y, color='#7D0552', clear=True,
                    linewidth=None, linestype='solid',
                    fname='./patch_line.png'):
         """Patch a line to the existing panel
 
-        @param x: x data, should be a list with two elements
-        @param y: y data, should be a list with two elements
+        @param x: x data, [x1, x2] where x1 and x2 are x positions
+        @param y: y data, [y1, y2] where y1 and y2 are y positions
 
         Keyword arguments:
         color     -- line color (default: #7D0552)
@@ -126,8 +165,8 @@ class PLOT(tools.DATA, COLORS):
                     fname='./patch_arrow.png'):
         """Patch a arrow to the existing panel
 
-        @param x: the starting point of x axis
-        @param y: the starting point of y axis
+        @param x: the starting point of x axis, should be a single value
+        @param y: the starting point of y axis, should be a single value
 
         Keyword arguments:
         dx        -- delta x of the arrow
@@ -165,8 +204,8 @@ class PLOT(tools.DATA, COLORS):
                       clear=True, fname='./patch_textbox.png'):
         """Patch a textbox to the existing panel
 
-        @param x: the starting point of x axis
-        @param y: the starting point of y axis
+        @param x: the starting point of x axis, should be a single value
+        @param y: the starting point of y axis, should be a single value
         @param text: text to show
 
         Keyword arguments:
@@ -203,8 +242,8 @@ class PLOT(tools.DATA, COLORS):
                       fname='./patch_ellipse.png'):
         """Patch a ellipse to the existing panel
 
-        @param x: the starting point of x axis
-        @param y: the starting point of y axis
+        @param x: the starting point of x axis, should be a single value
+        @param y: the starting point of y axis, should be a single value
 
         Keyword arguments:
         w         -- width of the ellipse
@@ -243,8 +282,8 @@ class PLOT(tools.DATA, COLORS):
                         fname='./patch_rectangle.png'):
         """Patch a rectangle to the existing panel
 
-        @param x: the starting point of x axis
-        @param y: the starting point of y axis
+        @param x: the starting point of x axis, should be a single value
+        @param y: the starting point of y axis, should be a single value
 
         Keyword arguments:
         w         -- width of the rectangle (default: 3)
@@ -289,6 +328,8 @@ class PLOT(tools.DATA, COLORS):
 
         """
         import cv2
+        if not self.check_exist(img_path):
+            return
         img = cv2.imread(img_path)
         if new_home is None:
             new_path = img_path.replace('.jpg', '_patch.jpg')
@@ -303,19 +344,96 @@ class PLOT(tools.DATA, COLORS):
                       (pos[2], pos[3]), (0, 255, 0), 2)
         cv2.imwrite(new_path, img)
 
+    def plot(self, data, clear=True, fname='./plot.png',
+             title='', connected=True, ymax=None,
+             ymin=None, xlabel='', ylabel='', xticks=None,
+             xrotation=45, color=None, xmax=None):
+        """Draw the very basic 1D plot
+
+        @param data: an 1D array [y1, y2, y3...yn]
+
+        Keyword arguments:
+        clear     -- true to clear panel after output (default: True)
+        xlabel    -- label of the X axis (default: '')
+        ylabel    -- label of the y axis (default: '')
+        title     -- chart title (default: 'Distributions')
+        connected -- true to draw line between dots (default: True)
+        xmax      -- maximum of x axis (default: max(data)+0.1)
+        ymax      -- maximum of y axis (default: max(data)+0.1)
+        ymin      -- minimum of y axis (default: max(data)-0.1)
+        fname     -- output filename (default: './dist_1d.png')
+
+        """
+
+        data = self.conv_to_np(data)
+
+        fmt = '-o' if connected else 'o'
+        color = self.blue[2] if color is None else color
+        plt.plot(data, fmt, color=color)
+        _ymax, _ymin = self.find_axis_max_min(data)
+        ymax = _ymax if ymax is None else max(ymax, _ymax)
+        ymin = _ymin if ymin is None else min(ymin, _ymin)
+        xmax = 1.1*(len(data)-1) if xmax is None else xmax
+
+        plt.axis([-0.1, xmax, ymin, ymax])
+        xtick_marks = np.arange(len(data))
+        if xticks is None:
+            xticks = xtick_marks
+        plt.xticks(xtick_marks, xticks, rotation=xrotation)
+        self._add_titles(title, xlabel, ylabel)
+        if fname is not None:
+            plt.savefig(fname)
+        if clear:
+            plt.cla()
+
+    def plot_classes(self, data, fname='./classes.png',
+                     xlabel='', ylabel='', legend=None, marker_size=40,
+                     title='Classes', clear=True, leg_loc='rt'):
+        """Plot scatter figures for multiple classes
+
+        @param data: data [a1, a2, .., an] where a1, a2, an are 2D arrays
+                     a1 = [[x1, y1], [x1, y2], ..., [xn, yn]]
+                     xn, yn are 1D arrays of the x, y values in n class
+
+        Keyword arguments:
+        legend      -- a list of the legend, must match len(data)
+                       (default: index of the list to be drawn)
+        xlabel      -- label of the X axis (default: '')
+        ylabel      -- label of the y axis (default: '')
+        marker_size -- size of the markers
+        clear       -- true to clear panel after output (default: True)
+        title       -- chart title (default: '')
+        fname       -- output filename (default: './points.png')
+
+        """
+        for i in range(0, len(data)):
+            color_idx = i % len(self.colors)
+            dks = i % 10
+            color = getattr(self, self.colors[color_idx])[dks]
+            args = {'c': color, 's': marker_size,
+                    'edgecolors': 'face', 'alpha': 0.8}
+            args['label'] = legend[i] if legend is not None else str(i)
+            plt.scatter(data[i][0], data[i][1], **args)
+        self._add_legend(leg_loc)
+        self._add_titles(title, xlabel, ylabel)
+        if fname is not None:
+            plt.savefig(fname)
+        if clear:
+            plt.cla()
+
     def plot_pie(self, data, bfrac=False, shadow=False, clear=True,
-                 title='Pie Chart', cg='pink', radius=1.1,
+                 title='Pie Chart', color='pink', radius=1.1,
                  pie_labels=None, expl=None, fname='./pie.png'):
         """Draw a pie chart
 
-        @param data: a list of input data (1D)
+        @param data: a list of input data [x1, x2, x3,...,xn]
 
         Keyword arguments:
         bfrac      -- true if the input data already represents fractions
                       (default: False)
         shadow     -- add shadow to the chart (default: False)
         title      -- chart title (default: 'Pie Chart')
-        cg         -- color group to be used (default: 'pink')
+        color      -- color group to be used (default: 'pink')
         radius     -- radius of the pie (default: 1.1)
         pie_labels -- labels of each components
                       (default: index of the elements)
@@ -332,7 +450,7 @@ class PLOT(tools.DATA, COLORS):
         fracs = data if bfrac else self.get_perc(data)
         if pie_labels is None:
             pie_labels = list(map(str, range(1, len(data)+1)))
-        color_class = getattr(self, cg)
+        color_class = getattr(self, color)
 
         args = {'labels': pie_labels,
                 'autopct': '%1.1f%%',
@@ -356,11 +474,13 @@ class PLOT(tools.DATA, COLORS):
 
     def plot_stacked_bar(self, data, xticks=None, xlabel='', legend=None,
                          ylabel='', xrotation=45, width=0.6, clear=True,
-                         cg='blue', title='Stacked Bar Chart',
-                         log=False, fname='stack_bar.png'):
+                         color='blue', title='Stacked Bar Chart',
+                         log=False, fname='stack_bar.png', leg_loc='rt'):
         """Draw a bar chart with errors
 
-        @param data: a list of input data (2D)
+        @param data: a list of input data
+                     [[x1, x2..xn], [y1, y2..yn], [z1, z2..zn],..]
+                     where x1, y1, z1 are quantities at the first position
 
         Keyword arguments:
         xticks    -- ticks of the x axis (default: array index of the elements)
@@ -370,7 +490,7 @@ class PLOT(tools.DATA, COLORS):
         ylabel    -- label of the y axis (default: '')
         xrotation -- rotation angle of xticks (default: 45)
         width     -- relative width of the bar (default: 0.6)
-        cg        -- color group to be used (default: 'blue')
+        color     -- color group to be used (default: 'blue')
         title     -- chart title (default: 'Stacked Bar Chart')
         log       -- true to draw log scale (default: False)
         fname     -- output filename (default: './stack_bar.png')
@@ -381,7 +501,7 @@ class PLOT(tools.DATA, COLORS):
         data = self.conv_to_np(data)
 
         ind = np.arange(_len)
-        stack_colors = getattr(self, cg)
+        stack_colors = getattr(self, color)
         if xticks is None:
             xticks = list(map(str, range(1, _len+1)))
 
@@ -392,18 +512,75 @@ class PLOT(tools.DATA, COLORS):
             a = np.array(data[i]) if type(data[i]) is list else data[i]
             label = legend[i] if legend is not None else str(i)
             p = plt.bar(ind, a, width, bottom=sum_array,
-                        log=log, label=label,
+                        log=log, label=label, alpha=0.85,
                         color=stack_colors[i % 10])
             sum_array = np.add(sum_array, a)
             _ymax, _ymin = self.find_axis_max_min(a)
             ymax += _ymax
 
         plt.axis([0, _len, ymin, ymax])
-        plt.ylabel(ylabel, color='#504A4B')
-        plt.xlabel(xlabel, color='#504A4B')
-        plt.title(title, color='#504A4B', weight='bold')
+        self._add_legend(leg_loc)
+        self._add_titles(title, xlabel, ylabel)
         plt.xticks(ind + width/2., xticks)
-        plt.legend(bbox_to_anchor=(1.12, 1.12), loc=1, borderaxespad=0.)
+        if fname is not None:
+            plt.savefig(fname)
+        if clear:
+            plt.cla()
+
+    def plot_multi_bars(self, data, xticks=None, xlabel='', legend=None,
+                        ylabel='', err=None, xrotation=45, clear=True,
+                        color='green', title='Bar Chart', ecolor='brown',
+                        log=False, fname='multi_bars.png', leg_loc='rt'):
+        """Draw a bar chart with errors
+
+        @param data: a 2D list of input data
+                     [a1, a2, a3...]
+                     a1 is a 1D array, a1 = [x1, x2, ...]
+                     where the length of a1, a2, a3 should be the same
+
+        Keyword arguments:
+        xticks    -- ticks of the x axis (default: array index of the elements)
+        xlabel    -- label of the X axis (default: '')
+        ylabel    -- label of the y axis (default: '')
+        legend    -- legend of the items (default: data index)
+        err       -- upper error array (default: None)
+        xrotation -- rotation angle of xticks (default: 45)
+        clear     -- true to clear panel after output (default: True)
+        color     -- color group (default: 'grey')
+        title     -- chart title (default: 'Bar Chart')
+        log       -- true to draw log scale (default: False)
+        fname     -- output filename (default: './multi_bars.png')
+        ecolor    -- color group of the error bars (default: 'brown')
+        leg_loc   -- location of the legend, rt(default)/rb/lt/lb/c
+
+        """
+
+        data = self.conv_to_np(data)
+        if xticks is None:
+            xticks = list(map(str, range(1, len(data)+1)))
+
+        ind = np.arange(len(xticks))
+        N = len(data)
+        width = 1.0/N
+
+        for i in range(0, N):
+            label = legend[i] if legend is not None else str(i)
+            args = {'color': getattr(self, color)[i],
+                    'label': label, 'alpha': 0.8}
+            if err is not None:
+                args['ecolor'] = getattr(self, ecolor)[i]
+                args['yerr'] = err[i]
+            _ind = ind + width * i * 0.9
+            _rec = self.ax.bar(_ind, data[i], width*0.9, **args)
+
+        if legend is None:
+            legend = range(0, N)
+        self._add_legend(leg_loc)
+        self._add_titles(title, xlabel, ylabel)
+        self.ax.set_xticks(ind+width/2)
+        self.ax.set_xticklabels(xticks, rotation=xrotation)
+        if log:
+            self.ax.set_yscale('log')
         if fname is not None:
             plt.savefig(fname)
         if clear:
@@ -415,7 +592,9 @@ class PLOT(tools.DATA, COLORS):
                         log=False, fname='bar.png', ecolor='#009966'):
         """Draw a bar chart with errors
 
-        @param data: a list of input data (1D)
+        @param data: a list of input data
+                     [x1, x2, x3...]
+                     where x1, x2, x3 are quantities at the every position
 
         Keyword arguments:
         xticks    -- ticks of the x axis (default: array index of the elements)
@@ -458,17 +637,19 @@ class PLOT(tools.DATA, COLORS):
 
     def plot_2D_dists(self, data, scale=False, legend=None, clear=True,
                       title='Distrubitions', connected=True, amin=None,
-                      amax=None, xlabel='Index', ylabel='',
-                      fname='./dist_2d.png'):
+                      amax=None, xlabel='', ylabel='',
+                      fname='./dist_2d.png', leg_loc='rt'):
         """Draw the dist of multiple 2D arrays.
 
         @param data: list of 2D arrays
+                     [a1, a2, .., an] where a1, a2, an are 2D arrays
+                     a1 = [[x1, x2...xn], [y1, y2...yn]]
 
         Keyword arguments:
         scale     -- true to scale the distributions (default: False)
         legend    -- a list of the legend, must match len(data)
                      (default: index of the list to be drawn)
-        xlabel    -- label of the X axis (default: 'Index')
+        xlabel    -- label of the X axis (default: '')
         ylabel    -- label of the y axis (default: '')
         clear     -- true to clear panel after output (default: True)
         title     -- chart title (default: 'Distributions')
@@ -505,43 +686,42 @@ class PLOT(tools.DATA, COLORS):
                 ymin = _ymin if ymin is None else min(ymin, _ymin)
 
         plt.axis([xmin, xmax, ymin, ymax])
-        plt.title(title, color='#504A4B', weight='bold')
-        plt.xlabel(xlabel, color='#504A4B')
-        plt.ylabel(ylabel, color='#504A4B')
-        plt.legend(bbox_to_anchor=(1.12, 1.0), loc=1, borderaxespad=0.)
+        self._add_legend(leg_loc)
+        self._add_titles(title, xlabel, ylabel)
         if fname is not None:
             plt.savefig(fname)
         if clear:
             plt.cla()
 
     def plot_1D_dists(self, data, scale=False, legend=None, clear=True,
-                      title='Distrubitions', connected=True, amax=None,
-                      amin=None, xlabel='Index', ylabel='',
-                      fname='./dist_1d.png'):
+                      title='Distrubitions', connected=True, ymax=None,
+                      ymin=None, xlabel='', ylabel='', xticks=None,
+                      xrotation=45, leg_loc='rt', xmax=None,
+                      fname='./dist_1d.png', rebin=None):
         """Draw the dist of multiple 1D arrays.
 
         @param data: list of 1D arrays
+                     [a1, a2, .., an] where a1, a2, an are 1D arrays
+                     a1 = [x1, x2...xn]
 
         Keyword arguments:
         scale     -- true to scale the distributions (default: False)
         legend    -- a list of the legend, must match len(data)
                      (default: index of the list to be drawn)
         clear     -- true to clear panel after output (default: True)
-        xlabel    -- label of the X axis (default: 'Index')
+        xlabel    -- label of the X axis (default: '')
         ylabel    -- label of the y axis (default: '')
         title     -- chart title (default: 'Distributions')
         connected -- true to draw line between dots (default: True)
-        amax      -- maximum of y axis (default: max(data)+0.1)
-        amin      -- minimum of y axis (default: max(data)-0.1)
+        xmax      -- maximum of x axis (default: max(data)+0.1)
+        ymax      -- maximum of y axis (default: max(data)+0.1)
+        ymin      -- minimum of y axis (default: max(data)-0.1)
         fname     -- output filename (default: './dist_1d.png')
 
         """
 
         data = self.conv_to_np(data)
 
-        ymax = amax
-        ymin = amin
-        xmax = None
         fmt = '-o' if connected else 'o'
         for i in range(0, len(data)):
             label = legend[i] if legend is not None else str(i)
@@ -550,21 +730,88 @@ class PLOT(tools.DATA, COLORS):
                 a = np.array(a)
             if scale:
                 a = self.scale(a)
-            plt.plot(a, fmt, label=label)
+
+            color_idx = i % len(self.colors)
+            dks = i % 10
+            color = getattr(self, self.colors[color_idx])[dks]
+            plt.plot(a, fmt, label=label, color=color)
 
             _ymax, _ymin = self.find_axis_max_min(a)
             _xmax = 1.1*(len(a)-1)
-            if amax is None:
-                ymax = _ymax if ymax is None else max(ymax, _ymax)
-            if amin is None:
-                ymin = _ymin if ymin is None else min(ymin, _ymin)
+            ymax = _ymax if ymax is None else max(ymax, _ymax)
+            ymin = _ymin if ymin is None else min(ymin, _ymin)
             xmax = _xmax if xmax is None else max(xmax, _xmax)
 
         plt.axis([-0.1, xmax, ymin, ymax])
-        plt.title(title, color='#504A4B', weight='bold')
-        plt.xlabel(xlabel, color='#504A4B')
-        plt.ylabel(ylabel, color='#504A4B')
-        plt.legend(bbox_to_anchor=(1.12, 1.0), loc=1, borderaxespad=0.)
+        xtick_marks = np.arange(len(data[0]))
+        if xticks is None:
+            xticks = xtick_marks
+        plt.xticks(xtick_marks, xticks, rotation=xrotation)
+        if (len(xticks) > 25 or len(yticks)) > 25 and rebin is None:
+            rebin = 25
+        if rebin is not None:
+            plt.locator_params(nbins=rebin)
+
+        self._add_legend(leg_loc)
+        self._add_titles(title, xlabel, ylabel)
+        if fname is not None:
+            plt.savefig(fname)
+        if clear:
+            plt.cla()
+
+    def diff_axis_1D(self, data, legend=None, c1=None, c2=None,
+                     xrotation=45, connected=True, xticks=None,
+                     clear=True, xmax=None, leg_loc='rt',
+                     xlabel='', ylabel='', title='Distrubitions',
+                     fname='./diff_axis_1D.png'):
+        """Draw two dists with different axis
+
+        @param data: [a1, a2] where a1 and a2 are 1D arrays
+                     a1 = [x1, x2, .., xn]
+                     a2 = [y1, y2..., yn]
+
+        Keyword arguments:
+        legend    -- a list of the legend, must match len(data)
+                     (default: index of the list to be drawn)
+        clear     -- true to clear panel after output (default: True)
+        xrotation -- rotation angle of the xticks( default: 45)
+        connected -- true to draw line between dots (default: True)
+        xticks    -- xticks (default: data index)
+        xlabel    -- label of the X axis (default: '')
+        ylabel    -- label of the y axis (default: '')
+        title     -- chart title (default: 'Distributions')
+        fname     -- output filename (default: './dist_two.png')
+
+        """
+
+        c1 = self.red[4] if c1 is None else c1
+        c2 = self.green[4] if c2 is None else c2
+        legend = ['dist 1', 'dist 2'] if legend is None else legend
+        fm = 'o-' if connected else 'o'
+        xmax = len(data[0]) if xmax is None else xmax
+
+        p1, = self.ax.plot(data[0], fm, color=c1, alpha=0.8, label=legend[0])
+        for tl in self.ax.get_yticklabels():
+            tl.set_color(c1)
+        ymax1, ymin1 = self.find_axis_max_min(data[0])
+        self.ax.set_ylim([ymin1, ymax1])
+        self.ax.set_xlim([-0.5, xmax])
+
+        ax2 = self.ax.twinx()
+        p2, = ax2.plot(data[1], fm, color=c2, alpha=0.8, label=legend[1])
+        for tl in ax2.get_yticklabels():
+            tl.set_color(c2)
+        ymax2, ymin2 = self.find_axis_max_min(data[1])
+        ax2.set_ylim([ymin2, ymax2])
+        ax2.set_xlim([-0.5, xmax])
+
+        xtick_marks = np.arange(len(data[0]))
+        if xticks is None:
+            xticks = xtick_marks
+        plt.xticks(xtick_marks, xticks, rotation=xrotation)
+        self._add_titles(title, xlabel, ylabel)
+
+        plt.legend([p1, p2], legend, loc=self.loc_map[leg_loc])
         if fname is not None:
             plt.savefig(fname)
         if clear:
@@ -572,16 +819,18 @@ class PLOT(tools.DATA, COLORS):
 
     def histogram(self, data, xlabel='', ylabel='', clear=True,
                   title='Histogram', nbins=None, bfit=False,
-                  fname='./hist.png', grid=True,
+                  xlim=None, fname='./hist.png', grid=True,
                   align='mid', log=False, facecolor='#339966'):
         """Draw histogram of the numpy array
 
         @param data: input array (1D)
+                     [x1, x2...xn] where xi are raw values
 
         Keyword arguments:
         xlabel -- label of the X axis (default: '')
         ylabel -- label of the y axis (default: '')
-        clear     -- true to clear panel after output (default: True)
+        clear  -- true to clear panel after output (default: True)
+        xlim   -- limits of x axis (default: max, min of data)
         title  -- chart title (default: 'Histogram')
         nbins  -- number of bins (default: length of the set of input data)
         bfit   -- also draw fit function (default: False)
@@ -597,7 +846,7 @@ class PLOT(tools.DATA, COLORS):
         if nbins is None:
             nbins = len(set(data))
         y, x, patches = plt.hist(data, nbins, normed=1, log=log,
-                                 facecolor=facecolor, alpha=0.5,
+                                 facecolor=facecolor, alpha=0.7,
                                  align=align, rwidth=1.0)
         if bfit:
             mu = np.mean(data)
@@ -609,7 +858,10 @@ class PLOT(tools.DATA, COLORS):
         plt.ylabel(ylabel, color='#504A4B')
         plt.xlabel(xlabel, color='#504A4B')
         plt.grid(grid)
-        xmax, xmin = self.find_axis_max_min(x)
+        if xlim is None:
+            xmax, xmin = self.find_axis_max_min(x)
+        else:
+            xmin, xmax = xlim
         ymax, ymin = self.find_axis_max_min(y)
         plt.axis([xmin, xmax, 0, ymax])
         if fname is not None:
@@ -620,21 +872,25 @@ class PLOT(tools.DATA, COLORS):
     def plot_points(self, x, y, err=None, err_low=None, clear=True,
                     connected=False, xlabel='', ylabel='', xticks=None,
                     fname='./points.png', title='', ymax=None, ymin=None,
-                    ecolor='#3399FF', color='#CC6600'):
+                    xmax=None, xmin=None, ecolor='#3399FF', color='#CC6600'):
         """Plot points with (asymmetry) errors
 
-        @param x: x array
-        @param y: y array
+        @param x: x array [x1, x2,...xn]
+        @param y: y array [y1, y2,...yn]
 
         Keyword arguments:
         err       -- upper error array (default: None)
+                     [e1, e2,...en]
         err_low   -- lower error array (default: None or err if err is set)
         connected -- true to draw line between dots (default: False)
+        xticks     -- ticks of the x axis (default: array index)
         xlabel    -- label of the X axis (default: '')
         ylabel    -- label of the y axis (default: '')
         clear     -- true to clear panel after output (default: True)
         title     -- chart title (default: '')
         fname     -- output filename (default: './points.png')
+        xmax      -- maximum of x axis (default: max(data)+0.1)
+        xmin      -- minimum of x axis (default: max(data)-0.1)
         ymax      -- maximum of y axis (default: max(data)+0.1)
         ymin      -- minimum of y axis (default: max(data)-0.1)
         ecolor    -- color of the errors (default: '#3399FF')
@@ -653,13 +909,13 @@ class PLOT(tools.DATA, COLORS):
                 args['yerr'] = [err, err]
         self.ax.errorbar(x, y, **args)
         self.ax.set_title(title)
-        xmax, xmin = self.find_axis_max_min(x)
+        _xmax, _xmin = self.find_axis_max_min(x)
+        xmax = _xmax if xmax is None else xmax
+        xmin = _xmin if xmin is None else xmin
         plt.xlim(xmin, xmax)
         _ymax, _ymin = self.find_axis_max_min(y)
-        if ymax is None:
-            ymax = _ymax
-        if ymin is None:
-            ymin = _ymin
+        ymax = _ymax if ymax is None else ymax
+        ymin = _ymin if ymin is None else ymin
         plt.ylim(ymin, ymax)
         self.ax.set_xlabel(xlabel)
         self.ax.set_ylabel(ylabel)
@@ -678,8 +934,8 @@ class PLOT(tools.DATA, COLORS):
                           ylabel='', fname='./bubble.png'):
         """Plot bubble chart
 
-        @param x: x array
-        @param y: y array
+        @param x: x array, x positions of the bubbles
+        @param y: y array, y positions of the bubbles
 
         Keyword arguments:
         z      -- z array to determine the size of bubbles (default [3]*N)
@@ -723,25 +979,25 @@ class PLOT(tools.DATA, COLORS):
                               xrotation=45,
                               show_axis=True,
                               show_text=True, clear=True,
-                              cmap=plt.cm.Blues, norm=True):
+                              color='Blues', norm=True):
 
         self.plot_matrix(cm, title=title, xticks=xticks, yticks=yticks,
                          fname=fname, xlabel=xlabel, ylabel=ylabel,
                          xrotation=xrotation, show_text=show_text,
-                         cmap=cmap, norm=norm, clear=clear,
+                         color=color, norm=norm, clear=clear,
                          show_axis=show_axis)
 
     def plot_matrix(self, cm, title='',
                     xticks=None, yticks=None, fname='./cm.png',
-                    xlabel='Predicted label',
-                    ylabel='True label',
+                    xlabel='Predicted label', ylabel='True label',
                     xrotation=45, clear=True,
-                    show_text=True,
-                    show_axis=True,
-                    cmap=plt.cm.Blues, norm=True):
+                    color='YlOrRd', rebin=None,
+                    show_text=True, show_axis=True, norm=True):
         """Plot (confusion) matrix
 
-        @param cm: input matrix
+        @param cm: input matrix (2D)
+                   [a1, a2...an]
+                   a = [x1, x2...xn]
 
         Keyword arguments:
         title      -- chart title (default: '')
@@ -754,7 +1010,7 @@ class PLOT(tools.DATA, COLORS):
         clear      -- true to clear panel after output (default: True)
         show_text  -- true to show values on grids (default: True)
         show_axis  -- true to show axis (default: True)
-        cmap       -- color map (defaul: Blues)
+        color      -- color map, see http://goo.gl/51s91K (default: YlOrRd)
         norm       -- true to normlize numbers (default: True)
 
         """
@@ -762,8 +1018,8 @@ class PLOT(tools.DATA, COLORS):
         if norm:
             cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
 
-        plt.imshow(cm, interpolation='nearest', cmap=cmap)
-
+        cmap = getattr(plt.cm, color)
+        plt.imshow(cm, interpolation='nearest', cmap=cmap, alpha=0.7)
         if show_text:
             diff = 1
             ind_array_x = np.arange(0, len(cm[0]), diff)
@@ -783,8 +1039,10 @@ class PLOT(tools.DATA, COLORS):
             yticks = ytick_marks
         plt.xticks(xtick_marks, xticks, rotation=xrotation)
         plt.yticks(ytick_marks, yticks)
-        if len(xticks) > 20 or len(yticks) > 20:
-            plt.locator_params(nbins=20)
+        if (len(xticks) > 25 or len(yticks)) > 25 and rebin is None:
+            rebin = 25
+        if rebin is not None:
+            plt.locator_params(nbins=rebin)
         plt.tight_layout()
         plt.ylabel(ylabel, color='#504A4B')
         plt.xlabel(xlabel, color='#504A4B')

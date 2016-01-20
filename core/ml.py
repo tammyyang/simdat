@@ -37,13 +37,37 @@ class Args(object):
         """
 
         if not os.path.isfile(f):
-            print("WARNING: File %s does not exist" % f)
+            print("[ML] WARNING: File %s does not exist" % f)
             return
         inparm = io.parse_json(f)
         cinst = self.__dict__.keys()
         for k in inparm:
             if k in cinst:
                 setattr(self, k, inparm[k])
+
+    def _print_arg(self, arg, arg_dic):
+        """Print argument explanation"""
+        print('[ML] * %s *' % arg)
+        print('[ML]   Description: %s' % arg_dic['des'])
+        print('[ML]   Type: %s' % arg_dic['type'])
+        print('[ML]   Default: %s' % arg_dic['default'])
+
+    def explain_args(self, fname, arg=''):
+        """Print explanation for args
+
+        @param fname: The json file which includes the explanations
+
+        Keyword Arguments:
+        arg -- specify the argument to print (default: all)
+
+        """
+        intros = io.parse_json(fname)
+        print('[ML] === Reading explanations from %s.' % fname)
+        if len(arg) < 1:
+            for _arg in intros.keys():
+                self._print_arg(_arg, intros[_arg])
+        else:
+            self._print_arg(arg, intros[arg])
 
 
 class DataArgs(Args):
@@ -79,8 +103,10 @@ class MLArgs(Args):
         self.nfolds = 5
         self.get_prob = True
         self.test_size = 0.33
+        self.retrain = True
         self.random = 42
         self.outd = './'
+        self.multiclass = None
 
     def tune_args_for_data(self, N):
         """Tunning args right before training is applied
@@ -148,6 +174,23 @@ class NeighborsArgs(MLArgs):
             self.grids[0]['outlier_label'] = N
 
 
+class MLPArgs(MLArgs):
+    def _add_args(self):
+        """Function to add additional arguments"""
+
+        self._add_mlp_args()
+
+    def _add_mlp_args(self):
+        """Add additional arguments for SVM class"""
+
+        self._add_ml_args()
+        self.class_mode = 'categorical'
+        self.loss = 'mean_squared_error'
+        self.nb_epoch = 100
+        self.dropout = 0.5
+        self.bsize = 32
+
+
 class RFArgs(MLArgs):
     def _add_args(self):
         """Function to add additional arguments"""
@@ -158,9 +201,12 @@ class RFArgs(MLArgs):
         """Add additional arguments for SVM class"""
 
         self._add_ml_args()
-        self.grids = [{'max_depth': [3, 4, 5, 6, 7],
-                       'n_estimators': [5, 10, 15],
-                       'max_features': [1, 2, 'sqrt', 'log2']}]
+        self.extreme = True
+        self.grids = [{'criterion': ['gini', 'entropy'],
+                       'bootstrap': [True, False],
+                       'random_state': [None, 1, 64],
+                       'n_estimators': [64, 96, 128, 256],
+                       'max_features': [None, 'sqrt', 'log2']}]
 
 
 class SVMArgs(MLArgs):
@@ -217,8 +263,9 @@ class SVMArgs(MLArgs):
 
 class MLTools():
     def __init__(self):
-        """Init if MLTools, don't do anything here"""
+        """Init function of MLTools class"""
 
+        self.args = MLArgs(pfs=[])
         return
 
     def get_class_from_path(self, opath, keyword):
@@ -235,6 +282,77 @@ class MLTools():
                 return base
             _dirname = os.path.dirname(_dirname)
         return None
+
+    def PCA(self, X, Y=None, ncomp=2, method='PCA'):
+        """ decompose a multivariate dataset in an orthogonal
+            set that explain a maximum amount of the variance
+
+        @param X: Input dataset
+
+        Keyword Arguments:
+        ncomp  -- number or components to be kept (Default: 2)
+        method -- method to be used
+                  PCA(default)/Randomized/Sparse
+
+        """
+        from sklearn import decomposition
+        from sklearn import cross_decomposition
+        if method == 'Randomized':
+            pca = decomposition.RandomizedPCA(n_components=ncomp)
+        elif method == 'Sparse':
+            pca = decomposition.SparsePCA(n_components=ncomp)
+        elif method == 'rbf':
+            pca = decomposition.KernelPCA(n_components=ncomp,
+                                          fit_inverse_transform=True,
+                                          gamma=10, kernel="rbf")
+        elif method == 'linear':
+            pca = decomposition.KernelPCA(n_components=ncomp,
+                                          kernel="linear")
+        elif method == 'sigmoid':
+            pca = decomposition.KernelPCA(n_components=ncomp,
+                                          kernel="sigmoid")
+        elif method == 'SVD':
+            pca = decomposition.TruncatedSVD(n_components=ncomp)
+        else:
+            pca = decomposition.PCA(n_components=ncomp)
+            method = 'PCA'
+        print('[ML] Using %s method' % method)
+        pca.fit(X)
+        return pca.transform(X)
+
+    def save_model(self, fprefix, model, high=False):
+        """Save model to a file for future use
+
+        @param fprefix: prefix of the output file
+        @param model: model to be saved
+
+        """
+        import cPickle
+        io.dir_check(self.args.outd)
+        outf = ''.join([self.args.outd, fprefix, '.pkl'])
+
+        with open(outf, 'wb') as f:
+            if high:
+                cPickle.dump(model, f,
+                             protocol=cPickle.HIGHEST_PROTOCOL)
+            else:
+                cPickle.dump(model, f)
+        print("[ML] Model is saved to %s" % outf)
+        return outf
+
+    def read_model(self, fmodel):
+        """Read model from a file
+
+        @param fmodel: file path of the input model
+
+        """
+        if not os.path.isfile(fmodel):
+            raise Exception("Model file %s does not exist." % fmodel)
+
+        import pickle
+        with open(fmodel, 'rb') as f:
+            model = pickle.load(f)
+        return model
 
 
 class MLRun(MLTools):
@@ -255,7 +373,7 @@ class MLRun(MLTools):
         """
         self.args = MLArgs(pfs=pfs)
 
-    def _set_model(self):
+    def _init_model(self):
         """Place holder for child class to set the ML model"""
 
         return None
@@ -272,12 +390,19 @@ class MLRun(MLTools):
         length = dt.check_len(data, target)
         train_d, test_d, train_t, test_t = \
             self.split_samples(data, target)
-        model, mf = self.train_with_grids(train_d, train_t)
+        model, method = self.train(train_d, train_t)
         if len(test_t) > 0:
             result = self.test(test_d, test_t, model)
+            if self.args.retrain:
+                print("[ML] Re-fit model with the full dataset")
+                if method == 'MLP':
+                    target = dt.convert_cats(target)
+                model.fit(data, target)
         else:
-            print('No additional testing is performed')
-        return mf
+            print('[ML] No additional testing is performed')
+            result = None
+        mf = self.save_model(method, model)
+        return result
 
     def split_samples(self, data, target):
         """Split samples
@@ -293,7 +418,7 @@ class MLRun(MLTools):
                                               random_state=self.args.random)
         return train_d, test_d, train_t, test_t
 
-    def train_with_grids(self, data, target):
+    def train(self, data, target):
         """Train with GridSearchCV to Find the best parameters
 
         @param data: Input training data array (multi-dimensional np array)
@@ -302,15 +427,20 @@ class MLRun(MLTools):
         @return clf model trained, path of the output model
 
         """
+        from sklearn import cross_validation
+        cv = cross_validation.KFold(len(data),
+                                    n_folds=self.args.nfolds)
+        self.args.tune_args_for_data(len(data))
+        method, model = self._init_model()
+        if model is None:
+            print("[ML] Error: cannot set the model properly")
+            sys.exit(1)
 
+        from sklearn.grid_search import GridSearchCV
         t0 = time.time()
         if 'grids' not in self.args.__dict__.keys():
             raise Exception("grids are not set properly")
 
-        from sklearn import cross_validation
-        from sklearn.grid_search import GridSearchCV
-
-        print_len = 50
         logging.debug('Splitting the jobs into %i' % self.args.njobs)
         log_level = logging.getLogger().getEffectiveLevel()
 
@@ -318,60 +448,47 @@ class MLRun(MLTools):
             return int(log_level * (-0.1) + 3)
         verbose = 0 if log_level == 30 else _verbose_level(log_level)
 
-        cv = cross_validation.KFold(len(data),
-                                    n_folds=self.args.nfolds)
-        self.args.tune_args_for_data(len(data))
-        method, model = self._set_model()
         if model is None:
-            print("Error: cannot set the model properly")
+            print("[ML] Error: cannot set the model properly")
             sys.exit(1)
-        print('GridSearchCV for: %s' % str(self.args.grids))
+        print('[ML] GridSearchCV for: %s' % str(self.args.grids))
+
         clf = GridSearchCV(model, self.args.grids,
                            n_jobs=self.args.njobs,
                            cv=cv, verbose=verbose)
-
-        logging.debug('First %i samples of training data' % print_len)
-        logging.debug(str(data[:print_len]))
-        logging.debug('First %i samples of training target' % print_len)
-        logging.debug(str(target[:print_len]))
-
         clf.fit(data, target)
         best_parms = clf.best_params_
-        t0 = dt.print_time(t0, 'find best parameters - train_with_grids')
-        print ('Best parameters are: %s' % str(best_parms))
-        mf = self.save_model(method, clf)
+        t0 = dt.print_time(t0, 'find best parameters - train')
+        print ('[ML] Best parameters are: %s' % str(best_parms))
 
-        return clf, mf
+        best_model = clf.best_estimator_
+        if self.args.multiclass is not None:
+            clf = self._multiclass_refit(best_model)
+            clf.fit(data, target)
 
-    def save_model(self, fprefix, model):
-        """Save model to a file for future use
+        return best_model, method
 
-        @param fprefix: prefix of the output file
-        @param model: model to be saved
+    def _multiclass_refit(self, clf):
+        """Return advanced choices of the classification method"""
 
-        """
-        import pickle
-        io.dir_check(self.args.outd)
-        outf = ''.join([self.args.outd, fprefix, '.pkl'])
+        if self.args.multiclass == 'one-vs-rest':
+            from sklearn.multiclass import OneVsRestClassifier
+            print('[ML] Using one-vs-rest method to re-train')
+            clf = OneVsRestClassifier(clf)
 
-        with open(outf, 'wb') as f:
-            pickle.dump(model, f)
-        print("Model is saved to %s" % outf)
-        return outf
+        elif self.args.multiclass == 'one-vs-one':
+            from sklearn.multiclass import OneVsOneClassifier
+            self.args.get_prob = False
+            print('[ML] Using one-vs-one method to re-train')
+            print('[ML] WARNING: Set get_prob to False')
+            clf = OneVsOneClassifier(clf)
 
-    def read_model(self, fmodel):
-        """Read model from a file
+        elif self.args.multiclass == 'error-correcting':
+            from sklearn.multiclass import OutputCodeClassifier
+            print('[ML] Using error-correcting method to re-train')
+            clf = OutputCodeClassifier(clf, code_size=2)
 
-        @param fmodel: file path of the input model
-
-        """
-        if not os.path.isfile(fmodel):
-            raise Exception("Model file %s does not exist." % fmodel)
-
-        import pickle
-        with open(fmodel, 'rb') as f:
-            model = pickle.load(f)
-        return model
+        return clf
 
     def predict(self, data, trained_model, outf=None):
         """Predict using the existing model
@@ -384,11 +501,15 @@ class MLRun(MLTools):
 
         """
         t0 = time.time()
-        result = {'Result': trained_model.predict(data)}
+        result = {'Result': self._get_predicted(data, trained_model)}
         if outf is not None:
             io.write_json(result, fname=outf)
         t0 = dt.print_time(t0, 'predict %i data entries' % len(data))
         return result
+
+    def _get_predicted(self, data, trained_model):
+        """Get predicted vector"""
+        return trained_model.predict(data)
 
     def test(self, data, target, trained_model, target_names=None):
         """Test the existing model
@@ -402,8 +523,7 @@ class MLRun(MLTools):
         """
         t0 = time.time()
         from sklearn import metrics
-        print_len = 50
-        predicted = trained_model.predict(data)
+        predicted = self._get_predicted(data, trained_model)
         if self.args.get_prob:
             prob = trained_model.predict_proba(data)
         else:
@@ -411,20 +531,103 @@ class MLRun(MLTools):
         accuracy = metrics.accuracy_score(target, predicted)
         error = dt.cal_standard_error(predicted)
 
-        logging.debug(metrics.classification_report(target, predicted,
-                                                    target_names=target_names))
-        logging.debug("Accuracy: %0.5f (+/- %0.5f)" % (accuracy, error))
+        print(metrics.classification_report(target, predicted,
+                                            target_names=target_names))
+        print("[ML] Accuracy: %0.5f (+/- %0.5f)" % (accuracy, error))
 
         result = {'accuracy': accuracy, 'error': error,
                   'predicted': predicted, 'prob': prob,
                   'cm': metrics.confusion_matrix(target, predicted)}
 
-        logging.debug('First %i results from the predicted' % print_len)
-        logging.debug(str(predicted[:print_len]))
-        logging.debug('First %i results from the testing target' % print_len)
-        logging.debug(str(target[:print_len]))
-
         return result
+
+
+class MLPRun(MLRun):
+    def ml_init(self, pfs):
+        """Initialize arguments needed
+
+        @param pfs: profiles to be read (used by MLArgs)
+
+        """
+        self.args = MLPArgs(pfs=pfs)
+
+    def _init_model(self, parms=None):
+        """Create the MLP model"""
+
+        from keras.models import Sequential
+        from keras.layers.core import Dense, Dropout, Activation
+        from keras.optimizers import SGD
+
+        print("[ML] Setting MLP model...")
+        model = Sequential()
+        model.add(Dense(parms['indim'], init='uniform',
+                        input_dim=parms['indim']))
+        model.add(Activation('tanh'))
+        model.add(Dropout(self.args.dropout))
+        model.add(Dense(64, init='uniform'))
+        model.add(Activation('tanh'))
+        model.add(Dropout(self.args.dropout))
+        model.add(Dense(parms['ncat'], init='uniform'))
+        model.add(Activation('softmax'))
+
+        sgd = SGD(lr=0.1, decay=1e-6, momentum=0.9, nesterov=True)
+        model.compile(loss=self.args.loss,
+                      optimizer=sgd,
+                      class_mode=self.args.class_mode)
+        return 'MLP', model
+
+    def train(self, data, target):
+        """Train with the Keras MLP model
+
+        @param data: Input training data array (multi-dimensional np array)
+        @param target: Input training target array (1D np array)
+
+        @return clf model trained, training method
+
+        """
+        data = dt.conv_to_np(data)
+        target = dt.convert_cats(target)
+        parms = {'ncat': target.shape[1],
+                 'indim': data.shape[1]}
+        method, model = self._init_model(parms=parms)
+        print("[ML] Training MLP")
+        model.fit(data, target, nb_epoch=self.args.nb_epoch,
+                  batch_size=self.args.bsize,
+                  verbose=1, show_accuracy=True)
+        return model, method
+
+    def _get_predicted(self, data, trained_model):
+        """Get predicted vector"""
+        return trained_model.predict_classes(data, verbose=1,
+                                             batch_size=self.args.bsize)
+
+    def read_model(self, fmodel, parms):
+        """Read model from a file
+
+        @param fmodel: file path of the model weights
+        @param parms = {'ncat': target.shape[1],
+                        'indim': data.shape[1]}
+
+        """
+        if not os.path.isfile(fmodel):
+            raise Exception("Model file %s does not exist." % fmodel)
+
+        model = self._init_model(parms=parms)
+        model.load_weights(fmodel)
+        return model
+
+    def save_model(self, fprefix, model):
+        """Save model to a file for future use
+
+        @param fprefix: prefix of the output file
+        @param model: model to be saved
+
+        """
+        io.dir_check(self.args.outd)
+        outf = ''.join([self.args.outd, fprefix, '.pkl'])
+        model.save_weights(outf, overwrite=True)
+        print("[ML] Model is saved to %s" % outf)
+        return outf
 
 
 class NeighborsRun(MLRun):
@@ -436,15 +639,22 @@ class NeighborsRun(MLRun):
         """
         self.args = NeighborsArgs(pfs=pfs)
 
-    def _set_model(self):
+    def _init_model(self, parms=None):
         """Set ML model"""
 
         from sklearn import neighbors
         if self.args.radius == 0:
-            return 'Neighbors', neighbors.KNeighborsClassifier()
+            if parms is not None:
+                model = neighbors.KNeighborsClassifier(**parms)
+            else:
+                model = neighbors.KNeighborsClassifier()
 
         else:
-            return 'Neighbors', neighbors.RadiusNeighborsClassifier()
+            if parms is not None:
+                model = neighbors.RadiusNeighborsClassifier(**parms)
+            else:
+                model = neighbors.RadiusNeighborsClassifier()
+        return 'Neighbors', model
 
 
 class RFRun(MLRun):
@@ -456,11 +666,18 @@ class RFRun(MLRun):
         """
         self.args = RFArgs(pfs=pfs)
 
-    def _set_model(self):
+    def _init_model(self, parms=None):
         """Set ML model"""
 
         from sklearn import ensemble
-        return 'RF', ensemble.RandomForestClassifier()
+        if self.args.extreme:
+            if parms is not None:
+                return 'ExtremeRF', ensemble.ExtraTreesClassifier(**parms)
+            return 'ExtremeRF', ensemble.ExtraTreesClassifier()
+        else:
+            if parms is not None:
+                return 'RF', ensemble.RandomForestClassifier(**parms)
+            return 'RF', ensemble.RandomForestClassifier()
 
 
 class SVMRun(MLRun):
@@ -472,8 +689,12 @@ class SVMRun(MLRun):
         """
         self.args = SVMArgs(pfs=pfs)
 
-    def _set_model(self):
+    def _init_model(self, parms=None):
         """Set ML model"""
 
         from sklearn import svm
-        return 'SVC', svm.SVC(probability=True)
+        if parms is None:
+            parms = {'probability': True}
+        else:
+            parms['probability'] = True
+        return 'SVC', svm.SVC(**parms)
