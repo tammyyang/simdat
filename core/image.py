@@ -2,15 +2,9 @@ import os
 import subprocess
 import numpy as np
 import logging
+import cv2
 from PIL import Image
 from simdat.core import tools
-from cv2 import imwrite
-from cv2 import Sobel, CV_64F, Laplacian
-from cv2 import cvtColor, COLOR_BGR2GRAY
-from cv2 import GaussianBlur
-from cv2 import adaptiveThreshold
-from cv2 import boundingRect, rectangle
-from cv2 import findContours, RETR_EXTERNAL, CHAIN_APPROX_NONE
 
 
 class IMAGE(tools.TOOLS):
@@ -65,7 +59,7 @@ class IMAGE(tools.TOOLS):
     def crop_black_bars(self, img, fname=None, thre=1):
         """Crop symmetric black bars"""
 
-        _gray = cvtColor(img, COLOR_BGR2GRAY)
+        _gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         _mean = np.array(_gray).mean(axis=1)
         _selected = [i for i in range(0, len(_mean)) if _mean[i] > thre]
         _start = _selected[0]
@@ -83,7 +77,7 @@ class IMAGE(tools.TOOLS):
     def laplacian(self, img, output=False):
         """Laplacian transformation"""
 
-        la = Laplacian(img, CV_64F)
+        la = cv2.Laplacian(img, cv2.CV_64F)
         if output:
             self.save(la, 'laplacian.png')
         return la
@@ -92,54 +86,86 @@ class IMAGE(tools.TOOLS):
         """Sobel transformation"""
 
         if axis == 0:
-            sobel = Sobel(img, CV_64F, 0, 1, ksize=5)
+            sobel = cv2.Sobel(img, cv2.CV_64F, 0, 1, ksize=5)
         elif axis == 1:
-            sobel = Sobel(img, CV_64F, 1, 0, ksize=5)
+            sobel = cv2.Sobel(img, cv2.CV_64F, 1, 0, ksize=5)
         if output:
             self.save(sobel, 'sobel.png')
         return sobel
 
-    def detect_text_area(self, img, save=False):
-        """Detect text area using simple opencv methods"""
+    def contours(self, img, save=False):
+        """Get contours"""
 
-        blur = GaussianBlur(img, (5, 5), 0)
-        thresh = adaptiveThreshold(blur, 255, 1, 1, 11, 2)
-        se = np.ones((7, 7), dtype='uint8')
-        if save:
-            self.save(blur, 'blur.png')
-            self.save(thresh, 'thresh.png')
-        contours, hierarchy = findContours(thresh, RETR_EXTERNAL,
-                                           CHAIN_APPROX_NONE)
+        if self.is_rgb(img):
+            img = self.gray(img)
+        contours, hier = cv2.findContours(img, cv2.RETR_LIST,
+                                          cv2.CHAIN_APPROX_SIMPLE)
         return contours
 
-    def draw_contours(self, img, contours, fname=None):
+    def draw_contours(self, img, contours, amin=-1, amax=-1,
+                      output=False, rect=False):
         """Draw contours
 
         @param img: input image array
         @param contours: contours to be drawn
 
         Keyword arguments:
-        output -- True to output the image
+        amin   -- min of the area to be selected
+        amax   -- max of the area to be selected
+        rect   -- True to draw boundingRec (default: False)
+        output -- True to output the image (default: False)
 
         """
-        for contour in contours:
-            [x, y, w, h] = boundingRect(contour)
-
-            if h > len(img)*0.9 or w > len(img[0])*0.9:
+        for cnt in contours:
+            area = cv2.contourArea(cnt)
+            if amin > 0 and area < amin:
                 continue
-            if h < 4 or w < 4:
+            if amax > 0 and area > amax:
                 continue
-            rectangle(img, (x, y), (x+w, y+h), (255, 0, 255), 2)
-        if fname is not None:
-            self.save(img, fname)
+            if rect:
+                [x, y, w, h] = cv2.boundingRect(cnt)
+                cv2.rectangle(img, (x, y), (x+w, y+h), (255, 0, 255), 2)
+            else:
+                cv2.drawContours(img, [cnt], 0, (0, 255, 0), 2)
+        if output:
+            self.save(img, 'contours.png')
         return img
 
     def is_rgb(self, img):
         """Check if the image is rgb or gray scale"""
 
-        if len(img.shape) > 2 or img.shape[2] == 3:
-            return True
-        return False
+        if len(img.shape) <= 2:
+            return False
+        if img.shape[2] < 3:
+            return False
+        return True
+
+    def get_houghlines(self, img):
+        """Get lines from hough transform"""
+
+        if self.is_rgb(img):
+            img = self.gray(img)
+
+        edges = cv2.Canny(img, 100, 200)
+        return cv2.HoughLines(edges, 1, np.pi/180, 200)
+
+    def draw_houghlines(self, img, lines, output=False):
+        """Draw lines found by hough transform"""
+
+        for rho, theta in lines[0]:
+            a = np.cos(theta)
+            b = np.sin(theta)
+            x0 = a*rho
+            y0 = b*rho
+            x1 = int(x0 + 1000*(-b))
+            y1 = int(y0 + 1000*(a))
+            x2 = int(x0 - 1000*(-b))
+            y2 = int(y0 - 1000*(a))
+            cv2.line(img, (x1, y1), (x2, y2), (0, 0, 255), 2)
+
+        if output:
+            self.save(img, 'houghlines.png')
+        return lines
 
     def gray(self, img, output=False):
         """Convert the image to gray scale
@@ -150,7 +176,7 @@ class IMAGE(tools.TOOLS):
         output -- True to output the image
 
         """
-        gray = cvtColor(img, COLOR_BGR2GRAY)
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         if output:
             self.save(gray, 'gray.png')
         return gray
@@ -203,7 +229,7 @@ class IMAGE(tools.TOOLS):
         fname -- output file name
 
         """
-        imwrite(fname, img)
+        cv2.imwrite(fname, img)
         return 0
 
     def read(self, fimg):

@@ -5,24 +5,31 @@ import argparse
 import logging
 import numpy as np
 from simdat.core import image
+from simdat.core import plot
 
 imgtl = image.OverlayTextDetection()
 
 
 def test(imgs):
+    pl = plot.PLOT()
     for _img in imgs:
         print('Processing %s' % _img)
         img = imgtl.read(_img)
-        lbp = imgtl.linked_map_boundary(img, output=True)
-        cv2.convertTo(lbp, cv2.CV_8U)
-        gray = cv2.cvtColor(lbp,cv2.COLOR_BGR2GRAY)
-        blur = cv2.GaussianBlur(gray,(5,5),0)
-        thresh = cv2.adaptiveThreshold(blur,255,1,1,11,2)
+        lmb = imgtl.linked_map_boundary(img, output=True)
+        lmb = lmb.astype('uint8')
+        contours = imgtl.contours(lmb)
+        amin = img.shape[0]*img.shape[1]*0.01
+        amax = img.shape[0]*img.shape[1]*0.2
+        imgtl.draw_contours(img, contours, amin=amin, amax=amax, output=True)
 
-        contours,hierarchy = cv2.findContours(thresh,cv2.RETR_LIST,cv2.CHAIN_APPROX_SIMPLE)
-
-        # res = cv2.cvtColor(lbp, cv2.CV_8UC1)
-        # contours,hierarchy = cv2.findContours(res, 1, 2)
+        # a = np.bincount(index[0])
+        # b = np.bincount(index[1])
+        # pl.plot(a, fname='a.png')
+        # pl.plot(b, fname='b.png')
+        # for i in range(0, len(index[0])):
+        #     print index[0][i], index[1][i]
+        # lines = imgtl.get_houghlines(lmb)
+        # imgtl.draw_houghlines(img, lines, output=True)
 
 
 def main():
