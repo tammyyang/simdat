@@ -24,11 +24,36 @@ def test(imgs):
 
         lbp_mean = np.mean(lbp, axis=1)
         pl.plot(lbp_mean, fname='mean_row.png')
+        b = [lbp_mean.mean() - 3 * lbp_mean.std(), lbp_mean.mean() + 3 * lbp_mean.std()]
+        a = [i for i in range(0, len(lbp_mean)) if lbp_mean[i] > b[0] and lbp_mean[i] > b[1]]
+        c = []
+        start = a[0]
+        end = a[0]
+        counter = -1
+        thre = img.shape[0]*0.05
+        print(thre)
+        ## Think ##
+        for i in range(0, len(a)):
+            if i < counter:
+                continue
+            if i == len(a) - 1 and a[i] - a[i-1] < thre:
+                c.append((a[i-1], a[i]))
+            for j in range(i+1, len(a)):
+                if a[j] - a[j+1] < thre:
+                    continue
+                else:
+                    counter = j
+                    c.append((a[i], a[j-1]))
+                    break
+        print(a)
+        print(c)
         lbp_std = np.std(lbp, axis=1)
         pl.plot(lbp_std, fname='std_row.png')
 
         lbp_mean = np.mean(lbp, axis=0)
         pl.plot(lbp_mean, fname='mean_col.png')
+        b = [lbp_mean.mean() - 5 * lbp_mean.std(), lbp_mean.mean() + 5 * lbp_mean.std()]
+        a = [i for i in range(0, len(lbp_mean)) if lbp_mean[i] > b[0] and lbp_mean[i] > b[1]]
         lbp_std = np.std(lbp, axis=0)
         pl.plot(lbp_std, fname='std_col.png')
 
