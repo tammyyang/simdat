@@ -59,7 +59,10 @@ class IMAGE(tools.TOOLS):
     def crop_black_bars(self, img, fname=None, thre=1):
         """Crop symmetric black bars"""
 
-        _gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        if self.is_rgb:
+            _gray = self.gray(img)
+        else:
+            _gray = _gray
         _mean = np.array(_gray).mean(axis=1)
         _selected = [i for i in range(0, len(_mean)) if _mean[i] > thre]
         _start = _selected[0]
@@ -74,24 +77,26 @@ class IMAGE(tools.TOOLS):
             logging.info('Saving croped file as %s.' % fname)
             self.save(img[cut:-cut], fname)
 
-    def laplacian(self, img, output=False):
+        return cut
+
+    def laplacian(self, img, save=False):
         """Laplacian transformation"""
 
         if self.is_rgb(img):
             img = self.gray(img)
         la = cv2.Laplacian(img, cv2.CV_64F)
-        if output:
+        if save:
             self.save(la, 'laplacian.png')
         return la
 
-    def sobel(self, img, axis=0, output=False):
+    def sobel(self, img, axis=0, save=False):
         """Sobel transformation"""
 
         if axis == 0:
             sobel = cv2.Sobel(img, cv2.CV_64F, 0, 1, ksize=5)
         elif axis == 1:
             sobel = cv2.Sobel(img, cv2.CV_64F, 1, 0, ksize=5)
-        if output:
+        if save:
             self.save(sobel, 'sobel.png')
         return sobel
 
@@ -105,7 +110,7 @@ class IMAGE(tools.TOOLS):
         return contours
 
     def draw_contours(self, img, contours, amin=-1, amax=-1,
-                      output=False, rect=False):
+                      save=False, rect=False):
         """Draw contours
 
         @param img: input image array
@@ -115,7 +120,7 @@ class IMAGE(tools.TOOLS):
         amin   -- min of the area to be selected
         amax   -- max of the area to be selected
         rect   -- True to draw boundingRec (default: False)
-        output -- True to output the image (default: False)
+        save -- True to save the image (default: False)
 
         """
         for cnt in contours:
@@ -129,7 +134,7 @@ class IMAGE(tools.TOOLS):
                 cv2.rectangle(img, (x, y), (x+w, y+h), (255, 0, 255), 2)
             else:
                 cv2.drawContours(img, [cnt], 0, (0, 255, 0), 2)
-        if output:
+        if save:
             self.save(img, 'contours.png')
         return img
 
@@ -151,7 +156,7 @@ class IMAGE(tools.TOOLS):
         edges = cv2.Canny(img, 100, 200)
         return cv2.HoughLines(edges, 1, np.pi/180, 200)
 
-    def draw_houghlines(self, img, lines, output=False):
+    def draw_houghlines(self, img, lines, save=False):
         """Draw lines found by hough transform"""
 
         for rho, theta in lines[0]:
@@ -165,7 +170,7 @@ class IMAGE(tools.TOOLS):
             y2 = int(y0 - 1000*(a))
             cv2.line(img, (x1, y1), (x2, y2), (0, 0, 255), 2)
 
-        if output:
+        if save:
             self.save(img, 'houghlines.png')
         return lines
 
@@ -180,17 +185,17 @@ class IMAGE(tools.TOOLS):
             return False
         return True
 
-    def gray(self, img, output=False):
+    def gray(self, img, save=False):
         """Convert the image to gray scale
 
         @param img: image array
 
         Keyword arguments:
-        output -- True to output the image
+        save -- True to save the image
 
         """
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        if output:
+        if save:
             self.save(gray, 'gray.png')
         return gray
 
@@ -215,14 +220,14 @@ class IMAGE(tools.TOOLS):
             cp_img = np.where(cp_img < imin, default, cp_img)
         return cp_img
 
-    def LBP(self, img, output=False, parms=None, subtract=False):
+    def LBP(self, img, save=False, parms=None, subtract=False):
         """Get the LBP image
         (reference: http://goo.gl/aeADZd)
 
         @param img: image array
 
         Keyword arguments:
-        output    -- True to output the image
+        save    -- True to save the image
         parms     -- [points, radius] (default: None)
         subtract -- True to subtract values to pts (default: False)
 
@@ -239,17 +244,17 @@ class IMAGE(tools.TOOLS):
         lbp = local_binary_pattern(img, pts, radius,  method='uniform')
         if subtract:
             lbp = np.abs(lbp - pts)
-        if output:
+        if save:
             self.save(lbp, 'lbp')
         return lbp
 
-    def intensity(self, img, output=False):
+    def intensity(self, img, save=False):
         """Get the pixel intensity
 
         @param img: image array
 
         Keyword arguments:
-        output -- True to output the image
+        save -- True to save the image
 
         """
         if self.is_rgb(img):
@@ -258,7 +263,7 @@ class IMAGE(tools.TOOLS):
             intensity = img
         intensity = intensity.astype(float)
         intensity *= (1.0/intensity.max())
-        if output:
+        if save:
             self.save(intensity, 'intensity.png')
         return intensity
 
@@ -268,7 +273,7 @@ class IMAGE(tools.TOOLS):
         @param img: image array
 
         Keyword arguments:
-        fname -- output file name
+        fname -- save file name
 
         """
         cv2.imwrite(fname, img)
@@ -303,13 +308,13 @@ class OverlayTextDetection(IMAGE):
     Link of the original paper: http://goo.gl/d3GQ3T
 
     """
-    def satuation(self, img, output=False):
+    def satuation(self, img, save=False):
         """Get the image satuation
 
         @param img: image array
 
         Keyword arguments:
-        output  -- True to output the image (default: False)
+        save  -- True to save the image (default: False)
 
         """
         if not self.is_rgb(img):
@@ -318,41 +323,41 @@ class OverlayTextDetection(IMAGE):
         np.seterr(divide='ignore')
         sat = 1 - np.divide(3, (img.sum(axis=2)*img.min(axis=2)))
         sat[np.isneginf(sat)] = 0
-        if output:
+        if save:
             self.save(sat, 'sat.png')
         return sat
 
-    def maxS(self, img, output=False):
+    def maxS(self, img, save=False):
         """Get maxS, more details see http://goo.gl/d3GQ3T
 
         @param img: image array
 
         Keyword arguments:
-        output     -- True to output the image (default: False)
+        save     -- True to save the image (default: False)
 
         """
-        intensity = self.intensity(img, output=output)
+        intensity = self.intensity(img, save=save)
         maxS = np.where(intensity > 0.5, 2*(0.5-intensity), 2*intensity)
-        if output:
+        if save:
             self.save(maxS, 'maxS.png')
         return maxS
 
-    def tildeS(self, img, output=False, nan_to_num=True):
+    def tildeS(self, img, save=False, nan_to_num=True):
         """Get tilde S, more details see http://goo.gl/d3GQ3T
 
         @param img: image array
 
         Keyword arguments:
-        output     -- True to output the image (default: False)
+        save     -- True to save the image (default: False)
         nan_to_num -- True to convert inf to numbers (default: True)
 
         """
-        sat = self.satuation(img, output=output)
-        maxS = self.maxS(img, output=output)
+        sat = self.satuation(img, save=save)
+        maxS = self.maxS(img, save=save)
         tildeS = sat/maxS
         if nan_to_num:
             tildeS = np.nan_to_num(tildeS)
-        if output:
+        if save:
             self.save(tildeS, 'tildeS.png')
         return tildeS
 
@@ -379,28 +384,28 @@ class OverlayTextDetection(IMAGE):
                                   diff_int.T[-1], axis=1)
         return (1 + tildeS)*intensity
 
-    def T(self, img, output=False, T_H=1):
+    def T(self, img, save=False, T_H=1):
         """Get D, more details see http://goo.gl/d3GQ3T
 
         @param img: image array
 
         Keyword arguments:
         T_H   -- threshold used for the transition map
-        output -- True to output the image
+        save -- True to save the image
 
         """
-        tildeS = self.tildeS(img, output=output)
-        intensity = self.intensity(img, output=output)
+        tildeS = self.tildeS(img, save=save)
+        intensity = self.intensity(img, save=save)
         diff_tildeS = np.diff(tildeS)
         diff_int = np.absolute(np.diff(intensity))
         D_L = self.calD(diff_tildeS, diff_int) + 1
         D_R = self.calD(diff_tildeS, diff_int, left=False)
         T = np.where(D_R > D_L, 1, 0)
-        if output:
+        if save:
             self.save(T, 'T.png')
         return T
 
-    def linked_map_boundary(self, img, output=False,
+    def linked_map_boundary(self, img, save=False,
                             T_H=1, r=0.04):
         """Get linked_map_boundary
 
@@ -410,10 +415,10 @@ class OverlayTextDetection(IMAGE):
         r      -- ratio for setting threshold (default: 0.04)
         T_H    -- threshold used for the transition map
                   (used by self.T)
-        output -- True to output the image
+        save -- True to save the image
 
         """
-        T = self.T(img, output=output, T_H=T_H)
+        T = self.T(img, save=save, T_H=T_H)
         thre = int(T.shape[1]*r)
         for rth in range(0, T.shape[0]):
             non_zero = np.nonzero(T[rth])[0]
@@ -422,6 +427,42 @@ class OverlayTextDetection(IMAGE):
                 e = non_zero[i+1]
                 if e - s < thre:
                     T[rth][s:e+1] = 255
-        if output:
+        if save:
             self.save(T, 'lmb.png')
         return T
+
+    def detect_text_area(self, img, save=False):
+        lmb = self.linked_map_boundary(img, save=save)
+        lbp = self.LBP(lmb, subtract=True)
+        # Select only values in the middle range
+        thre = np.amax(lbp)*0.3
+        lbp = self.select(lbp, thre*0.5, thre)
+        lbp = lbp.astype('uint8')
+
+        # Apply the Morphological closing window
+        h = int(img.shape[0]*0.1)
+        w = int(img.shape[1]*0.20)
+        kernel = np.ones((h, w), np.uint8)
+        mor = cv2.morphologyEx(lbp, cv2.MORPH_CLOSE, kernel)
+
+        # Draw contours
+        contours = self.contours(mor)
+        total_area = img.shape[0]*img.shape[1]
+        # Filter out areas which are too big or too small
+        amin = total_area*0.01
+        amax = total_area*0.5
+        self.draw_contours(img, contours, amin=amin, amax=amax, save=save)
+
+        if save:
+            self.save(img, 'final.png')
+
+        return img
+        # Use houghlines
+        # a = np.bincount(index[0])
+        # b = np.bincount(index[1])
+        # pl.plot(a, fname='a.png')
+        # pl.plot(b, fname='b.png')
+        # for i in range(0, len(index[0])):
+        #     print index[0][i], index[1][i]
+        # lines = imgtl.get_houghlines(lmb)
+        # imgtl.draw_houghlines(img, lines, save=True)
