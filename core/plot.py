@@ -347,7 +347,7 @@ class PLOT(tools.DATA, COLORS):
     def plot(self, data, clear=True, fname='./plot.png',
              title='', connected=True, ymax=None,
              ymin=None, xlabel='', ylabel='', xticks=None,
-             xrotation=45, color=None, xmax=None):
+             xrotation=45, color=None, xmax=None, rebin=None):
         """Draw the very basic 1D plot
 
         @param data: an 1D array [y1, y2, y3...yn]
@@ -379,6 +379,10 @@ class PLOT(tools.DATA, COLORS):
         xtick_marks = np.arange(len(data))
         if xticks is None:
             xticks = xtick_marks
+        if len(xticks) > 20 and rebin is None:
+            rebin = len(xticks)/20
+        if rebin is not None:
+            xtick_marks, xticks = self.red_ticks(xtick_marks, xticks, rebin)
         plt.xticks(xtick_marks, xticks, rotation=xrotation)
         self._add_titles(title, xlabel, ylabel)
         if fname is not None:
@@ -1038,7 +1042,7 @@ class PLOT(tools.DATA, COLORS):
             xticks = xtick_marks
         if yticks is None:
             yticks = ytick_marks
-        if (len(xticks) > 20 or len(yticks)) > 20 and rebin is None:
+        if (len(xticks) > 20 or len(yticks) > 20) and rebin is None:
             rebin = max(len(xticks), len(yticks))/20
         if rebin is not None:
             xtick_marks, xticks = self.red_ticks(xtick_marks, xticks, rebin)

@@ -4,6 +4,7 @@ import sys
 import argparse
 import logging
 import numpy as np
+from scipy import ndimage
 from simdat.core import image
 from simdat.core import plot
 
@@ -15,13 +16,33 @@ def test(imgs):
     for _img in imgs:
         print('Processing %s' % _img)
         img = imgtl.read(_img)
-        lmb = imgtl.linked_map_boundary(img, output=True)
-        lmb = lmb.astype('uint8')
-        contours = imgtl.contours(lmb)
-        amin = img.shape[0]*img.shape[1]*0.01
-        amax = img.shape[0]*img.shape[1]*0.2
-        imgtl.draw_contours(img, contours, amin=amin, amax=amax, output=True)
+        lmb = imgtl.linked_map_boundary(img, output=False)
+        ''' Use LBP '''
+        lbp = imgtl.LBP(lmb, subtract=True)
+        thre = np.amax(lbp)*0.3
+        lbp = imgtl.select(lbp, thre*0.5, thre)
 
+        lbp_mean = np.mean(lbp, axis=1)
+        pl.plot(lbp_mean, fname='mean_row.png')
+        lbp_std = np.std(lbp, axis=1)
+        pl.plot(lbp_std, fname='std_row.png')
+
+        lbp_mean = np.mean(lbp, axis=0)
+        pl.plot(lbp_mean, fname='mean_col.png')
+        lbp_std = np.std(lbp, axis=0)
+        pl.plot(lbp_std, fname='std_col.png')
+
+        pl.plot_matrix(lbp, show_text=False, norm=False)
+
+        ''' Use Contours '''
+        # lmb = lmb.astype('uint8')
+        # contours = imgtl.contours(lmb)
+        # amin = img.shape[0]*img.shape[1]*0.01
+        # amax = img.shape[0]*img.shape[1]*0.2
+        # imgtl.draw_contours(img, contours, amin=amin, amax=amax, output=True)
+        # imgtl.save(img, 'contours.png')
+
+        ''' Use houghlines '''
         # a = np.bincount(index[0])
         # b = np.bincount(index[1])
         # pl.plot(a, fname='a.png')

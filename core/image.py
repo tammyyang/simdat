@@ -77,6 +77,8 @@ class IMAGE(tools.TOOLS):
     def laplacian(self, img, output=False):
         """Laplacian transformation"""
 
+        if self.is_rgb(img):
+            img = self.gray(img)
         la = cv2.Laplacian(img, cv2.CV_64F)
         if output:
             self.save(la, 'laplacian.png')
@@ -122,10 +124,6 @@ class IMAGE(tools.TOOLS):
                 continue
             if amax > 0 and area > amax:
                 continue
-            # if cnt[0][0][0] > 0.33*img.shape[1] and cnt[0][0][0] < 0.67*img.shape[1]:
-            #    continue
-            # if cnt[0][0][1] > 0.25*img.shape[0] and cnt[0][0][1] < 0.75*img.shape[0]:
-            #    continue
             if rect:
                 [x, y, w, h] = cv2.boundingRect(cnt)
                 cv2.rectangle(img, (x, y), (x+w, y+h), (255, 0, 255), 2)
@@ -171,6 +169,17 @@ class IMAGE(tools.TOOLS):
             self.save(img, 'houghlines.png')
         return lines
 
+    def check_cnt_std(self, img, cnt, thre=0.01):
+        """Check if std of contour points is within a threshold"""
+
+        std_x = np.std(cnt.T[0][0])
+        w = img.shape[1]
+        std_y = np.std(cnt.T[1][0])
+        h = img.shape[0]
+        if std_x <= thre*w or std_y <= thre*h:
+            return False
+        return True
+
     def gray(self, img, output=False):
         """Convert the image to gray scale
 
@@ -185,22 +194,51 @@ class IMAGE(tools.TOOLS):
             self.save(gray, 'gray.png')
         return gray
 
-    def LBP(self, img, output=False):
+    def select(self, img, imin, imax, default=0, inv=False):
+        """Select only values in a given range
+           and apply default value to the rest
+
+        @param img: image array
+        @param imin: lower limit
+        @param imax: upper limit
+
+        Keyword arguments:
+        default -- the default value to be applied (default: 0)
+        inv     -- invert the selection, to select values NOT
+                   in the region (default: False)
+
+        """
+        if inv:
+            cp_img = np.where(img < imax and img > imin, default, img)
+        else:
+            cp_img = np.where(img > imax, default, img)
+            cp_img = np.where(cp_img < imin, default, cp_img)
+        return cp_img
+
+    def LBP(self, img, output=False, parms=None, subtract=False):
         """Get the LBP image
         (reference: http://goo.gl/aeADZd)
 
         @param img: image array
 
         Keyword arguments:
-        output -- True to output the image
+        output    -- True to output the image
+        parms     -- [points, radius] (default: None)
+        subtract -- True to subtract values to pts (default: False)
 
         """
         from skimage.feature import local_binary_pattern
         if self.is_rgb(img):
             img = self.gray(img)
-        pts = 6
-        radius = 3
+        if parms is None:
+            pts = int(img.shape[0]*img.shape[1]*0.0003)
+            radius = min(img.shape[0], img.shape[1])*0.015
+        else:
+            pts = parms[0]
+            radius = parms[1]
         lbp = local_binary_pattern(img, pts, radius,  method='uniform')
+        if subtract:
+            lbp = np.abs(lbp - pts)
         if output:
             self.save(lbp, 'lbp')
         return lbp
