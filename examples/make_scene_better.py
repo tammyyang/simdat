@@ -21,51 +21,59 @@ def test(imgs):
         lbp = imgtl.LBP(lmb, subtract=True)
         thre = np.amax(lbp)*0.3
         lbp = imgtl.select(lbp, thre*0.5, thre)
+        pl.plot_matrix(lbp, show_text=False, norm=False, fname='lbp.png')
 
-        lbp_mean = np.mean(lbp, axis=1)
-        pl.plot(lbp_mean, fname='mean_row.png')
-        b = [lbp_mean.mean() - 3 * lbp_mean.std(), lbp_mean.mean() + 3 * lbp_mean.std()]
-        a = [i for i in range(0, len(lbp_mean)) if lbp_mean[i] > b[0] and lbp_mean[i] > b[1]]
-        c = []
-        start = a[0]
-        end = a[0]
-        counter = -1
-        thre = img.shape[0]*0.05
-        print(thre)
-        ## Think ##
-        for i in range(0, len(a)):
-            if i < counter:
-                continue
-            if i == len(a) - 1 and a[i] - a[i-1] < thre:
-                c.append((a[i-1], a[i]))
-            for j in range(i+1, len(a)):
-                if a[j] - a[j+1] < thre:
-                    continue
-                else:
-                    counter = j
-                    c.append((a[i], a[j-1]))
-                    break
-        print(a)
-        print(c)
-        lbp_std = np.std(lbp, axis=1)
-        pl.plot(lbp_std, fname='std_row.png')
+        '''
+        mean = np.mean(lbp, axis=1)
+        pl.plot(mean, fname='mean_row.png')
+        sigma = mean.mean() + 2*mean.std()
+        greater = [i for i in range(0, len(mean)) if (mean[i] > sigma)]
+        thre = img.shape[0]*0.2
+        mappingy = np.zeros(mean.shape)
+        for i in range(0, len(greater)-1):
+            s = greater[i]
+            e = greater[i+1]
+            if e - s < thre:
+                mappingy[s:e+1] = 1
+        mappingy = mappingy.reshape((mappingy.shape[0], 1))
+        mappingy = np.repeat(mappingy, img.shape[1], axis=1)
+        pl.plot_matrix(mappingy, show_text=False, norm=False, fname='mappingy.png')
 
-        lbp_mean = np.mean(lbp, axis=0)
-        pl.plot(lbp_mean, fname='mean_col.png')
-        b = [lbp_mean.mean() - 5 * lbp_mean.std(), lbp_mean.mean() + 5 * lbp_mean.std()]
-        a = [i for i in range(0, len(lbp_mean)) if lbp_mean[i] > b[0] and lbp_mean[i] > b[1]]
-        lbp_std = np.std(lbp, axis=0)
-        pl.plot(lbp_std, fname='std_col.png')
+        mean = np.mean(lbp, axis=0)
+        pl.plot(mean, fname='mean_col.png')
+        sigma = mean.mean() + 2*mean.std()
+        greater = [i for i in range(0, len(mean)) if (mean[i] > sigma)]
+        thre = int(img.shape[1]*0.2)
+        mappingx = np.zeros(mean.shape)
+        for i in range(0, len(greater)-1):
+            s = greater[i]
+            e = greater[i+1]
+            if e - s < thre:
+                mappingx[s:e+1] = 1
+        mappingx = mappingx.reshape((mappingx.shape[0], 1))
+        mappingx = mappingx.T
+        mappingx = np.repeat(mappingx, img.shape[0], axis=0)
+        pl.plot_matrix(mappingx, show_text=False, norm=False, fname='mappingx.png')
+        mapping = mappingx + mappingy
+        pl.plot_matrix(mapping, show_text=False, norm=False, fname='mapping.png')
 
-        pl.plot_matrix(lbp, show_text=False, norm=False)
+        # res = mapping*lmb
+        res = mapping*lbp
+        '''
+        res = lbp
+        pl.plot_matrix(res, show_text=False, norm=False, fname='res.png')
+        res = res.astype('uint8')
+        h = int(img.shape[0]*0.1)
+        w = int(img.shape[1]*0.20)
+        kernel = np.ones((h, w),np.uint8)
+        res = cv2.morphologyEx(res, cv2.MORPH_CLOSE, kernel)
+        pl.plot_matrix(res, show_text=False, norm=False, fname='closing.png')
 
-        ''' Use Contours '''
-        # lmb = lmb.astype('uint8')
-        # contours = imgtl.contours(lmb)
-        # amin = img.shape[0]*img.shape[1]*0.01
-        # amax = img.shape[0]*img.shape[1]*0.2
-        # imgtl.draw_contours(img, contours, amin=amin, amax=amax, output=True)
-        # imgtl.save(img, 'contours.png')
+        contours = imgtl.contours(res)
+        amin = img.shape[0]*img.shape[1]*0.01
+        amax = img.shape[0]*img.shape[1]*0.5
+        imgtl.draw_contours(img, contours, amin=amin, amax=amax, output=True)
+        imgtl.save(img, 'contours.png')
 
         ''' Use houghlines '''
         # a = np.bincount(index[0])
