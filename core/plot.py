@@ -99,7 +99,7 @@ class PLOT(tools.DATA, COLORS):
         print('[PLOT] x max = %i, y max = %i' % (xmax, ymax))
         plt.imshow(img)
         if clear:
-            plt.cla()
+            plt.clf()
         return img, (xmax, ymax)
 
     def _add_titles(self, title, xlabel, ylabel):
@@ -157,7 +157,7 @@ class PLOT(tools.DATA, COLORS):
         if fname is not None:
             plt.savefig(fname)
         if clear:
-            plt.cla()
+            plt.clf()
 
     def patch_arrow(self, x, y, dx=20, dy=100, width=10,
                     color='#566D7E', fill=False, clear=True,
@@ -197,7 +197,7 @@ class PLOT(tools.DATA, COLORS):
         if fname is not None:
             plt.savefig(fname)
         if clear:
-            plt.cla()
+            plt.clf()
 
     def patch_textbox(self, x, y, text, style='round',
                       textcolor='#565051', edgecolor='#565051',
@@ -223,7 +223,7 @@ class PLOT(tools.DATA, COLORS):
         if fname is not None:
             plt.savefig(fname)
         if clear:
-            plt.cla()
+            plt.clf()
 
     def patch_circle(self, x, y, radius=3,
                      color='#E77471', fill=False, clear=True,
@@ -274,7 +274,7 @@ class PLOT(tools.DATA, COLORS):
         if fname is not None:
             plt.savefig(fname)
         if clear:
-            plt.cla()
+            plt.clf()
 
     def patch_rectangle(self, x, y, w=3, h=3, angle=0,
                         color='#6AA121', fill=False, clear=True,
@@ -314,7 +314,7 @@ class PLOT(tools.DATA, COLORS):
         if fname is not None:
             plt.savefig(fname)
         if clear:
-            plt.cla()
+            plt.clf()
 
     def patch_rectangle_img(self, img_path, pos, new_home=None):
         """Open an image and patch a rectangle to it
@@ -388,7 +388,7 @@ class PLOT(tools.DATA, COLORS):
         if fname is not None:
             plt.savefig(fname)
         if clear:
-            plt.cla()
+            plt.clf()
 
     def plot_classes(self, data, fname='./classes.png',
                      xlabel='', ylabel='', legend=None, marker_size=40,
@@ -423,7 +423,7 @@ class PLOT(tools.DATA, COLORS):
         if fname is not None:
             plt.savefig(fname)
         if clear:
-            plt.cla()
+            plt.clf()
 
     def plot_pie(self, data, bfrac=False, shadow=False, clear=True,
                  title='Pie Chart', color='pink', radius=1.1,
@@ -474,7 +474,7 @@ class PLOT(tools.DATA, COLORS):
         if fname is not None:
             plt.savefig(fname)
         if clear:
-            plt.cla()
+            plt.clf()
 
     def plot_stacked_bar(self, data, xticks=None, xlabel='', legend=None,
                          ylabel='', xrotation=45, width=0.6, clear=True,
@@ -529,7 +529,7 @@ class PLOT(tools.DATA, COLORS):
         if fname is not None:
             plt.savefig(fname)
         if clear:
-            plt.cla()
+            plt.clf()
 
     def plot_multi_bars(self, data, xticks=None, xlabel='', legend=None,
                         ylabel='', err=None, xrotation=45, clear=True,
@@ -588,7 +588,7 @@ class PLOT(tools.DATA, COLORS):
         if fname is not None:
             plt.savefig(fname)
         if clear:
-            plt.cla()
+            plt.clf()
 
     def plot_single_bar(self, data, xticks=None, xlabel='',
                         ylabel='', err=None, xrotation=45, clear=True,
@@ -637,7 +637,7 @@ class PLOT(tools.DATA, COLORS):
         if fname is not None:
             plt.savefig(fname)
         if clear:
-            plt.cla()
+            plt.clf()
 
     def plot_2D_dists(self, data, scale=False, legend=None, clear=True,
                       title='Distrubitions', connected=True, amin=None,
@@ -695,7 +695,7 @@ class PLOT(tools.DATA, COLORS):
         if fname is not None:
             plt.savefig(fname)
         if clear:
-            plt.cla()
+            plt.clf()
 
     def plot_1D_dists(self, data, scale=False, legend=None, clear=True,
                       title='Distrubitions', connected=True, ymax=None,
@@ -762,7 +762,7 @@ class PLOT(tools.DATA, COLORS):
         if fname is not None:
             plt.savefig(fname)
         if clear:
-            plt.cla()
+            plt.clf()
 
     def diff_axis_1D(self, data, legend=None, c1=None, c2=None,
                      xrotation=45, connected=True, xticks=None,
@@ -820,7 +820,7 @@ class PLOT(tools.DATA, COLORS):
         if fname is not None:
             plt.savefig(fname)
         if clear:
-            plt.cla()
+            plt.clf()
 
     def histogram(self, data, xlabel='', ylabel='', clear=True,
                   title='Histogram', nbins=None, bfit=False,
@@ -872,7 +872,7 @@ class PLOT(tools.DATA, COLORS):
         if fname is not None:
             plt.savefig(fname)
         if clear:
-            plt.cla()
+            plt.clf()
 
     def plot_points(self, x, y, err=None, err_low=None, clear=True,
                     connected=False, xlabel='', ylabel='', xticks=None,
@@ -930,7 +930,7 @@ class PLOT(tools.DATA, COLORS):
         if fname is not None:
             plt.savefig(fname)
         if clear:
-            plt.cla()
+            plt.clf()
 
     def plot_bubble_chart(self, x, y, z=None, scaler=1,
                           ascale_min=0.5, ascale_max=0.5,
@@ -975,7 +975,7 @@ class PLOT(tools.DATA, COLORS):
         if fname is not None:
             plt.savefig(fname)
         if clear:
-            plt.cla()
+            plt.clf()
 
     def plot_confusion_matrix(self, cm, title='Confusion matrix',
                               xticks=None, yticks=None, fname='./cm.png',
@@ -1058,7 +1058,7 @@ class PLOT(tools.DATA, COLORS):
         if fname is not None:
             plt.savefig(fname)
         if clear:
-            plt.cla()
+            plt.clf()
 
     def red_ticks(self, marks, ticks, interval):
         orilen = len(ticks)
