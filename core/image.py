@@ -117,7 +117,7 @@ class IMAGE(tools.TOOLS):
         return contours
 
     def draw_contours(self, img, contours, amin=-1, amax=-1,
-                      save=False, rect=False):
+                      save=False, rect=False, whratio=-1.0):
         """Draw contours
 
         @param img: input image array
@@ -138,6 +138,9 @@ class IMAGE(tools.TOOLS):
                 continue
             if rect:
                 [x, y, w, h] = cv2.boundingRect(cnt)
+                if whratio > 0:
+                    if w/h < whratio and h/w < whratio:
+                        continue
                 cv2.rectangle(img, (x, y), (x+w, y+h), (255, 0, 255), 2)
             else:
                 cv2.drawContours(img, [cnt], 0, (0, 255, 0), 2)
@@ -252,8 +255,70 @@ class IMAGE(tools.TOOLS):
         if subtract:
             lbp = np.abs(lbp - pts)
         if save:
-            self.save(lbp, 'lbp')
+            self.pl.plot_matrix(lbp, fname='lbp_cm.png', show_text=False,
+                                show_axis=False, norm=False)
         return lbp
+
+    def morph_opening(self, img, hr=0.05, wr=0.1, save=False):
+        """Apply Morphological opening transform
+
+        @param img: image array
+
+        Keyword arguments:
+        hr   -- ratio to the height, for closing window (default: 0.1)
+        wr   -- ratio to the width, for closing window (default: 0.2)
+        save -- True to save the image
+
+        """
+        h = int(img.shape[0]*hr)
+        w = int(img.shape[1]*wr)
+        kernel = np.ones((h, w), np.uint8)
+        opening = cv2.morphologyEx(img, cv2.MORPH_OPEN, kernel)
+        if save:
+            self.pl.plot_matrix(opening, fname='opening_cm.png',
+                                show_text=False,
+                                show_axis=False, norm=False)
+        return opening
+
+    def morph_dilation(self, img, rs=0.01, save=False):
+        """Apply Morphological dilation transform
+
+        @param img: image array
+
+        Keyword arguments:
+        shape -- width of the kernel
+        save -- True to save the image
+
+        """
+        shape = int(min(img.shape[0], img.shape[1])*rs)
+        kernel = np.ones((shape, shape), np.uint8)
+        dil = cv2.dilate(img, kernel, iterations=1)
+        if save:
+            self.pl.plot_matrix(dil, fname='dil_cm.png',
+                                show_text=False,
+                                show_axis=False, norm=False)
+        return dil
+
+    def morph_closing(self, img, hr=0.1, wr=0.2, save=False):
+        """Apply Morphological closing transform
+
+        @param img: image array
+
+        Keyword arguments:
+        hr   -- ratio to the height, for closing window (default: 0.1)
+        wr   -- ratio to the width, for closing window (default: 0.2)
+        save -- True to save the image
+
+        """
+        h = int(img.shape[0]*hr)
+        w = int(img.shape[1]*wr)
+        kernel = np.ones((h, w), np.uint8)
+        closing = cv2.morphologyEx(img, cv2.MORPH_CLOSE, kernel)
+        if save:
+            self.pl.plot_matrix(closing, fname='closing_cm.png',
+                                show_text=False,
+                                show_axis=False, norm=False)
+        return closing
 
     def intensity(self, img, save=False):
         """Get the pixel intensity
@@ -271,7 +336,8 @@ class IMAGE(tools.TOOLS):
         intensity = intensity.astype(float)
         intensity *= (1.0/intensity.max())
         if save:
-            self.save(intensity, 'intensity.png')
+            self.pl.plot_matrix(intensity, fname='intensity_cm.png',
+                                show_text=False, show_axis=False, norm=False)
         return intensity
 
     def save(self, img, fname='cv2.img'):
@@ -317,6 +383,7 @@ class OverlayTextDetection(IMAGE):
     """
     def img_init(self):
         self.pl = plot.PLOT()
+
     def satuation(self, img, save=False):
         """Get the image satuation
 
@@ -333,7 +400,8 @@ class OverlayTextDetection(IMAGE):
         sat = 1 - np.divide(3, (img.sum(axis=2)*img.min(axis=2)))
         sat[np.isneginf(sat)] = 0
         if save:
-            self.save(sat, 'sat.png')
+            self.pl.plot_matrix(sat, fname='sat_cm.png',
+                                show_text=False, show_axis=False, norm=False)
         return sat
 
     def maxS(self, img, save=False):
@@ -348,7 +416,8 @@ class OverlayTextDetection(IMAGE):
         intensity = self.intensity(img, save=save)
         maxS = np.where(intensity > 0.5, 2*(0.5-intensity), 2*intensity)
         if save:
-            self.save(maxS, 'maxS.png')
+            self.pl.plot_matrix(maxS, fname='maxS_cm.png',
+                                show_text=False, show_axis=False, norm=False)
         return maxS
 
     def tildeS(self, img, save=False, nan_to_num=True):
@@ -367,7 +436,7 @@ class OverlayTextDetection(IMAGE):
         if nan_to_num:
             tildeS = np.nan_to_num(tildeS)
         if save:
-            self.save(tildeS, 'tildeS.png')
+            self.save(tildeS, 'tildeS_cm.png')
         return tildeS
 
     def calD(self, diff_tildeS, diff_int, left=True):
@@ -411,7 +480,8 @@ class OverlayTextDetection(IMAGE):
         D_R = self.calD(diff_tildeS, diff_int, left=False)
         T = np.where(D_R > D_L, 1, 0)
         if save:
-            self.save(T, 'T.png')
+            self.pl.plot_matrix(T, fname='T_cm.png', show_text=False,
+                                show_axis=False, norm=False)
         return T
 
     def linked_map_boundary(self, img, save=False,
@@ -441,38 +511,36 @@ class OverlayTextDetection(IMAGE):
         return T
 
     def detect_text_area(self, img, save=False):
+        """Detect text area"""
+
         lmb = self.linked_map_boundary(img, save=save)
         lbp = self.LBP(lmb, subtract=True, save=save)
         # Select only values in the middle range
         thre = np.amax(lbp)*0.3
-        lbp = self.select(lbp, thre*0.5, thre)
-        self.save(lbp, 'lbp.png')
-        lbp = lbp.astype('uint8')
+        lbp = self.select(lbp, thre*0.1, thre)
+        if save:
+            self.pl.plot_matrix(lbp, fname='lbp_cm_selected.png', norm=False,
+                                show_text=False, show_axis=False)
 
-        # Apply the Morphological closing window
-        h = int(img.shape[0]*0.1)
-        w = int(img.shape[1]*0.20)
-        kernel = np.ones((h, w), np.uint8)
-        mor = cv2.morphologyEx(lbp, cv2.MORPH_CLOSE, kernel)
+        # Apply the Morphological window
+        mor = self.morph_dilation(lbp, rs=0.04, save=save)
+        mor = self.morph_opening(mor, hr=0.05, wr=0.05, save=save)
+        mor = self.morph_closing(mor, hr=0.1, wr=0.1, save=save)
+        mor_selected = np.where(mor > mor.max()*0.33, 1, 0)
+        mor_selected = np.repeat(mor_selected, 3).reshape(img.shape[0],
+                                                          img.shape[1], 3)
+        final = mor_selected*img
+        self.save(final, 'final.png')
 
         # Draw contours
-        contours = self.contours(mor)
+        final = final.astype('uint8')
+        contours = self.contours(self.gray(final))
         total_area = img.shape[0]*img.shape[1]
         # Filter out areas which are too big or too small
-        amin = total_area*0.01
+        amin = total_area*0.005
         amax = total_area*0.5
-        self.draw_contours(img, contours, amin=amin, amax=amax, save=save)
-
-        if save:
-            self.save(img, 'final.png')
+        # Draw contours with the cut to w/h and h/w
+        self.draw_contours(img, contours, amin=amin, amax=amax,
+                           save=save, rect=True, whratio=1.5)
 
         return img
-        # Use houghlines
-        # a = np.bincount(index[0])
-        # b = np.bincount(index[1])
-        # pl.plot(a, fname='a.png')
-        # pl.plot(b, fname='b.png')
-        # for i in range(0, len(index[0])):
-        #     print index[0][i], index[1][i]
-        # lines = imgtl.get_houghlines(lmb)
-        # imgtl.draw_houghlines(img, lines, save=True)

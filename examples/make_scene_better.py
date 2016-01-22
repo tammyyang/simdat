@@ -81,7 +81,8 @@ def main():
         elif args.action == 'detect-text':
             fname = ''.join([name, '_text', ext])
             img = imgtl.detect_text_area(img, save=args.save)
-            imgtl.save(img, fname)
+            if args.save:
+                imgtl.save(img, fname)
 
 if __name__ == '__main__':
     main()
