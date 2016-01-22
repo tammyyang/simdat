@@ -42,6 +42,10 @@ def main():
                 help="increase output verbosity"
                 )
     parser.add_argument(
+                "-s", "--save", action='store_true',
+                help="save intermediate"
+                )
+    parser.add_argument(
                 "-t", "--test", action='store_true'
                 )
     args = parser.parse_args()
@@ -76,7 +80,7 @@ def main():
             imgtl.crop_black_bars(img, fname=fname)
         elif args.action == 'detect-text':
             fname = ''.join([name, '_text', ext])
-            img = imgtl.detect_text_area(img, save=False)
+            img = imgtl.detect_text_area(img, save=args.save)
             imgtl.save(img, fname)
 
 if __name__ == '__main__':

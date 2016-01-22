@@ -5,9 +5,16 @@ import logging
 import cv2
 from PIL import Image
 from simdat.core import tools
+from simdat.core import plot
 
 
 class IMAGE(tools.TOOLS):
+    def tools_init(self):
+        self.img_init()
+
+    def img_init(self):
+        pass
+
     def find_images(self, dir_path=None, keyword=None):
         """Find images under a directory
 
@@ -308,6 +315,8 @@ class OverlayTextDetection(IMAGE):
     Link of the original paper: http://goo.gl/d3GQ3T
 
     """
+    def img_init(self):
+        self.pl = plot.PLOT()
     def satuation(self, img, save=False):
         """Get the image satuation
 
@@ -433,10 +442,11 @@ class OverlayTextDetection(IMAGE):
 
     def detect_text_area(self, img, save=False):
         lmb = self.linked_map_boundary(img, save=save)
-        lbp = self.LBP(lmb, subtract=True)
+        lbp = self.LBP(lmb, subtract=True, save=save)
         # Select only values in the middle range
         thre = np.amax(lbp)*0.3
         lbp = self.select(lbp, thre*0.5, thre)
+        self.save(lbp, 'lbp.png')
         lbp = lbp.astype('uint8')
 
         # Apply the Morphological closing window
