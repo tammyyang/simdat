@@ -84,7 +84,7 @@ class IMAGE(tools.TOOLS):
             logging.info('Saving croped file as %s.' % fname)
             self.save(img[cut:-cut], fname)
 
-        return cut
+        return img[cut:-cut]
 
     def laplacian(self, img, save=False):
         """Laplacian transformation"""
@@ -117,7 +117,8 @@ class IMAGE(tools.TOOLS):
         return contours
 
     def draw_contours(self, img, contours, amin=-1, amax=-1,
-                      save=False, rect=False, whratio=-1.0):
+                      save=False, rect=False, whratio=-1.0,
+                      color=(255, 0, 255), width=2):
         """Draw contours
 
         @param img: input image array
@@ -127,9 +128,12 @@ class IMAGE(tools.TOOLS):
         amin   -- min of the area to be selected
         amax   -- max of the area to be selected
         rect   -- True to draw boundingRec (default: False)
-        save -- True to save the image (default: False)
+        save   -- True to save the image (default: False)
+        color  -- Line color (default: (255, 0, 255))
+        width  -- Line width, -1 to fill (default: 2)
 
         """
+        areas = []
         for cnt in contours:
             area = cv2.contourArea(cnt)
             if amin > 0 and area < amin:
@@ -141,12 +145,14 @@ class IMAGE(tools.TOOLS):
                 if whratio > 0:
                     if w/h < whratio and h/w < whratio:
                         continue
-                cv2.rectangle(img, (x, y), (x+w, y+h), (255, 0, 255), 2)
+                cv2.rectangle(img, (x, y), (x+w, y+h), color, width)
+                areas.append([x, y, w, h])
             else:
-                cv2.drawContours(img, [cnt], 0, (0, 255, 0), 2)
+                cv2.drawContours(img, [cnt], 0, color, width)
+                areas.append(area)
         if save:
             self.save(img, 'contours.png')
-        return img
+        return img, areas
 
     def is_rgb(self, img):
         """Check if the image is rgb or gray scale"""
@@ -383,6 +389,7 @@ class OverlayTextDetection(IMAGE):
     """
     def img_init(self):
         self.pl = plot.PLOT()
+        self.da = tools.DATA()
 
     def satuation(self, img, save=False):
         """Get the image satuation
@@ -513,6 +520,7 @@ class OverlayTextDetection(IMAGE):
     def detect_text_area(self, img, save=False):
         """Detect text area"""
 
+        gray = self.gray(img, save=save)
         lmb = self.linked_map_boundary(img, save=save)
         lbp = self.LBP(lmb, subtract=True, save=save)
         # Select only values in the middle range
@@ -527,20 +535,47 @@ class OverlayTextDetection(IMAGE):
         mor = self.morph_opening(mor, hr=0.05, wr=0.05, save=save)
         mor = self.morph_closing(mor, hr=0.1, wr=0.1, save=save)
         mor_selected = np.where(mor > mor.max()*0.33, 1, 0)
-        mor_selected = np.repeat(mor_selected, 3).reshape(img.shape[0],
-                                                          img.shape[1], 3)
-        final = mor_selected*img
-        self.save(final, 'final.png')
+        if save:
+            self.save(mor_selected, 'mor_selected.png')
 
-        # Draw contours
-        final = final.astype('uint8')
-        contours = self.contours(self.gray(final))
+        # Find max rectangle from mor_selected
+        size1, pos1 = self.da.max_size(mor_selected)
+        a1 = self.da.area(size1)
+        croped1 = img[pos1[0]:pos1[0]+size1[0], pos1[1]:pos1[1]+size1[1]]
+        if save:
+            self.save(croped1, 'area1.png')
+
+        # find contours
+        gray = self.gray(img)
+        selected_gray = gray*mor_selected
+        selected_gray = selected_gray.astype('uint8')
+        contours = self.contours(selected_gray)
         total_area = img.shape[0]*img.shape[1]
         # Filter out areas which are too big or too small
         amin = total_area*0.005
         amax = total_area*0.5
-        # Draw contours with the cut to w/h and h/w
-        self.draw_contours(img, contours, amin=amin, amax=amax,
-                           save=save, rect=True, whratio=1.5)
+        # Select rec contours with the cut to w/h and h/w
+        gray, areas = self.draw_contours(gray, contours, amin=amin, amax=amax,
+                                         save=save, rect=True, whratio=1.5)
 
-        return img
+        # Find max rectangle from contours
+        tmp = np.zeros(gray.shape)
+        for (x, y, w, h) in areas:
+            tmp[y:y+h, x:x+w] = 255
+        if save:
+            self.save(tmp, 'tmp.png')
+        size2, pos2 = self.da.max_size(tmp)
+        a2 = self.da.area(size2)
+        croped2 = img[pos2[0]:pos2[0]+size2[0], pos2[1]:pos2[1]+size2[1]]
+        if save:
+            self.save(croped2, 'area2.png')
+
+        # Select the good croped area to output
+        amax = total_area*0.95
+        if a1 > amax and a2 <= amax:
+            return croped2
+        if a2 > amax and a1 <= amax:
+            return croped1
+        if a2 > a1:
+            return croped2
+        return croped1
