@@ -2,7 +2,9 @@ import os
 import sys
 import time
 import json
+import logging
 import numpy as np
+from operator import mul
 
 
 class NumpyAwareJSONEncoder(json.JSONEncoder):
@@ -464,9 +466,77 @@ class DATA(TOOLS):
     def is_np(self, array):
         """Check if the input array is in type of np.ndarray"""
 
-        if type(array) in [np.ndarray, np.int64]:
+        if type(array) in [np.ndarray, np.int64, np.float64]:
             return True
         return False
+
+    def max_size(self, mat, value=0):
+        """Find pos, h, w of the largest rectangle containing all `value`'s.
+        For each row solve "Largest Rectangle in a Histrogram" problem [1]:
+        [1]: http://blog.csdn.net/arbuckle/archive/2006/05/06/710988.aspx
+
+        @param mat: input matrix
+
+        Keyword arguments:
+        value -- the value to be found in the rectangle
+
+        @return (height, width), (start_row, start_col)
+        """
+        start_row = 0
+        it = iter(mat)
+        hist = [(el == value) for el in next(it, [])]
+        max_size, start_pos = self.max_rectangle_size(hist)
+        counter = 0
+        for row in it:
+            counter += 1
+            hist = [(1+h) if el == value else 0 for h, el in zip(hist, row)]
+            _max_size, _start = self.max_rectangle_size(hist)
+            _max_size = max(max_size, _max_size, key=self.area)
+            if _max_size > max_size:
+                max_size = _max_size
+                start_pos = _start
+                start_row = counter
+        return max_size, (start_row - max_size[0] + 1, start_pos)
+
+    def max_rectangle_size(self, histogram):
+        """Find height, width of the largest rectangle that fits entirely
+        under the histogram. Algorithm is "Linear search using a stack of
+        incomplete subproblems" [1].
+        [1]: http://blog.csdn.net/arbuckle/archive/2006/05/06/710988.aspx
+        """
+        from collections import namedtuple
+        Info = namedtuple('Info', 'start height')
+
+        stack = []
+        top = lambda: stack[-1]
+        max_size = (0, 0)   # height, width of the largest rectangle
+        pos = 0             # current position in the histogram
+        for pos, height in enumerate(histogram):
+            start = pos     # position where rectangle starts
+            while True:
+                if len(stack) == 0:
+                    stack.append(Info(start, height))  # push
+                elif height > top().height:
+                    stack.append(Info(start, height))  # push
+                elif stack and height < top().height:
+                    max_size = max(max_size, (top().height,
+                                   (pos - top().start)), key=self.area)
+                    start, _ = stack.pop()
+                    continue
+                break       # height == top().height goes here
+
+        pos += 1
+        start_pos = start
+        for start, height in stack:
+            _max_size = max(max_size, (height, (pos - start)), key=self.area)
+            if _max_size != max_size:
+                max_size = _max_size
+                start_pos = start
+
+        return max_size, start_pos
+
+    def area(self, size):
+        return reduce(mul, size)
 
     def conv_to_np(self, array):
         """Convert DataFrame or list to np.ndarray"""
@@ -484,66 +554,3 @@ class DATA(TOOLS):
         print("[TOOLS] WARNING: the type of input array is not correct!")
         print(type(array))
         return array
-
-
-class IMAGE(TOOLS):
-    def find_images(self, dir_path=None, keyword=None):
-        """Find images under a directory
-
-
-        Keyword arguments:
-        dir_path -- path of the directory to check (default: '.')
-        keyword  -- keyword used to filter images (default: None)
-
-        @return output: a list of images found
-
-        """
-        if dir_path is None:
-            dir_path = os.getcwd()
-        output = []
-        for dirPath, dirNames, fileNames in os.walk(dir_path):
-            dirmatch = False
-            if keyword is not None and dirPath.find(keyword) > 0:
-                dirmatch = True
-            for f in fileNames:
-                if keyword is not None and dirPath.find(keyword) < 0:
-                    if not dirmatch:
-                        continue
-                if self.check_ext(f, ('.jpg', 'png')):
-                    output.append(os.path.join(dirPath, f))
-        return output
-
-    def get_img_info(self, img_path):
-        """Find image size and pixel array
-
-        @param img_path: path of the input image
-
-        @return image.size: tuple, size of the image
-        @return pix: pixel of the image
-
-        """
-        from PIL import Image
-        im = Image.open(img_path)
-        pix = im.load()
-        return im.size, pix
-
-    def get_images(self, path):
-        """Find images from the given path"""
-
-        if os.path.isfile(path):
-            if self.check_ext(path, ('.jpg', 'png')):
-                return [path]
-        elif os.path.isdir(path):
-            return self.find_images(path)
-
-    def get_jpeg_quality(self, img_path):
-        """Get the jpeg quality using identify tool"""
-
-        import subprocess
-        try:
-            q = subprocess.check_output("identify -verbose %s | grep Quality"
-                                        % img_path, shell=True)
-            q = q.replace(' ', '').split('\n')[0].split(':')[1]
-            return int(q)
-        except subprocess.CalledProcessError:
-            return None

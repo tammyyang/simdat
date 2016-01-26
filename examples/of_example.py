@@ -2,6 +2,7 @@ import sys
 import numpy as np
 from simdat.openface import oftools
 from simdat.core import tools
+from simdat.core import image
 from simdat.core import plot
 from simdat.core import ml
 
@@ -27,7 +28,7 @@ Tune other parameters in openface.json and ml.json
 
 pfs = ['openface.json', 'ml.json']
 mpf = '/tammy/viscovery/demo/db/models/train_homography/mapping.json'
-im = tools.IMAGE()
+im = image.IMAGE()
 io = tools.MLIO()
 pl = plot.PLOT()
 mltl = ml.MLTools()

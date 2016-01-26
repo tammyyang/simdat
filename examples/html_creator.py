@@ -5,9 +5,9 @@
 #           (default: simdat/examples/html_plots.template)
 import os
 import sys
-from simdat.core import tools
+from simdat.core import image
 
-imtl = tools.IMAGE()
+imtl = image.IMAGE()
 
 args = sys.argv[1:]
 if len(args) > 0:

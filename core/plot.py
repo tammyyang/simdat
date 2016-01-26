@@ -99,7 +99,7 @@ class PLOT(tools.DATA, COLORS):
         print('[PLOT] x max = %i, y max = %i' % (xmax, ymax))
         plt.imshow(img)
         if clear:
-            plt.cla()
+            plt.clf()
         return img, (xmax, ymax)
 
     def _add_titles(self, title, xlabel, ylabel):
@@ -157,7 +157,7 @@ class PLOT(tools.DATA, COLORS):
         if fname is not None:
             plt.savefig(fname)
         if clear:
-            plt.cla()
+            plt.clf()
 
     def patch_arrow(self, x, y, dx=20, dy=100, width=10,
                     color='#566D7E', fill=False, clear=True,
@@ -197,7 +197,7 @@ class PLOT(tools.DATA, COLORS):
         if fname is not None:
             plt.savefig(fname)
         if clear:
-            plt.cla()
+            plt.clf()
 
     def patch_textbox(self, x, y, text, style='round',
                       textcolor='#565051', edgecolor='#565051',
@@ -223,7 +223,7 @@ class PLOT(tools.DATA, COLORS):
         if fname is not None:
             plt.savefig(fname)
         if clear:
-            plt.cla()
+            plt.clf()
 
     def patch_circle(self, x, y, radius=3,
                      color='#E77471', fill=False, clear=True,
@@ -274,7 +274,7 @@ class PLOT(tools.DATA, COLORS):
         if fname is not None:
             plt.savefig(fname)
         if clear:
-            plt.cla()
+            plt.clf()
 
     def patch_rectangle(self, x, y, w=3, h=3, angle=0,
                         color='#6AA121', fill=False, clear=True,
@@ -314,7 +314,7 @@ class PLOT(tools.DATA, COLORS):
         if fname is not None:
             plt.savefig(fname)
         if clear:
-            plt.cla()
+            plt.clf()
 
     def patch_rectangle_img(self, img_path, pos, new_home=None):
         """Open an image and patch a rectangle to it
@@ -347,7 +347,7 @@ class PLOT(tools.DATA, COLORS):
     def plot(self, data, clear=True, fname='./plot.png',
              title='', connected=True, ymax=None,
              ymin=None, xlabel='', ylabel='', xticks=None,
-             xrotation=45, color=None, xmax=None):
+             xrotation=45, color=None, xmax=None, rebin=None):
         """Draw the very basic 1D plot
 
         @param data: an 1D array [y1, y2, y3...yn]
@@ -379,12 +379,16 @@ class PLOT(tools.DATA, COLORS):
         xtick_marks = np.arange(len(data))
         if xticks is None:
             xticks = xtick_marks
+        if len(xticks) > 20 and rebin is None:
+            rebin = len(xticks)/20
+        if rebin is not None:
+            xtick_marks, xticks = self.red_ticks(xtick_marks, xticks, rebin)
         plt.xticks(xtick_marks, xticks, rotation=xrotation)
         self._add_titles(title, xlabel, ylabel)
         if fname is not None:
             plt.savefig(fname)
         if clear:
-            plt.cla()
+            plt.clf()
 
     def plot_classes(self, data, fname='./classes.png',
                      xlabel='', ylabel='', legend=None, marker_size=40,
@@ -419,7 +423,7 @@ class PLOT(tools.DATA, COLORS):
         if fname is not None:
             plt.savefig(fname)
         if clear:
-            plt.cla()
+            plt.clf()
 
     def plot_pie(self, data, bfrac=False, shadow=False, clear=True,
                  title='Pie Chart', color='pink', radius=1.1,
@@ -470,7 +474,7 @@ class PLOT(tools.DATA, COLORS):
         if fname is not None:
             plt.savefig(fname)
         if clear:
-            plt.cla()
+            plt.clf()
 
     def plot_stacked_bar(self, data, xticks=None, xlabel='', legend=None,
                          ylabel='', xrotation=45, width=0.6, clear=True,
@@ -525,7 +529,7 @@ class PLOT(tools.DATA, COLORS):
         if fname is not None:
             plt.savefig(fname)
         if clear:
-            plt.cla()
+            plt.clf()
 
     def plot_multi_bars(self, data, xticks=None, xlabel='', legend=None,
                         ylabel='', err=None, xrotation=45, clear=True,
@@ -584,7 +588,7 @@ class PLOT(tools.DATA, COLORS):
         if fname is not None:
             plt.savefig(fname)
         if clear:
-            plt.cla()
+            plt.clf()
 
     def plot_single_bar(self, data, xticks=None, xlabel='',
                         ylabel='', err=None, xrotation=45, clear=True,
@@ -633,7 +637,7 @@ class PLOT(tools.DATA, COLORS):
         if fname is not None:
             plt.savefig(fname)
         if clear:
-            plt.cla()
+            plt.clf()
 
     def plot_2D_dists(self, data, scale=False, legend=None, clear=True,
                       title='Distrubitions', connected=True, amin=None,
@@ -691,7 +695,7 @@ class PLOT(tools.DATA, COLORS):
         if fname is not None:
             plt.savefig(fname)
         if clear:
-            plt.cla()
+            plt.clf()
 
     def plot_1D_dists(self, data, scale=False, legend=None, clear=True,
                       title='Distrubitions', connected=True, ymax=None,
@@ -717,6 +721,7 @@ class PLOT(tools.DATA, COLORS):
         ymax      -- maximum of y axis (default: max(data)+0.1)
         ymin      -- minimum of y axis (default: max(data)-0.1)
         fname     -- output filename (default: './dist_1d.png')
+        rebin     -- N bins to be grouped together
 
         """
 
@@ -746,18 +751,18 @@ class PLOT(tools.DATA, COLORS):
         xtick_marks = np.arange(len(data[0]))
         if xticks is None:
             xticks = xtick_marks
-        plt.xticks(xtick_marks, xticks, rotation=xrotation)
-        if (len(xticks) > 25 or len(yticks)) > 25 and rebin is None:
-            rebin = 25
+        if len(xticks) > 20 and rebin is None:
+            rebin = len(xticks)/20
         if rebin is not None:
-            plt.locator_params(nbins=rebin)
+            xtick_marks, xticks = self.red_ticks(xtick_marks, xticks, rebin)
+        plt.xticks(xtick_marks, xticks, rotation=xrotation)
 
         self._add_legend(leg_loc)
         self._add_titles(title, xlabel, ylabel)
         if fname is not None:
             plt.savefig(fname)
         if clear:
-            plt.cla()
+            plt.clf()
 
     def diff_axis_1D(self, data, legend=None, c1=None, c2=None,
                      xrotation=45, connected=True, xticks=None,
@@ -815,7 +820,7 @@ class PLOT(tools.DATA, COLORS):
         if fname is not None:
             plt.savefig(fname)
         if clear:
-            plt.cla()
+            plt.clf()
 
     def histogram(self, data, xlabel='', ylabel='', clear=True,
                   title='Histogram', nbins=None, bfit=False,
@@ -867,7 +872,7 @@ class PLOT(tools.DATA, COLORS):
         if fname is not None:
             plt.savefig(fname)
         if clear:
-            plt.cla()
+            plt.clf()
 
     def plot_points(self, x, y, err=None, err_low=None, clear=True,
                     connected=False, xlabel='', ylabel='', xticks=None,
@@ -925,7 +930,7 @@ class PLOT(tools.DATA, COLORS):
         if fname is not None:
             plt.savefig(fname)
         if clear:
-            plt.cla()
+            plt.clf()
 
     def plot_bubble_chart(self, x, y, z=None, scaler=1,
                           ascale_min=0.5, ascale_max=0.5,
@@ -970,7 +975,7 @@ class PLOT(tools.DATA, COLORS):
         if fname is not None:
             plt.savefig(fname)
         if clear:
-            plt.cla()
+            plt.clf()
 
     def plot_confusion_matrix(self, cm, title='Confusion matrix',
                               xticks=None, yticks=None, fname='./cm.png',
@@ -1037,12 +1042,14 @@ class PLOT(tools.DATA, COLORS):
             xticks = xtick_marks
         if yticks is None:
             yticks = ytick_marks
+        if (len(xticks) > 20 or len(yticks) > 20) and rebin is None:
+            rebin = max(len(xticks), len(yticks))/20
+        if rebin is not None:
+            xtick_marks, xticks = self.red_ticks(xtick_marks, xticks, rebin)
+            ytick_marks, yticks = self.red_ticks(ytick_marks, yticks, rebin)
         plt.xticks(xtick_marks, xticks, rotation=xrotation)
         plt.yticks(ytick_marks, yticks)
-        if (len(xticks) > 25 or len(yticks)) > 25 and rebin is None:
-            rebin = 25
-        if rebin is not None:
-            plt.locator_params(nbins=rebin)
+
         plt.tight_layout()
         plt.ylabel(ylabel, color='#504A4B')
         plt.xlabel(xlabel, color='#504A4B')
@@ -1051,4 +1058,20 @@ class PLOT(tools.DATA, COLORS):
         if fname is not None:
             plt.savefig(fname)
         if clear:
-            plt.cla()
+            plt.clf()
+
+    def red_ticks(self, marks, ticks, interval):
+        orilen = len(ticks)
+        nbins = orilen/interval
+        if nbins < 1:
+            return 0
+        newmarks = [marks[0]]
+        newticks = [ticks[0]]
+        for i in range(0, len(marks)):
+            if (i+1) % interval == 0:
+                newmarks.append(marks[i])
+                newticks.append(ticks[i])
+        if orilen % nbins != 1:
+            newmarks.append(marks[-1])
+            newticks.append(ticks[-1])
+        return newmarks, newticks

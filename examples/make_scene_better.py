@@ -1,30 +1,21 @@
 import cv2
 import os
+import sys
 import argparse
 import logging
 import numpy as np
-from simdat.core import tools
+from scipy import ndimage
+from simdat.core import image
+from simdat.core import plot
+
+imgtl = image.OverlayTextDetection()
 
 
-def crop_black_bars(fimg, thre=1, save=True):
-    name, ext = os.path.splitext(fimg)
-    img = cv2.imread(fimg)
-
-    _gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    _mean = np.array(_gray).mean(axis=1)
-    _selected = [i for i in range(0, len(_mean)) if _mean[i] > thre]
-
-    start = _selected[0]
-    end = _selected[-1]
-
-    logging.debug(_mean[100:])
-    logging.debug(_mean[:100])
-    logging.info('Selected image raws line %i to line %i' % (start, end))
-
-    if save:
-        fname = ''.join([name, '_crop', ext])
-        logging.info('Saving croped file as %s.' % fname)
-        cv2.imwrite(fname, img[start:end])
+def test(imgs):
+    pl = plot.PLOT()
+    for _img in imgs:
+        print('Processing %s' % _img)
+        img = imgtl.read(_img)
 
 
 def main():
@@ -42,12 +33,20 @@ def main():
                 help="Specify the directory to look for images (default .)."
                 )
     parser.add_argument(
-                "-a", "--action", type=str, default='black-bar',
-                help="Select action: black-bar/ (default: black-bar)."
+                "-a", "--action", type=str, default='crop-text',
+                help="Select action: black-bar/crop-text \
+                      (default: crop-text)."
                 )
     parser.add_argument(
                 "-v", "--verbosity", action="count",
                 help="increase output verbosity"
+                )
+    parser.add_argument(
+                "-s", "--save", action='store_true',
+                help="save intermediate"
+                )
+    parser.add_argument(
+                "-t", "--test", action='store_true'
                 )
     args = parser.parse_args()
 
@@ -59,7 +58,6 @@ def main():
     logging.basicConfig(level=log_level,
                         format='[MSB %(levelname)s] %(message)s')
 
-    imgtl = tools.IMAGE()
     if args.fname is not None:
         imgtl.check_exist(args.fname)
         imgs = [args.fname]
@@ -68,10 +66,22 @@ def main():
     else:
         imgs = imgtl.find_images()
 
-    for fimg in imgs:
-        if args.action == 'black-bar':
-            crop_black_bars(fimg)
+    if args.test:
+        test(imgs)
+        sys.exit(1)
 
+    for fimg in imgs:
+        print('Processing %s' % fimg)
+        name, ext = os.path.splitext(fimg)
+        img = imgtl.read(fimg)
+        gray = imgtl.gray(img)
+        if args.action == 'black-bar':
+            fname = ''.join([name, '_crop', ext])
+            imgtl.crop_black_bars(img, fname=fname)
+        elif args.action == 'crop-text':
+            fname = ''.join([name, '_text', ext])
+            img = imgtl.detect_text_area(img, save=args.save)
+            imgtl.save(img, fname)
 
 if __name__ == '__main__':
     main()
