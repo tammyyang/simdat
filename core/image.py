@@ -63,6 +63,15 @@ class IMAGE(tools.TOOLS):
         elif os.path.isdir(path):
             return self.find_images(path)
 
+    def find_boundary(self, img, thre=0, findmax=True):
+        mean = np.array(img).mean(axis=1)
+        selected = [i for i in range(0, len(mean)) if mean[i] > thre]
+        start = selected[0]
+        end = selected[-1]
+        if findmax:
+            return max(start, len(img) - end)
+        return min(start, len(img) - end)
+
     def crop_black_bars(self, img, fname=None, thre=1):
         """Crop symmetric black bars"""
 
@@ -70,21 +79,19 @@ class IMAGE(tools.TOOLS):
             _gray = self.gray(img)
         else:
             _gray = _gray
-        _mean = np.array(_gray).mean(axis=1)
-        _selected = [i for i in range(0, len(_mean)) if _mean[i] > thre]
-        _start = _selected[0]
-        _end = _selected[-1]
-        cut = max(_start, len(img) - _end)
+        cut1 = self.find_boundary(_gray, thre=thre)
+        cut2 = self.find_boundary(_gray.T, thre=thre)
 
-        logging.debug(_mean[100:])
-        logging.debug(_mean[:100])
-        logging.info('Cut %i lines' % cut)
+        if cut1 >0:
+            img = img[cut1:-cut1]
+        if cut2 >0:
+            img = img[:, cut2:-cut2]
 
         if fname is not None:
             logging.info('Saving croped file as %s.' % fname)
-            self.save(img[cut:-cut], fname)
+            self.save(img, fname)
 
-        return img[cut:-cut]
+        return img
 
     def laplacian(self, img, save=False):
         """Laplacian transformation"""
