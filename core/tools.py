@@ -526,10 +526,10 @@ class DATA(TOOLS):
                 break       # height == top().height goes here
 
         pos += 1
-        start_pos = start
+        start_pos = 0
         for start, height in stack:
             _max_size = max(max_size, (height, (pos - start)), key=self.area)
-            if _max_size != max_size:
+            if _max_size > max_size:
                 max_size = _max_size
                 start_pos = start
 
