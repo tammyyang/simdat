@@ -7,14 +7,14 @@
 <table border=2 cellspacing=20>
 {% for img in imgs %}
 {% set f = img.split('/')[-1].split('.')[0] %}
-{% if loop.index %3 == 1 %}<tr>{% endif %}
+{% if loop.index %10 == 1 %}<tr>{% endif %}
     <th>{{ f }}<br>
     <img src ='{{ img }}'
-    width ='320' height ='240'
+    width ='240' height ='180'
     usemap =#{{ f }} border=0 /></th>
-{% if loop.index %3 == 3 %}</tr>{% endif %}
+{% if loop.index %10 == 10 %}</tr>{% endif %}
 {% endfor %}
-{% if imgs | length %3 != 3 %}</tr>{% endif %}
+{% if imgs | length %10 != 10 %}</tr>{% endif %}
 </table>
 
 {% for img in imgs %}

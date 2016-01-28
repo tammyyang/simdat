@@ -33,9 +33,9 @@ def main():
                 help="Specify the directory to look for images (default .)."
                 )
     parser.add_argument(
-                "-a", "--action", type=str, default='crop-text',
+                "-a", "--action", type=str, default='scene',
                 help="Select action: black-bar/crop-text \
-                      (default: crop-text)."
+                      (default: scene)."
                 )
     parser.add_argument(
                 "-v", "--verbosity", action="count",
@@ -78,6 +78,11 @@ def main():
         if args.action == 'black-bar':
             fname = ''.join([name, '_crop', ext])
             imgtl.crop_black_bars(img, fname=fname)
+        elif args.action == 'scene':
+            fname = ''.join([name, '_scene', ext])
+            croped = imgtl.crop_black_bars(img)
+            text_removed = imgtl.detect_text_area(croped, save=args.save)
+            imgtl.save(text_removed, fname)
         elif args.action == 'crop-text':
             fname = ''.join([name, '_text', ext])
             img = imgtl.detect_text_area(img, save=args.save)

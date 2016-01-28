@@ -491,12 +491,14 @@ class DATA(TOOLS):
             counter += 1
             hist = [(1+h) if el == value else 0 for h, el in zip(hist, row)]
             _max_size, _start = self.max_rectangle_size(hist)
-            _max_size = max(max_size, _max_size, key=self.area)
-            if _max_size > max_size:
+            if self.area(_max_size) > self.area(max_size):
                 max_size = _max_size
                 start_pos = _start
                 start_row = counter
-        return max_size, (start_row - max_size[0] + 1, start_pos)
+        y = start_row - max_size[0] + 1
+        # FIXME: start_pos = the top-right corner OR the top-left?
+        x = start_pos if start_pos < max_size[1] else start_pos -max_size[1] + 1
+        return max_size, (y, x)
 
     def max_rectangle_size(self, histogram):
         """Find height, width of the largest rectangle that fits entirely
@@ -507,29 +509,35 @@ class DATA(TOOLS):
         from collections import namedtuple
         Info = namedtuple('Info', 'start height')
 
+        # Maintain a stack
         stack = []
         top = lambda: stack[-1]
-        max_size = (0, 0)   # height, width of the largest rectangle
-        pos = 0             # current position in the histogram
+        max_size = (0, 0)
+        pos = 0
         for pos, height in enumerate(histogram):
-            start = pos     # position where rectangle starts
+            # Position where rectangle starts
+            start = pos
             while True:
+                # If the stack is empty, push
                 if len(stack) == 0:
-                    stack.append(Info(start, height))  # push
+                    stack.append(Info(start, height))
+                # If the right bar is higher than the current top, push
                 elif height > top().height:
-                    stack.append(Info(start, height))  # push
+                    stack.append(Info(start, height))
+                # Else, calculate the rectangle size
                 elif stack and height < top().height:
                     max_size = max(max_size, (top().height,
                                    (pos - top().start)), key=self.area)
                     start, _ = stack.pop()
                     continue
-                break       # height == top().height goes here
+                # Height == top().height goes here
+                break
 
         pos += 1
-        start_pos = start
+        start_pos = 0
         for start, height in stack:
             _max_size = max(max_size, (height, (pos - start)), key=self.area)
-            if _max_size != max_size:
+            if _max_size >= max_size:
                 max_size = _max_size
                 start_pos = start
 

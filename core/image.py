@@ -63,6 +63,15 @@ class IMAGE(tools.TOOLS):
         elif os.path.isdir(path):
             return self.find_images(path)
 
+    def find_boundary(self, img, thre=0, findmax=True):
+        mean = np.array(img).mean(axis=1)
+        selected = [i for i in range(0, len(mean)) if mean[i] > thre]
+        start = selected[0]
+        end = selected[-1]
+        if findmax:
+            return max(start, len(img) - end)
+        return min(start, len(img) - end)
+
     def crop_black_bars(self, img, fname=None, thre=1):
         """Crop symmetric black bars"""
 
@@ -70,21 +79,19 @@ class IMAGE(tools.TOOLS):
             _gray = self.gray(img)
         else:
             _gray = _gray
-        _mean = np.array(_gray).mean(axis=1)
-        _selected = [i for i in range(0, len(_mean)) if _mean[i] > thre]
-        _start = _selected[0]
-        _end = _selected[-1]
-        cut = max(_start, len(img) - _end)
+        cut1 = self.find_boundary(_gray, thre=thre)
+        cut2 = self.find_boundary(_gray.T, thre=thre)
 
-        logging.debug(_mean[100:])
-        logging.debug(_mean[:100])
-        logging.info('Cut %i lines' % cut)
+        if cut1 >0:
+            img = img[cut1:-cut1]
+        if cut2 >0:
+            img = img[:, cut2:-cut2]
 
         if fname is not None:
             logging.info('Saving croped file as %s.' % fname)
-            self.save(img[cut:-cut], fname)
+            self.save(img, fname)
 
-        return img[cut:-cut]
+        return img
 
     def laplacian(self, img, save=False):
         """Laplacian transformation"""
@@ -134,6 +141,7 @@ class IMAGE(tools.TOOLS):
 
         """
         areas = []
+        [h0, w0] = img.shape
         for cnt in contours:
             area = cv2.contourArea(cnt)
             if amin > 0 and area < amin:
@@ -145,8 +153,10 @@ class IMAGE(tools.TOOLS):
                 if whratio > 0:
                     if w/h < whratio and h/w < whratio:
                         continue
-                cv2.rectangle(img, (x, y), (x+w, y+h), color, width)
-                areas.append([x, y, w, h])
+                if w > h and not (y >= h0*0.15 and y+h <= h0*0.85) or\
+                   h > w and not (x >= w0*0.15 and x+w <= w0*0.85):
+                    cv2.rectangle(img, (x, y), (x+w, y+h), color, width)
+                    areas.append([x, y, w, h])
             else:
                 cv2.drawContours(img, [cnt], 0, color, width)
                 areas.append(area)
@@ -536,7 +546,8 @@ class OverlayTextDetection(IMAGE):
         mor = self.morph_closing(mor, hr=0.1, wr=0.1, save=save)
         mor_selected = np.where(mor > mor.max()*0.33, 1, 0)
         if save:
-            self.save(mor_selected, 'mor_selected.png')
+            self.pl.plot_matrix(mor_selected, fname='mor_selected.png',
+                                norm=False, show_text=False, show_axis=False)
 
         # Find max rectangle from mor_selected
         size1, pos1 = self.da.max_size(mor_selected)
@@ -552,10 +563,7 @@ class OverlayTextDetection(IMAGE):
         contours = self.contours(selected_gray)
         total_area = img.shape[0]*img.shape[1]
         # Filter out areas which are too big or too small
-        amin = total_area*0.005
-        amax = total_area*0.5
-        # Select rec contours with the cut to w/h and h/w
-        gray, areas = self.draw_contours(gray, contours, amin=amin, amax=amax,
+        gray, areas = self.draw_contours(gray, contours, amin=-1, amax=-1,
                                          save=save, rect=True, whratio=1.5)
 
         # Find max rectangle from contours
@@ -571,11 +579,18 @@ class OverlayTextDetection(IMAGE):
             self.save(croped2, 'area2.png')
 
         # Select the good croped area to output
+        amin = total_area*0.4
         amax = total_area*0.95
+        # case #1: no counter is found, and a1 is good
+        if a1 > amin and a2 > amax:
+            return croped1
+        # case #2: no counter is found, but a1 is too small
+        if a1 <= amin and a2 > amax:
+            return croped2
         if a1 > amax and a2 <= amax:
             return croped2
         if a2 > amax and a1 <= amax:
             return croped1
-        if a2 > a1:
-            return croped2
-        return croped1
+        if a1 > a2:
+            return croped1
+        return croped2
