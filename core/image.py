@@ -393,7 +393,7 @@ class IMAGE(tools.TOOLS):
 class OTDArgs(args.Args):
     def _add_args(self):
         """Called by __init__ of Args class"""
-        self.ramin = 0.5
+        self.ramin = 0.3
         self.ramax = 0.95
         self.rmor_sel = 0.33
         self.mor_ch = 0.1
@@ -545,6 +545,24 @@ class OverlayTextDetection(IMAGE):
             self.save(T, 'lmb.png')
         return T
 
+    def cal_side_means(self, img, thre=0.15):
+        """Calculate the mean of four sides"""
+
+        upper = thre*img.shape[0]
+        lower = (1-thre)*img.shape[0]
+        up = np.mean(img[:upper])
+        down = np.mean(img[lower:])
+        left = np.mean(img[:upper, :thre*img.shape[1]]) + \
+               np.mean(img[lower:, :thre*img.shape[1]])
+        left /= 2
+        right = np.mean(img[:upper, (1-thre)*img.shape[1]:]) + \
+                np.mean(img[lower:, (1-thre)*img.shape[1]:])
+        right /= 2
+        logging.debug("up: %.2f, down: %.2f, left: %.2f, right: %.2f"
+                       % (up, down, left, right))
+
+        return (up+down+left+right)/4.0
+
     def detect_text_area(self, img, save=False):
         """Detect text area"""
 
@@ -582,7 +600,7 @@ class OverlayTextDetection(IMAGE):
         selected_gray = gray*mor_selected
         selected_gray = selected_gray.astype('uint8')
         contours = self.contours(selected_gray)
-        total_area = img.shape[0]*img.shape[1]
+        total_area = gray.shape[0]*gray.shape[1]
         # Filter out areas which are too big or too small
         gray, areas = self.draw_contours(gray, contours, amin=-1, amax=-1,
                                          save=save, rect=True,
@@ -603,20 +621,30 @@ class OverlayTextDetection(IMAGE):
         # Select the good croped area to output
         amin = total_area*self.args.ramin
         amax = total_area*self.args.ramax
+        side_mean = self.cal_side_means(mor_selected)
+        total_mean = np.mean(mor_selected)
         # case #1: no counter is found, and a1 is good
+        logging.debug('side_mean = %.5f' % side_mean)
+        logging.debug('total_mean = %.5f' % total_mean)
         if a1 > amin and a2 > amax:
             logging.debug('a1 > amin and a2 > amax')
+            # If non-zero values are mostly in the center, return a2
+            if side_mean <= total_mean:
+                return croped2
             return croped1
         # case #2: no counter is found, but a1 is too small
         if a1 <= amin and a2 > amax:
             logging.debug('a1 <= amin and a2 > amax')
             return croped2
+        # case #3: a1 is too large but a2 is reasonable
         if a1 > amax and a2 <= amax:
             logging.debug('a1 > amax and a2 <= amax')
             return croped2
+        # case #4: a2 is too large but a1 is reasonable
         if a2 > amax and a1 <= amax:
             logging.debug('a2 > amax and a1 <= amax')
             return croped1
+        # case #5: a1 and a2 are both reasonable, pick the bigger one
         if a1 > a2:
             logging.debug('a1 > a2')
             return croped1
