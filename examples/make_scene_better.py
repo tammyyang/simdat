@@ -38,6 +38,10 @@ def main():
                       (default: scene)."
                 )
     parser.add_argument(
+                "-e", "--explain", action='store_true',
+                help="Explain the arguments used."
+                )
+    parser.add_argument(
                 "-v", "--verbosity", action="count",
                 help="increase output verbosity"
                 )
@@ -70,6 +74,8 @@ def main():
         test(imgs)
         sys.exit(1)
 
+    if len(imgs) == 0:
+        print('No image is found')
     for fimg in imgs:
         print('Processing %s' % fimg)
         name, ext = os.path.splitext(fimg)
@@ -79,6 +85,13 @@ def main():
             fname = ''.join([name, '_crop', ext])
             imgtl.crop_black_bars(img, fname=fname)
         elif args.action == 'scene':
+            if args.explain:
+                fexplain = 'otd_args.explain.json'
+                if not imgtl.check_exist(fexplain):
+                    print('ERROR: %s does not exist' % fexplain)
+                    sys.exit(1)
+                imgtl.args.explain_args(fexplain)
+                sys.exit(1)
             fname = ''.join([name, '_scene', ext])
             croped = imgtl.crop_black_bars(img)
             text_removed = imgtl.detect_text_area(croped, save=args.save)

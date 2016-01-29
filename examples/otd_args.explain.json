@@ -1,0 +1,57 @@
+{
+  "ramin":  {
+            "des": "Ratio to the total area for setting a minimum threshold of the selected area",
+            "type": "float",
+            "default": 0.05
+            },
+  "ramax":  {
+            "des": "Ratio to the total area for setting a maximum threshold of the selected area",
+            "type": "float",
+            "default": 0.05
+            },
+  "rmor_sel":  {
+            "des": "Ratio to the maximum value of the matrix after applying all morphological transform. This is used to filter out values below the threshold.",
+            "type": "float",
+            "default": 0.33
+            },
+  "mor_ch":  {
+            "des": "Height of the closing kernel of morphological transform.",
+            "type": "float",
+            "default": 0.1
+            },
+  "mor_cw":  {
+            "des": "Width of the closing kernel of morphological transform.",
+            "type": "float",
+            "default": 0.1
+            },
+  "mor_oh":  {
+            "des": "Height of the opening kernel of morphological transform.",
+            "type": "float",
+            "default": 0.05
+            },
+  "mor_ow":  {
+            "des": "Width of the opening kernel of morphological transform.",
+            "type": "float",
+            "default": 0.05
+            },
+  "mor_ds":  {
+            "des": "Length of the w and h of the dilation kernel.",
+            "type": "float",
+            "default": 0.04
+            },
+  "cwhratio":  {
+            "des": "Minimum ratio of w/h and h/w of the contour rectangle.",
+            "type": "float",
+            "default": 1.5
+            },
+  "rlbpmin":  {
+            "des": "Ratio to the maximum of lbp matrix. Only values ABOVE this range will be selected.",
+            "type": "float",
+            "default": 0.03
+            },
+  "ramax":  {
+            "des": "Ratio to the maximum of lbp matrix. Only values BELOW this range will be selected.",
+            "type": "float",
+            "default": 0.3
+            }
+}

@@ -6,6 +6,7 @@ import cv2
 from PIL import Image
 from simdat.core import tools
 from simdat.core import plot
+from simdat.core import args
 
 
 class IMAGE(tools.TOOLS):
@@ -82,9 +83,9 @@ class IMAGE(tools.TOOLS):
         cut1 = self.find_boundary(_gray, thre=thre)
         cut2 = self.find_boundary(_gray.T, thre=thre)
 
-        if cut1 >0:
+        if cut1 > 0:
             img = img[cut1:-cut1]
-        if cut2 >0:
+        if cut2 > 0:
             img = img[:, cut2:-cut2]
 
         if fname is not None:
@@ -389,6 +390,22 @@ class IMAGE(tools.TOOLS):
             return None
 
 
+class OTDArgs(args.Args):
+    def _add_args(self):
+        """Called by __init__ of Args class"""
+        self.ramin = 0.5
+        self.ramax = 0.95
+        self.rmor_sel = 0.33
+        self.mor_ch = 0.1
+        self.mor_cw = 0.1
+        self.mor_oh = 0.05
+        self.mor_ow = 0.05
+        self.mor_ds = 0.04
+        self.cwhratio = 1.5
+        self.rlbpmin = 0.03
+        self.rlbpmax = 0.3
+
+
 class OverlayTextDetection(IMAGE):
     """This is the implementation of the paper
 
@@ -400,6 +417,7 @@ class OverlayTextDetection(IMAGE):
     def img_init(self):
         self.pl = plot.PLOT()
         self.da = tools.DATA()
+        self.args = OTDArgs(pfs=['otd_args.json'])
 
     def satuation(self, img, save=False):
         """Get the image satuation
@@ -534,17 +552,20 @@ class OverlayTextDetection(IMAGE):
         lmb = self.linked_map_boundary(img, save=save)
         lbp = self.LBP(lmb, subtract=True, save=save)
         # Select only values in the middle range
-        thre = np.amax(lbp)*0.3
-        lbp = self.select(lbp, thre*0.1, thre)
+        lbpmax = np.amax(lbp)
+        lbp = self.select(lbp, lbpmax*self.args.rlbpmin,
+                          lbpmax*self.args.rlbpmax)
         if save:
             self.pl.plot_matrix(lbp, fname='lbp_cm_selected.png', norm=False,
                                 show_text=False, show_axis=False)
 
         # Apply the Morphological window
-        mor = self.morph_dilation(lbp, rs=0.04, save=save)
-        mor = self.morph_opening(mor, hr=0.05, wr=0.05, save=save)
-        mor = self.morph_closing(mor, hr=0.1, wr=0.1, save=save)
-        mor_selected = np.where(mor > mor.max()*0.33, 1, 0)
+        mor = self.morph_dilation(lbp, rs=self.args.mor_ds, save=save)
+        mor = self.morph_opening(mor, hr=self.args.mor_oh,
+                                 wr=self.args.mor_ow, save=save)
+        mor = self.morph_closing(mor, hr=self.args.mor_ch,
+                                 wr=self.args.mor_cw, save=save)
+        mor_selected = np.where(mor > mor.max()*self.args.rmor_sel, 1, 0)
         if save:
             self.pl.plot_matrix(mor_selected, fname='mor_selected.png',
                                 norm=False, show_text=False, show_axis=False)
@@ -564,7 +585,8 @@ class OverlayTextDetection(IMAGE):
         total_area = img.shape[0]*img.shape[1]
         # Filter out areas which are too big or too small
         gray, areas = self.draw_contours(gray, contours, amin=-1, amax=-1,
-                                         save=save, rect=True, whratio=1.5)
+                                         save=save, rect=True,
+                                         whratio=self.args.cwhratio)
 
         # Find max rectangle from contours
         tmp = np.zeros(gray.shape)
@@ -579,18 +601,23 @@ class OverlayTextDetection(IMAGE):
             self.save(croped2, 'area2.png')
 
         # Select the good croped area to output
-        amin = total_area*0.4
-        amax = total_area*0.95
+        amin = total_area*self.args.ramin
+        amax = total_area*self.args.ramax
         # case #1: no counter is found, and a1 is good
         if a1 > amin and a2 > amax:
+            logging.debug('a1 > amin and a2 > amax')
             return croped1
         # case #2: no counter is found, but a1 is too small
         if a1 <= amin and a2 > amax:
+            logging.debug('a1 <= amin and a2 > amax')
             return croped2
         if a1 > amax and a2 <= amax:
+            logging.debug('a1 > amax and a2 <= amax')
             return croped2
         if a2 > amax and a1 <= amax:
+            logging.debug('a2 > amax and a1 <= amax')
             return croped1
         if a1 > a2:
+            logging.debug('a1 > a2')
             return croped1
         return croped2

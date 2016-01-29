@@ -5,13 +5,14 @@ from simdat.core import tools
 from simdat.core import plot
 from simdat.core import ml
 from simdat.core import image
+from simdat.core import args
 
 io = tools.MLIO()
 pl = plot.PLOT()
 mlr = ml.MLRun()
 
 
-class OFArgs(ml.Args):
+class OFArgs(args.Args):
     def _add_args(self):
         """Init arguments of openface"""
         self._add_of_args()
