@@ -427,7 +427,8 @@ class PLOT(tools.DATA, COLORS):
 
     def plot_pie(self, data, bfrac=False, shadow=False, clear=True,
                  title='Pie Chart', color='pink', radius=1.1,
-                 pie_labels=None, expl=None, fname='./pie.png'):
+                 pie_labels=None, expl=None, fname='./pie.png',
+                 show_legend=False, show_frac=True, show_label=True):
         """Draw a pie chart
 
         @param data: a list of input data [x1, x2, x3,...,xn]
@@ -442,8 +443,11 @@ class PLOT(tools.DATA, COLORS):
         pie_labels -- labels of each components
                       (default: index of the elements)
         expl       -- index of the item to explode (default: None)
-        fname     -- output filename (default: './pie.png')
-        clear     -- true to clear panel after output (default: True)
+        fname      -- output filename (default: './pie.png')
+        show_frac  -- True to show fraction (default: True)
+        show_legend  -- True to show fraction (default: False)
+        show_label -- True to show labels (default: True)
+        clear      -- true to clear panel after output (default: True)
 
         """
 
@@ -456,12 +460,10 @@ class PLOT(tools.DATA, COLORS):
             pie_labels = list(map(str, range(1, len(data)+1)))
         color_class = getattr(self, color)
 
-        args = {'labels': pie_labels,
-                'autopct': '%1.1f%%',
-                'shadow': shadow,
+        args = {'shadow': shadow,
                 'radius': radius,
                 'textprops': {'color': color_class[0]},
-                'startangle': 90,
+                'startangle': 140,
                 'colors': color_class[-len(data):]}
 
         if expl is not None:
@@ -469,7 +471,18 @@ class PLOT(tools.DATA, COLORS):
             explode[expl] = 0.05
             args['explode'] = explode
 
-        plt.pie(fracs, **args)
+        if show_label:
+            args['labels'] = pie_labels
+
+        if show_frac:
+            args['autopct'] = '%1.1f%%'
+
+        if show_legend:
+            patches, texts = plt.pie(fracs, **args)
+            plt.legend(patches, pie_labels, loc="best")
+        else:
+            plt.pie(fracs, **args)
+
         plt.title(title, color='#504A4B', weight='bold')
         if fname is not None:
             plt.savefig(fname)
