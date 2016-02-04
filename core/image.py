@@ -156,8 +156,26 @@ class IMAGE(tools.TOOLS):
                         continue
                 if w > h and not (y >= h0*0.15 and y+h <= h0*0.85) or\
                    h > w and not (x >= w0*0.15 and x+w <= w0*0.85):
-                    cv2.rectangle(img, (x, y), (x+w, y+h), color, width)
-                    areas.append([x, y, w, h])
+-                    cv2.rectangle(img, (x, y), (x+w, y+h), color, width)
+-                    areas.append([x, y, w, h])
+
+                if w > h:
+                    if (y <= h0*0.15 and y+h >= h0*0.85):
+                        continue
+                    if (y <= h0*0.4 and y+h >= h0*0.4):
+                        continue
+                    if (y+h >= h0*0.6 and y <= h0*0.6):
+                        continue
+                if h > w:
+                    if (x <= w0*0.15 and x+w >= w0*0.85):
+                        continue
+                    if (w <= w0*0.4 and w+h >= w0*0.4):
+                        continue
+                    if (w+h >= h0*0.6 and w <= h0*0.6):
+                        continue
+                cv2.rectangle(img, (x, y), (x+w, y+h), color, width)
+                areas.append([x, y, w, h])
+
             else:
                 cv2.drawContours(img, [cnt], 0, color, width)
                 areas.append(area)
@@ -626,6 +644,10 @@ class OverlayTextDetection(IMAGE):
         # case #1: no counter is found, and a1 is good
         logging.debug('side_mean = %.5f' % side_mean)
         logging.debug('total_mean = %.5f' % total_mean)
+        logging.debug('A1/total_area = %.2f' % (float(a1)/total_area))
+        logging.debug('A2/total_area = %.2f' % (float(a2)/total_area))
+        if a1 < amin and a2 < amin:
+            return img
         if a1 > amin and a2 > amax:
             logging.debug('a1 > amin and a2 > amax')
             # If non-zero values are mostly in the center, return a2
