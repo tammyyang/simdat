@@ -266,16 +266,16 @@ class MLTools():
         @param model: model to be saved
 
         """
-        import cPickle
+        import pickle
         io.dir_check(self.args.outd)
         outf = ''.join([self.args.outd, fprefix, '.pkl'])
 
         with open(outf, 'wb') as f:
             if high:
-                cPickle.dump(model, f,
-                             protocol=cPickle.HIGHEST_PROTOCOL)
+                pickle.dump(model, f,
+                             protocol=pickle.HIGHEST_PROTOCOL)
             else:
-                cPickle.dump(model, f)
+                pickle.dump(model, f)
         print("[ML] Model is saved to %s" % outf)
         return outf
 
