@@ -158,7 +158,7 @@ class IMAGE(tools.TOOLS):
                 if whratio > 0:
                     if w/h < whratio and h/w < whratio:
                         continue
-                if bcut <= 0 and bwidth <= 0:
+                if bcut > 0 and bwidth > 0:
                     if w > h:
                         if (y <= h0*bcut and y+h >= h0*(bcut + bwidth)):
                             continue
@@ -411,7 +411,7 @@ class IMAGE(tools.TOOLS):
 class OTDArgs(args.Args):
     def _add_args(self):
         """Called by __init__ of Args class"""
-        self.ramin = 0.3
+        self.ramin = 0.35
         self.ramax = 0.95
         self.rmor_sel = 0.33
         self.mor_ch = 0.1

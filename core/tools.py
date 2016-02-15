@@ -498,10 +498,8 @@ class DATA(TOOLS):
         y = start_row - max_size[0] + 1
         if max_size[1] == len(hist):
             x = 0
-        elif start_pos < max_size[1] - 1:
-            x = start_pos
         else:
-            x = start_pos - max_size[1] + 1
+            x = min(abs(start_pos - max_size[1] + 1), start_pos)
         return max_size, (y, x)
 
     def max_rectangle_size(self, histogram):
