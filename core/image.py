@@ -126,7 +126,7 @@ class IMAGE(tools.TOOLS):
 
     def draw_contours(self, img, contours, amin=-1, amax=-1,
                       save=False, rect=False, whratio=-1.0,
-                      color=(255, 0, 255), width=2):
+                      color=(255, 0, 255), width=2, bcut=0.3, bwidth=0.1):
         """Draw contours
 
         @param img: input image array
@@ -139,6 +139,10 @@ class IMAGE(tools.TOOLS):
         save   -- True to save the image (default: False)
         color  -- Line color (default: (255, 0, 255))
         width  -- Line width, -1 to fill (default: 2)
+        bwidth -- boundary selection width, set it to 0 if no boundary
+                  selection should be applied (default: 0.1)
+        bcut   -- boundary selection ratio, set it to 0 if no boundary
+                  selection should be applied (default: 0.3)
 
         """
         areas = []
@@ -154,25 +158,21 @@ class IMAGE(tools.TOOLS):
                 if whratio > 0:
                     if w/h < whratio and h/w < whratio:
                         continue
-                if w > h and not (y >= h0*0.15 and y+h <= h0*0.85) or\
-                   h > w and not (x >= w0*0.15 and x+w <= w0*0.85):
-                    cv2.rectangle(img, (x, y), (x+w, y+h), color, width)
-                    areas.append([x, y, w, h])
-
-                if w > h:
-                    if (y <= h0*0.15 and y+h >= h0*0.85):
-                        continue
-                    if (y <= h0*0.4 and y+h >= h0*0.4):
-                        continue
-                    if (y+h >= h0*0.6 and y <= h0*0.6):
-                        continue
-                if h > w:
-                    if (x <= w0*0.15 and x+w >= w0*0.85):
-                        continue
-                    if (w <= w0*0.4 and w+h >= w0*0.4):
-                        continue
-                    if (w+h >= h0*0.6 and w <= h0*0.6):
-                        continue
+                if bcut <= 0 and bwidth <= 0:
+                    if w > h:
+                        if (y <= h0*bcut and y+h >= h0*(bcut + bwidth)):
+                            continue
+                        if (y+h >= h0*(1-bcut) and y <= h0*(1-(bcut+bwidth))):
+                            continue
+                        if (y >= h0*bcut and y+h <= h0*(1-bcut)):
+                            continue
+                    if h > w:
+                        if (w <= w0*bcut and x+w >= w0*(bcut + bwidth)):
+                            continue
+                        if (x+w >= w0*(1-bcut) and x <= w0*(1-(bcut+bwidth))):
+                            continue
+                        if (x >= w0*bcut and x+w <= w0*(1-bcut)):
+                            continue
                 cv2.rectangle(img, (x, y), (x+w, y+h), color, width)
                 areas.append([x, y, w, h])
 

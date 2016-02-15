@@ -480,7 +480,7 @@ class DATA(TOOLS):
         Keyword arguments:
         value -- the value to be found in the rectangle
 
-        @return (height, width), (start_row, start_col)
+        @return (height, width), (start_y, start_x)
         """
         start_row = 0
         it = iter(mat)
@@ -496,8 +496,12 @@ class DATA(TOOLS):
                 start_pos = _start
                 start_row = counter
         y = start_row - max_size[0] + 1
-        # FIXME: start_pos = the top-right corner OR the top-left?
-        x = start_pos if start_pos < max_size[1] else start_pos -max_size[1] + 1
+        if max_size[1] == len(hist):
+            x = 0
+        elif start_pos < max_size[1] - 1:
+            x = start_pos
+        else:
+            x = start_pos - max_size[1] + 1
         return max_size, (y, x)
 
     def max_rectangle_size(self, histogram):
@@ -537,7 +541,7 @@ class DATA(TOOLS):
         start_pos = 0
         for start, height in stack:
             _max_size = max(max_size, (height, (pos - start)), key=self.area)
-            if _max_size >= max_size:
+            if self.area(_max_size) >= self.area(max_size):
                 max_size = _max_size
                 start_pos = start
 
