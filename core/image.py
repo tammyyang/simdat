@@ -156,8 +156,8 @@ class IMAGE(tools.TOOLS):
                         continue
                 if w > h and not (y >= h0*0.15 and y+h <= h0*0.85) or\
                    h > w and not (x >= w0*0.15 and x+w <= w0*0.85):
--                    cv2.rectangle(img, (x, y), (x+w, y+h), color, width)
--                    areas.append([x, y, w, h])
+                    cv2.rectangle(img, (x, y), (x+w, y+h), color, width)
+                    areas.append([x, y, w, h])
 
                 if w > h:
                     if (y <= h0*0.15 and y+h >= h0*0.85):
