@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
 from matplotlib import font_manager
-from simdat.core.so import tools
+from simdat.core import tools
 from sklearn.metrics import confusion_matrix
 
 
@@ -124,10 +124,12 @@ class PLOT(tools.DATA, COLORS):
 
         """
 
+        args = {'loc': self.loc_map[loc]}
         font_file = path.join(os.environ['HOME'], '.fonts/noto/',
                               'NotoSansCJKtc-Light.otf')
-        chf = font_manager.FontProperties(fname=font_file)
-        args = {'loc': self.loc_map[loc], "prop": chf}
+        if self.check_exist(font_file):
+            chf = font_manager.FontProperties(fname=font_file)
+            args["prop"] = chf
         if loc == 'rt':
             args['bbox_to_anchor'] = (1.12, 1.0)
         elif loc in ['rb', 'lb', 'lt']:

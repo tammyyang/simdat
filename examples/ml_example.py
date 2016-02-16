@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import numpy as np
 import logging
-from simdat.core.so import ml
+from simdat.core import ml
 
 log_level = logging.DEBUG
 #Train a model

@@ -1,10 +1,10 @@
 import sys
 import numpy as np
 from simdat.openface import oftools
-from simdat.core.so import tools
 from simdat.core.so import image
+from simdat.core import tools
 from simdat.core import plot
-from simdat.core.so import ml
+from simdat.core import ml
 
 """
 This is an example to run openface and classify the results.

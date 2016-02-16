@@ -1,5 +1,5 @@
 import os
-from simdat.core.so import tools
+from simdat.core import tools
 
 io = tools.MLIO()
 

@@ -6,9 +6,9 @@ import logging
 import cv2
 from PIL import Image
 from simdat.core.so import math_tools
-from simdat.core.so import tools
+from simdat.core import tools
 from simdat.core import plot
-from simdat.core.so import args
+from simdat.core import args
 
 
 class IMAGE(tools.TOOLS):
