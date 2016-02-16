@@ -1,4 +1,4 @@
-from simdat.core.so import plot
+from simdat.core import plot
 pl = plot.PLOT()
 a = [[1, 2, 3, 4, 5],
      [2, 2, 2, 2, 2],

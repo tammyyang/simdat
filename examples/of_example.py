@@ -3,7 +3,7 @@ import numpy as np
 from simdat.openface import oftools
 from simdat.core.so import tools
 from simdat.core.so import image
-from simdat.core.so import plot
+from simdat.core import plot
 from simdat.core.so import ml
 
 """
