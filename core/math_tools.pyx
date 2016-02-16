@@ -73,8 +73,8 @@ class MathTools():
         pos += 1
         start_pos = 0
         for start, height in stack:
-            _max_size = max(max_size, (height, (pos - start)), key=self.area)
-            if self.area(_max_size) >= self.area(max_size):
+            _max_size = (height, (pos - start))
+            if self.area(_max_size) > self.area(max_size):
                 max_size = _max_size
                 start_pos = start
 
