@@ -5,8 +5,8 @@ import argparse
 import logging
 import numpy as np
 from scipy import ndimage
-from simdat.core import image
-from simdat.core import plot
+from simdat.core.so import image
+from simdat.core.so import plot
 
 imgtl = image.OverlayTextDetection()
 

@@ -1,9 +1,10 @@
 import os
+import sys
 import time
 import logging
 import numpy as np
-from simdat.core import tools
-from simdat.core import args
+from simdat.core.so import tools
+from simdat.core.so import args
 
 io = tools.MLIO()
 dt = tools.DATA()

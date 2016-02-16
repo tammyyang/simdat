@@ -1,4 +1,4 @@
-from simdat.core import plot
+from simdat.core.so import plot
 pl = plot.PLOT()
 a = [[1, 2, 3, 4, 5],
      [2, 2, 2, 2, 2],
@@ -26,7 +26,7 @@ d = [30, 50, 15, 5]
 # pl.diff_axis_1D(c, legend=legend, leg_loc='lt', xticks=xticks)
 
 # Example to draw 1D distributions
-# pl.plot_1D_dists(a, leg_loc='rt')
+pl.plot_1D_dists(a, leg_loc='rt')
 
 # Example to draw 2D distributions
 # pl.plot_2D_dists(a, clear=False)

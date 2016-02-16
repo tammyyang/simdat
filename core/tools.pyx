@@ -213,9 +213,9 @@ class MLIO(TOOLS):
         @return pandas DataFranm
 
         """
-        import pandas as pd
+        import pandas
         if self.check_exist(fname):
-            return pd.read_json(fname, orient=orient, numpy=np)
+            return pandas.read_json(fname, orient=orient, numpy=np)
 
     def read_jsons_to_df(self, flist, orient='columns', np=False):
         """Read json files as one pandas DataFrame
@@ -403,6 +403,7 @@ class DATA(TOOLS):
 
         """
 
+        import pandas as pd
         if exclude is not None:
             excluded = raw_df[exclude]
             _r = raw_df.drop(exclude, axis=1)
@@ -422,6 +423,7 @@ class DATA(TOOLS):
                    the target column to be used (default: None)
 
         """
+        import pandas as pd
         if ffields is not None:
             fields = MLIO().parse_json(ffields)
             if type(target) is int:

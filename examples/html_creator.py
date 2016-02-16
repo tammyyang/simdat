@@ -5,7 +5,7 @@
 #           (default: simdat/examples/html_plots.template)
 import os
 import sys
-from simdat.core import image
+from simdat.core.so import image
 
 imtl = image.IMAGE()
 

@@ -3,7 +3,7 @@ import sys
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
-from simdat.core import tools
+from simdat.core.so import tools
 from sklearn.metrics import confusion_matrix
 
 
