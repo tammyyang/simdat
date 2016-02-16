@@ -1,8 +1,10 @@
-from os import path
 import sys
+import os
+from os import path
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
+from matplotlib import font_manager
 from simdat.core.so import tools
 from sklearn.metrics import confusion_matrix
 
@@ -121,7 +123,11 @@ class PLOT(tools.DATA, COLORS):
                     cb   - central bottom
 
         """
-        args = {'loc': self.loc_map[loc]}
+
+        font_file = path.join(os.environ['HOME'], '.fonts/noto/',
+                              'NotoSansCJKtc-Light.otf')
+        chf = font_manager.FontProperties(fname=font_file)
+        args = {'loc': self.loc_map[loc], "prop": chf}
         if loc == 'rt':
             args['bbox_to_anchor'] = (1.12, 1.0)
         elif loc in ['rb', 'lb', 'lt']:
@@ -741,6 +747,9 @@ class PLOT(tools.DATA, COLORS):
         data = self.conv_to_np(data)
 
         fmt = '-o' if connected else 'o'
+        if rebin is not None:
+            data = self.rebin2D(data, (data.shape[0], data.shape[1]/rebin))
+
         for i in range(0, len(data)):
             label = legend[i] if legend is not None else str(i)
             a = data[i]
