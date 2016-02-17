@@ -1,10 +1,11 @@
+from keras.optimizers import SGD
 from simdat.core import dp_models
 from simdat.core import image
 
 models = dp_models.DPModel()
 im = image.IMAGE()
 
-weight_path = '/home/tammy/Dropbox/DT42/models/vgg/vgg16_weights.h5'
+weight_path = '/tammy/SOURCES/keras/examples/vgg16_weights.h5'
 img_path = 'airportwaitingarea_0001.jpg'
 
 model = models.VGG_16(weight_path)
