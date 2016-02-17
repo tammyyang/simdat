@@ -21,7 +21,6 @@ class IMAGE(tools.TOOLS):
     def find_images(self, dir_path=None, keyword=None):
         """Find images under a directory
 
-
         Keyword arguments:
         dir_path -- path of the directory to check (default: '.')
         keyword  -- keyword used to filter images (default: None)
