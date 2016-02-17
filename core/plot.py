@@ -353,7 +353,7 @@ class PLOT(tools.DATA, COLORS):
         cv2.imwrite(new_path, img)
 
     def plot(self, data, clear=True, fname='./plot.png',
-             title='', connected=True, ymax=None,
+             title='', connected=True, ymax=None, log=False,
              ymin=None, xlabel='', ylabel='', xticks=None,
              xrotation=45, color=None, xmax=None, rebin=None):
         """Draw the very basic 1D plot
@@ -367,6 +367,7 @@ class PLOT(tools.DATA, COLORS):
         title     -- chart title (default: 'Distributions')
         connected -- true to draw line between dots (default: True)
         xmax      -- maximum of x axis (default: max(data)+0.1)
+        log       -- true to draw log scale (default: False)
         ymax      -- maximum of y axis (default: max(data)+0.1)
         ymin      -- minimum of y axis (default: max(data)-0.1)
         fname     -- output filename (default: './dist_1d.png')
@@ -385,6 +386,8 @@ class PLOT(tools.DATA, COLORS):
 
         plt.axis([-0.1, xmax, ymin, ymax])
         xtick_marks = np.arange(len(data))
+        if log:
+            self.ax.set_yscale('log')
         if xticks is None:
             xticks = xtick_marks
         if len(xticks) > 20 and rebin is None:
