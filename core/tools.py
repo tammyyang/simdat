@@ -167,170 +167,6 @@ class TOOLS(object):
             shutil.move(fpath, newpath)
 
 
-class MLIO(TOOLS):
-    def write_csv(self, data, fname='output.csv'):
-        """Write data to csv
-
-        @param data: object to be written
-
-        Keyword arguments:
-        fname  -- output filename (default './output.csv')
-
-        """
-        import csv
-        f = open(fname, 'wb')
-        wr = csv.writer(f, dialect='excel')
-        wr.writerows(data)
-
-    def read_csv(self, fname, ftype=None):
-        """Read CSV file as list
-
-        @param fname: file to read
-
-        Keyword arguments:
-        ftype  -- convert data to the type (default: None)
-
-        @return list of csv content
-
-        """
-        import csv
-        output = []
-        with open(fname, 'rt') as csvfile:
-            for row in csv.reader(csvfile, delimiter=','):
-                if ftype is not None:
-                    row = map(ftype, row)
-                output.append(list(row))
-        return output
-
-    def read_json_to_df(self, fname, orient='columns', np=False):
-        """Read json file as pandas DataFrame
-
-        @param fname: input filename
-
-        Keyword arguments:
-        orient -- split/records/index/columns/values (default: 'columns')
-        np     -- true to direct decoding to numpy arrays (default: False)
-        @return pandas DataFranm
-
-        """
-        import pandas
-        if self.check_exist(fname):
-            return pandas.read_json(fname, orient=orient, numpy=np)
-
-    def read_jsons_to_df(self, flist, orient='columns', np=False):
-        """Read json files as one pandas DataFrame
-
-        @param fname: input file list
-
-        Keyword arguments:
-        orient -- split/records/index/columns/values (default: 'columns')
-        np     -- true to direct decoding to numpy arrays (default: False)
-        @return concated pandas DataFranm
-
-        """
-        import pandas as pd
-        dfs = []
-        for f in flist:
-            dfs.append(self.read_json_to_df(f, orient=orient, np=np))
-        return pd.concat(dfs)
-
-    def write_df_json(self, df, fname='df.json'):
-        """Wtite pandas.DataFrame to json output"""
-
-        df.to_json(fname)
-        print('[TOOLS] DataFrame is written to %s' % fname)
-
-    def read_csv_to_np(self, fname='data.csv'):
-        """Read CSV file as numpy array
-
-        Keyword arguments:
-        fname  -- input filename (default './data.csv')
-
-        @return numpy array
-
-        """
-        self.check_exist(fname)
-        content = self.read_csv(fname=fname, ftype=float)
-        return DATA().conv_to_np(content)
-
-    def parse_json(self, fname):
-        """Parse the input profile
-
-        @param fname: input profile path
-
-        @return data: a dictionary with user-defined data for training
-
-        """
-        import json
-        with open(fname) as data_file:
-            data = json.load(data_file)
-        return data
-
-    def write_json(self, data, fname='./output.json'):
-        """Write data to json
-
-        @param data: object to be written
-
-        Keyword arguments:
-        fname  -- output filename (default './output.json')
-
-        """
-        import json
-        with open(fname, 'w') as fp:
-            json.dump(data, fp, cls=NumpyAwareJSONEncoder)
-
-    def conv_csv_svmft(self, csvfile, target=0,
-                       ftype=float, classify=True):
-        """Convert csv file to SVM format
-
-        @param csvfile: file name of the csv to be read
-
-        Keyword arguments:
-
-        target   -- target column (default: 0)
-        ftype    -- convert data to the type (default: None)
-        classify -- true convert target to int type (default: True)
-
-        """
-        dt = DATA()
-        indata = self.read_csv(csvfile, ftype=ftype)
-        df = dt.conv_to_df(indata)
-
-        _data = df.drop(df.columns[[target]], axis=1)
-        data = dt.conv_to_np(_data)
-        target = dt.conv_to_np(df[target])
-
-        self.write_svmft(target, data, classify=classify)
-
-    def write_svmft(self, target, data, classify=True,
-                    fname='./data.svmft'):
-        """Output data with the format libsvm/wusvm accepts
-
-        @param target: array of the target (1D)
-        @param data: array of the data (multi-dimensional)
-
-        Keyword arguments:
-        classify -- true convert target to int type (default: True)
-        fname    -- output file name (default: ./data.svmft)
-
-        """
-
-        length = DATA().check_len(target, data)
-        if classify:
-            target = TOOLS().conv_to_np(target)
-            target = target.astype(int)
-
-        with open(fname, 'w') as outf:
-            for i in range(0, length):
-                output = []
-                output.append(str(target[i]))
-                for j in range(0, len(data[i])):
-                    output.append(str(j+1) + ':' + str(data[i][j]))
-                output.append('\n')
-                libsvm_format = ' '.join(output)
-                outf.write(libsvm_format)
-
-
 class DATA(TOOLS):
     def tools_init(self):
         """Called by __init__ of TOOLS class"""
@@ -369,8 +205,8 @@ class DATA(TOOLS):
         if ndarray.ndim != len(new_shape):
             raise ValueError("Shape mismatch: {} -> {}".format(ndarray.shape,
                                                                new_shape))
-        compression_pairs = [(d, c//d) for d,c in zip(new_shape,
-                                                      ndarray.shape)]
+        compression_pairs = [(d, c//d) for d, c in zip(new_shape,
+                                                       ndarray.shape)]
         flattened = [l for p in compression_pairs for l in p]
         ndarray = ndarray.reshape(flattened)
         for i in range(len(new_shape)):
@@ -447,6 +283,19 @@ class DATA(TOOLS):
             return pd.merge(excluded, _r)
         else:
             return (raw_df - raw_df.mean()) / (raw_df.max() - raw_df.min())
+
+    def conv_csv_df(self, csvfile, target=0):
+        """Convert csv file to dataframe
+
+        @param csvfile: file name of the csv to be read
+
+        Keyword arguments:
+
+        target   -- target column (default: 0)
+
+        """
+        import pandas as pd
+        return pd.DataFrame.from_csv(csvfile)
 
     def conv_to_df(self, array, ffields=None, target=None):
         """Convert array to pandas.DataFrame
@@ -586,6 +435,66 @@ class DATA(TOOLS):
     def area(self, size):
         return reduce(mul, size)
 
+    def read_csv(self, fname, ftype=None):
+        """Read CSV file as list
+
+        @param fname: file to read
+
+        Keyword arguments:
+        ftype  -- convert data to the type (default: None)
+
+        @return list of csv content
+
+        """
+        import csv
+        output = []
+        with open(fname, 'rt') as csvfile:
+            for row in csv.reader(csvfile, delimiter=','):
+                if ftype is not None:
+                    row = map(ftype, row)
+                output.append(list(row))
+        return output
+
+    def write_csv(self, data, fname='output.csv'):
+        """Write data to csv
+
+        @param data: object to be written
+
+        Keyword arguments:
+        fname  -- output filename (default './output.csv')
+
+        """
+        import csv
+        f = open(fname, 'wb')
+        wr = csv.writer(f, dialect='excel')
+        wr.writerows(data)
+
+    def parse_json(self, fname):
+        """Parse the input profile
+
+        @param fname: input profile path
+
+        @return data: a dictionary with user-defined data for training
+
+        """
+        import json
+        with open(fname) as data_file:
+            data = json.load(data_file)
+        return data
+
+    def write_json(self, data, fname='./output.json'):
+        """Write data to json
+
+        @param data: object to be written
+
+        Keyword arguments:
+        fname  -- output filename (default './output.json')
+
+        """
+        import json
+        with open(fname, 'w') as fp:
+            json.dump(data, fp, cls=NumpyAwareJSONEncoder)
+
     def conv_to_np(self, array):
         """Convert DataFrame or list to np.ndarray"""
 
@@ -602,3 +511,107 @@ class DATA(TOOLS):
         print("[TOOLS] WARNING: the type of input array is not correct!")
         print(type(array))
         return array
+
+
+class MLIO(DATA):
+    def read_json_to_df(self, fname, orient='columns', np=False):
+        """Read json file as pandas DataFrame
+
+        @param fname: input filename
+
+        Keyword arguments:
+        orient -- split/records/index/columns/values (default: 'columns')
+        np     -- true to direct decoding to numpy arrays (default: False)
+        @return pandas DataFranm
+
+        """
+        import pandas
+        if self.check_exist(fname):
+            return pandas.read_json(fname, orient=orient, numpy=np)
+
+    def read_jsons_to_df(self, flist, orient='columns', np=False):
+        """Read json files as one pandas DataFrame
+
+        @param fname: input file list
+
+        Keyword arguments:
+        orient -- split/records/index/columns/values (default: 'columns')
+        np     -- true to direct decoding to numpy arrays (default: False)
+        @return concated pandas DataFranm
+
+        """
+        import pandas as pd
+        dfs = []
+        for f in flist:
+            dfs.append(self.read_json_to_df(f, orient=orient, np=np))
+        return pd.concat(dfs)
+
+    def write_df_json(self, df, fname='df.json'):
+        """Wtite pandas.DataFrame to json output"""
+
+        df.to_json(fname)
+        print('[TOOLS] DataFrame is written to %s' % fname)
+
+    def read_csv_to_np(self, fname='data.csv'):
+        """Read CSV file as numpy array
+
+        Keyword arguments:
+        fname  -- input filename (default './data.csv')
+
+        @return numpy array
+
+        """
+        self.check_exist(fname)
+        content = self.read_csv(fname=fname, ftype=float)
+        return DATA().conv_to_np(content)
+
+    def conv_csv_svmft(self, csvfile, target=0,
+                       ftype=float, classify=True):
+        """Convert csv file to SVM format
+
+        @param csvfile: file name of the csv to be read
+
+        Keyword arguments:
+
+        target   -- target column (default: 0)
+        ftype    -- convert data to the type (default: None)
+        classify -- true convert target to int type (default: True)
+
+        """
+        dt = DATA()
+        indata = self.read_csv(csvfile, ftype=ftype)
+        df = dt.conv_to_df(indata)
+
+        _data = df.drop(df.columns[[target]], axis=1)
+        data = dt.conv_to_np(_data)
+        target = dt.conv_to_np(df[target])
+
+        self.write_svmft(target, data, classify=classify)
+
+    def write_svmft(self, target, data, classify=True,
+                    fname='./data.svmft'):
+        """Output data with the format libsvm/wusvm accepts
+
+        @param target: array of the target (1D)
+        @param data: array of the data (multi-dimensional)
+
+        Keyword arguments:
+        classify -- true convert target to int type (default: True)
+        fname    -- output file name (default: ./data.svmft)
+
+        """
+
+        length = DATA().check_len(target, data)
+        if classify:
+            target = TOOLS().conv_to_np(target)
+            target = target.astype(int)
+
+        with open(fname, 'w') as outf:
+            for i in range(0, length):
+                output = []
+                output.append(str(target[i]))
+                for j in range(0, len(data[i])):
+                    output.append(str(j+1) + ':' + str(data[i][j]))
+                output.append('\n')
+                libsvm_format = ' '.join(output)
+                outf.write(libsvm_format)
