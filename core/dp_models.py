@@ -1,4 +1,7 @@
+import theano
 import numpy as np
+import scipy as sp
+from sklearn import cluster
 from simdat.core import image
 from keras.models import Sequential
 from keras.layers.core import Flatten, Dense, Dropout
@@ -6,10 +9,44 @@ from keras.layers.convolutional import Convolution2D, MaxPooling2D
 from keras.layers.convolutional import ZeroPadding2D
 
 
-class DPModel:
+class DP:
     def __init__(self):
         pass
 
+    def extract_hypercolumn(self, model, la_idx, instance):
+        ''' Extract HyperColumn of pixels
+
+        @param model: input DP model
+        @param la_idx: indexes of the layers to be extract
+        @param instamce: image instance used to extract the hypercolumns
+
+        '''
+        layers = [model.layers[li].get_output(train=False) for li in la_idx]
+        get_feature = theano.function([model.layers[0].input], layers,
+                                      allow_input_downcast=False)
+        feature_maps = get_feature(instance)
+        hypercolumns = []
+        for convmap in feature_maps:
+            for fmap in convmap[0]:
+                upscaled = sp.misc.imresize(fmap, size=(224, 224),
+                                            mode="F", interp='bilinear')
+                hypercolumns.append(upscaled)
+        return np.asarray(hypercolumns)
+
+    def cluster_hc(self, hc):
+        ''' Use KMeans to cluster hypercolumns'''
+
+        m = hc.transpose(1, 2, 0).reshape(50176, -1)
+        kmeans = cluster.KMeans(n_clusters=2, max_iter=300,
+                                n_jobs=5, precompute_distances=True)
+        cluster_labels = kmeans .fit_predict(m)
+        imcluster = np.zeros((224, 224))
+        imcluster = imcluster.reshape((224*224,))
+        imcluster = cluster_labels
+        return imcluster
+
+
+class DPModel(DP):
     def VGG_19(weights_path=None):
         '''VGG-19 model, source from https://goo.gl/rvcNDw'''
 
