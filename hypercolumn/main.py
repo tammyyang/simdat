@@ -1,11 +1,13 @@
 import os
 import cv2
+import time
 import numpy as np
 from keras.optimizers import SGD
 from simdat.core import dp_models
 from simdat.core import plot
 from simdat.core import image
 
+t0 = time.time()
 models = dp_models.DPModel()
 imnet = dp_models.ImageNet()
 im = image.IMAGE()
@@ -13,13 +15,18 @@ pl = plot.PLOT()
 
 weight_path = '/tammy/SOURCES/keras/examples/vgg16_weights.h5'
 img_path = 'airportwaitingarea_0001.jpg'
+t0 = pl.print_time(t0, 'initiate')
 
 model = models.VGG_16(weight_path)
+t0 = pl.print_time(t0, 'load weights')
 sgd = SGD(lr=0.1, decay=1e-6, momentum=0.9, nesterov=True)
 model.compile(optimizer=sgd, loss='categorical_crossentropy')
+t0 = pl.print_time(t0, 'compile')
 
 imgs = im.find_images()
+t0 = pl.print_time(t0, 'find images')
 for fimg in imgs:
+    t0 = pl.print_time(t0, 'compute for one image')
     print('Processing %s' % fimg)
     name, ext = os.path.splitext(fimg)
     img_original = im.read(fimg, size=(224, 224))

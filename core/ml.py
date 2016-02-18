@@ -442,6 +442,7 @@ class MLRun(MLTools):
         """
         t0 = time.time()
         result = {'Result': self._get_predicted(data, trained_model)}
+        result['predicted'] = result['Result']
         if outf is not None:
             io.write_json(result, fname=outf)
         t0 = dt.print_time(t0, 'predict %i data entries' % len(data))
