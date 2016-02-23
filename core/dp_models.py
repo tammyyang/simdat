@@ -33,17 +33,19 @@ class DP:
                 hypercolumns.append(upscaled)
         return np.asarray(hypercolumns)
 
-    def cluster_hc(self, hc):
+    def cluster_hc(self, hc, n_jobs=1):
         ''' Use KMeans to cluster hypercolumns'''
 
-        m = hc.transpose(1, 2, 0).reshape(50176, -1)
-        kmeans = cluster.KMeans(n_clusters=2, max_iter=300,
-                                n_jobs=5, precompute_distances=True)
+        ori_size = hc.shape[1]
+        new_size = ori_size*ori_size
+        m = hc.transpose(1, 2, 0).reshape(new_size, -1)
+        kmeans = cluster.KMeans(n_clusters=2, max_iter=300, n_jobs=n_jobs,
+                                precompute_distances=True)
         cluster_labels = kmeans .fit_predict(m)
-        imcluster = np.zeros((224, 224))
-        imcluster = imcluster.reshape((224*224,))
+        imcluster = np.zeros((ori_size, ori_size))
+        imcluster = imcluster.reshape((new_size,))
         imcluster = cluster_labels
-        return imcluster
+        return imcluster.reshape(ori_size, ori_size)
 
 
 class DPModel(DP):
