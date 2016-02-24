@@ -111,7 +111,7 @@ class PLOT(tools.DATA, COLORS):
         self.ax.set_ylabel(ylabel, color='#504A4B')
         self.ax.set_xlabel(xlabel, color='#504A4B')
 
-    def _add_legend(self, loc):
+    def _add_legend(self, loc, mandarin=False, size=None):
         """Add Legend to the figure
 
         @param loc: location of the legend
@@ -127,9 +127,11 @@ class PLOT(tools.DATA, COLORS):
         args = {'loc': self.loc_map[loc]}
         font_file = path.join(os.environ['HOME'], '.fonts/noto/',
                               'NotoSansCJKtc-Light.otf')
-        if self.check_exist(font_file):
+        if self.check_exist(font_file) and mandarin:
             chf = font_manager.FontProperties(fname=font_file)
             args["prop"] = chf
+        elif type(size) is int:
+            args["prop"] = {"size": size}
         if loc == 'rt':
             args['bbox_to_anchor'] = (1.12, 1.0)
         elif loc in ['rb', 'lb', 'lt']:
@@ -724,8 +726,8 @@ class PLOT(tools.DATA, COLORS):
     def plot_1D_dists(self, data, scale=False, legend=None, clear=True,
                       title='Distrubitions', connected=True, ymax=None,
                       ymin=None, xlabel='', ylabel='', xticks=None,
-                      xrotation=45, leg_loc='rt', xmax=None,
-                      fname='./dist_1d.png', rebin=None):
+                      xrotation=45, leg_loc='rt', xmax=None, leg_size=None,
+                      fname='./dist_1d.png', rebin=None, mandarin=False):
         """Draw the dist of multiple 1D arrays.
 
         @param data: list of 1D arrays
@@ -769,7 +771,7 @@ class PLOT(tools.DATA, COLORS):
             plt.plot(a, fmt, label=label, color=color)
 
             _ymax, _ymin = self.find_axis_max_min(a)
-            _xmax = 1.1*(len(a)-1)
+            _xmax = 1.1*(a.shape[0] - 1)
             ymax = _ymax if ymax is None else max(ymax, _ymax)
             ymin = _ymin if ymin is None else min(ymin, _ymin)
             xmax = _xmax if xmax is None else max(xmax, _xmax)
@@ -784,7 +786,7 @@ class PLOT(tools.DATA, COLORS):
             xtick_marks, xticks = self.red_ticks(xtick_marks, xticks, rebin)
         plt.xticks(xtick_marks, xticks, rotation=xrotation)
 
-        self._add_legend(leg_loc)
+        self._add_legend(leg_loc, mandarin=mandarin, size=leg_size)
         self._add_titles(title, xlabel, ylabel)
         if fname is not None:
             plt.savefig(fname)
