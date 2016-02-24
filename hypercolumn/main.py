@@ -10,7 +10,7 @@ from simdat.core import image
 import theano
 
 t0 = time.time()
-models = dp_models.DPModel()
+mdls = dp_models.DPModel()
 imnet = dp_models.ImageNet()
 im = image.IMAGE()
 pl = plot.PLOT()
@@ -19,7 +19,7 @@ weight_path = '/tammy/SOURCES/keras/examples/vgg16_weights.h5'
 img_path = 'airportwaitingarea_0001.jpg'
 t0 = pl.print_time(t0, 'initiate')
 
-model = models.VGG_16(weight_path)
+model = mdls.VGG_16(weight_path)
 t0 = pl.print_time(t0, 'load weights')
 sgd = SGD(lr=0.1, decay=1e-6, momentum=0.9, nesterov=True)
 model.compile(optimizer=sgd, loss='categorical_crossentropy')
@@ -39,7 +39,9 @@ for fimg in imgs:
     pl.plot(out.ravel())
     imagenet_labels_filename = '/tammy/ImageNet/synset_words.txt'
     results = imnet.find_topk(prob, fname=imagenet_labels_filename)
-    print(results)
+    for stack in ['conv1', 'conv2', 'conv3', 'conv4', 'conv5']:
+        for l in mdls.layers[stack]:
+            l.trainable = False
 
     '''
     get_feature = theano.function([model.layers[0].input],
@@ -63,7 +65,7 @@ for fimg in imgs:
     # and the FC layers are [32, 34, 36]
 
     layers_extract = [3, 8]
-    hc = models.extract_hypercolumn(model, layers_extract, img)
+    hc = mdls.extract_hypercolumn(model, layers_extract, img)
     ave = np.average(hc.transpose(1, 2, 0), axis=2)
 
     name = name.split('/')[-1]
@@ -71,7 +73,7 @@ for fimg in imgs:
                    show_text=False, show_axis=False)
 
     layers_extract = [22, 29]
-    hc = models.extract_hypercolumn(model, layers_extract, img)
+    hc = mdls.extract_hypercolumn(model, layers_extract, img)
     ave = np.average(hc.transpose(1, 2, 0), axis=2)
 
     name = name.split('/')[-1]
@@ -79,17 +81,17 @@ for fimg in imgs:
                    show_text=False, show_axis=False)
 
     layers_extract = [3, 8, 15, 22, 29]
-    hc = models.extract_hypercolumn(model, layers_extract, img)
+    hc = mdls.extract_hypercolumn(model, layers_extract, img)
     ave = np.average(hc.transpose(1, 2, 0), axis=2)
 
     name = name.split('/')[-1]
     pl.plot_matrix(ave, fname='hc_'+name+'8_29_36.png', norm=False,
                    show_text=False, show_axis=False)
 
-    '''
 
     layers_extract = [3, 8, 15, 22, 29]
-    hc = models.extract_hypercolumn(model, layers_extract, img)
-    cluster = models.cluster_hc(hc)
+    hc = mdls.extract_hypercolumn(model, layers_extract, img)
+    cluster = mdls.cluster_hc(hc)
     pl.plot_matrix(cluster, fname='hc_cluster.png', norm=False,
                    show_text=False, show_axis=False)
+    '''
