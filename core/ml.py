@@ -208,7 +208,7 @@ class MLTools():
         self.args = MLArgs(pfs=[])
         return
 
-    def get_class_from_path(self, opath, keyword):
+    def get_class_from_path(self, opath, keyword='00'):
         """Get object class from the file path
 
         @param opath: path of the object
