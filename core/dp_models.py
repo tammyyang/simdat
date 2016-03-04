@@ -53,58 +53,72 @@ class DPModel(DP):
     def __init__(self):
         self.layers = None
 
-    def VGG_19(weights_path=None):
+    def VGG_19(self, weights_path=None):
         '''VGG-19 model, source from https://goo.gl/rvcNDw'''
 
+        self.layers = OrderedDict([
+            ('conv1', [
+                ZeroPadding2D((1, 1), input_shape=(3, 224, 224)),
+                Convolution2D(64, 3, 3, activation='relu'),
+                ZeroPadding2D((1, 1)),
+                Convolution2D(64, 3, 3, activation='relu'),
+                MaxPooling2D((2, 2),  strides=(2, 2))
+            ]),
+            ('conv2', [
+                ZeroPadding2D((1, 1)),
+                Convolution2D(128, 3, 3, activation='relu'),
+                ZeroPadding2D((1, 1)),
+                Convolution2D(128, 3, 3, activation='relu'),
+                MaxPooling2D((2, 2), strides=(2, 2))
+            ]),
+            ('conv3', [
+                ZeroPadding2D((1, 1)),
+                Convolution2D(256, 3, 3, activation='relu'),
+                ZeroPadding2D((1, 1)),
+                Convolution2D(256, 3, 3, activation='relu'),
+                ZeroPadding2D((1, 1)),
+                Convolution2D(256, 3, 3, activation='relu'),
+                ZeroPadding2D((1, 1)),
+                Convolution2D(256, 3, 3, activation='relu'),
+                MaxPooling2D((2, 2), strides=(2, 2))
+            ]),
+            ('conv4', [
+                ZeroPadding2D((1, 1)),
+                Convolution2D(512, 3, 3, activation='relu'),
+                ZeroPadding2D((1, 1)),
+                Convolution2D(512, 3, 3, activation='relu'),
+                ZeroPadding2D((1, 1)),
+                Convolution2D(512, 3, 3, activation='relu'),
+                ZeroPadding2D((1, 1)),
+                Convolution2D(512, 3, 3, activation='relu'),
+                MaxPooling2D((2, 2), strides=(2, 2))
+            ]),
+            ('conv5', [
+                ZeroPadding2D((1, 1)),
+                Convolution2D(512, 3, 3, activation='relu'),
+                ZeroPadding2D((1, 1)),
+                Convolution2D(512, 3, 3, activation='relu'),
+                ZeroPadding2D((1, 1)),
+                Convolution2D(512, 3, 3, activation='relu'),
+                ZeroPadding2D((1, 1)),
+                Convolution2D(512, 3, 3, activation='relu'),
+                MaxPooling2D((2, 2), strides=(2, 2))
+            ]),
+            ('fc', [
+                Flatten(),
+                Dense(4096, activation='relu'),
+                Dropout(0.5),
+                Dense(4096, activation='relu'),
+                Dropout(0.5),
+            ]),
+            ('classify', [
+                Dense(1000, activation='softmax')
+            ])
+        ])
         model = Sequential()
-        model.add(ZeroPadding2D((1, 1), input_shape=(3, 224, 224)))
-        model.add(Convolution2D(64, 3, 3, activation='relu'))
-        model.add(ZeroPadding2D((1, 1)))
-        model.add(Convolution2D(64, 3, 3, activation='relu'))
-        model.add(MaxPooling2D((2, 2), strides=(2, 2)))
-
-        model.add(ZeroPadding2D((1, 1)))
-        model.add(Convolution2D(128, 3, 3, activation='relu'))
-        model.add(ZeroPadding2D((1, 1)))
-        model.add(Convolution2D(128, 3, 3, activation='relu'))
-        model.add(MaxPooling2D((2, 2), strides=(2, 2)))
-
-        model.add(ZeroPadding2D((1, 1)))
-        model.add(Convolution2D(256, 3, 3, activation='relu'))
-        model.add(ZeroPadding2D((1, 1)))
-        model.add(Convolution2D(256, 3, 3, activation='relu'))
-        model.add(ZeroPadding2D((1, 1)))
-        model.add(Convolution2D(256, 3, 3, activation='relu'))
-        model.add(ZeroPadding2D((1, 1)))
-        model.add(Convolution2D(256, 3, 3, activation='relu'))
-        model.add(MaxPooling2D((2, 2), strides=(2, 2)))
-
-        model.add(ZeroPadding2D((1, 1)))
-        model.add(Convolution2D(512, 3, 3, activation='relu'))
-        model.add(ZeroPadding2D((1, 1)))
-        model.add(Convolution2D(512, 3, 3, activation='relu'))
-        model.add(ZeroPadding2D((1, 1)))
-        model.add(Convolution2D(512, 3, 3, activation='relu'))
-        model.add(ZeroPadding2D((1, 1)))
-        model.add(Convolution2D(512, 3, 3, activation='relu'))
-        model.add(MaxPooling2D((2, 2), strides=(2, 2)))
-
-        model.add(ZeroPadding2D((1, 1)))
-        model.add(Convolution2D(512, 3, 3, activation='relu'))
-        model.add(ZeroPadding2D((1, 1)))
-        model.add(Convolution2D(512, 3, 3, activation='relu'))
-        model.add(ZeroPadding2D((1, 1)))
-        model.add(Convolution2D(512, 3, 3, activation='relu'))
-        model.add(ZeroPadding2D((1, 1)))
-        model.add(Convolution2D(512, 3, 3, activation='relu'))
-        model.add(MaxPooling2D((2, 2), strides=(2, 2)))
-
-        model.add(Flatten())
-        model.add(Dense(4096, activation='relu'))
-        model.add(Dropout(0.5))
-        model.add(Dense(4096, activation='relu'))
-        model.add(Dropout(0.5))
-        model.add(Dense(1000, activation='softmax'))
+        for stack in self.layers:
+            for l in self.layers[stack]:
+                model.add(l)
 
         if weights_path:
             model.load_weights(weights_path)
