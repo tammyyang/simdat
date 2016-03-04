@@ -18,6 +18,7 @@ RUN apt-get install -y python-numpy python-scipy python-pip
 RUN apt-get install -y libatlas-dev libatlas3gf-base
 RUN apt-get install -y python-skimage python-matplotlib python-pandas
 RUN apt-get install -y python-h5py
+RUN apt-get install -y python-opencv
 RUN pip install scikit-learn
 
 EXPOSE 8888
