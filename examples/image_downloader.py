@@ -40,6 +40,11 @@ def parse_json(fname):
 data = parse_json('download_args.json')
 search_for = data['search_for']
 
+def check_dir(dirpath):
+    """Check if a directory exists, create one elsewise."""
+    if not os.path.exists(dirpath):
+        print("Creating %s" % dirpath)
+        os.makedirs(dirpath)
 
 def download_page(url):
     """Get contents from the download page"""
@@ -139,11 +144,9 @@ def main():
 
     if not args.test:
         import wget
-        from simdat.core import tools
-        tl = tools.TOOLS()
         for search_keyword in results:
             path = './images/' + search_keyword
-            tl.check_dir(path)
+            check_dir(path)
             os.chdir(path)
             items = results[search_keyword]
             print('  Downloading: 1/' + str(len(items)))
@@ -151,6 +154,7 @@ def main():
                 url = items[i]
                 filename = wget.download(url)
                 print('  Downloading: ' + str(i+2) + '/' + str(len(items)))
+                break
             os.chdir('../../')
     else:
         import json
