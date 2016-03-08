@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf8 -*-
+
 '''
 This is a modified version of
 https://github.com/hardikvasa/google-images-download
@@ -51,6 +54,7 @@ def check_dir(dirpath):
 def download_page(url):
     """Get contents from the download page"""
 
+    url = url.encode('utf8')
     version = (3, 0)
     cur_version = sys.version_info
     user_agent = ''.join(['Mozilla/5.0 (X11; Linux i686) ',
@@ -131,7 +135,7 @@ def main():
 
     for search_keyword in search_for:
         results[search_keyword] = []
-        print (" Item name = ", str(search_keyword))
+        print (" Item name = ", search_keyword)
         search = search_keyword.replace(' ', '%20')
         for j in range(0, len(search_for[search_keyword])):
             pure_keyword = '%20' + search_for[search_keyword][j]
@@ -154,8 +158,11 @@ def main():
             print('  Downloading: 1/' + str(len(items)))
             for i in range(0, len(items)):
                 url = items[i]
-                filename = wget.download(url)
-                print('  Downloading: ' + str(i+2) + '/' + str(len(items)))
+                try:
+                    filename = wget.download(url)
+                    print('  Downloading: ' + str(i+2) + '/' + str(len(items)))
+                except IndexError:
+                    print(' Skipping ' + url)
             os.chdir('../../')
     else:
         import json
