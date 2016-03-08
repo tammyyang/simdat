@@ -40,11 +40,13 @@ def parse_json(fname):
 data = parse_json('download_args.json')
 search_for = data['search_for']
 
+
 def check_dir(dirpath):
     """Check if a directory exists, create one elsewise."""
     if not os.path.exists(dirpath):
         print("Creating %s" % dirpath)
         os.makedirs(dirpath)
+
 
 def download_page(url):
     """Get contents from the download page"""
