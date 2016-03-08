@@ -24,7 +24,6 @@ import os
 import sys
 import json
 import argparse
-from simdat.core import tools
 
 
 def parse_json(fname):
