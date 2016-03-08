@@ -156,7 +156,6 @@ def main():
                 url = items[i]
                 filename = wget.download(url)
                 print('  Downloading: ' + str(i+2) + '/' + str(len(items)))
-                break
             os.chdir('../../')
     else:
         import json
