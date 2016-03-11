@@ -20,15 +20,12 @@ RUN cd ~ && \
     mkdir release && \
     cd release && \
     cmake -D CMAKE_BUILD_TYPE=RELEASE \
-	  -D CMAKE_INSTALL_PREFIX=/usr/local \
-	  -D INSTALL_C_EXAMPLES=ON \
-	  -D INSTALL_PYTHON_EXAMPLES=ON \
-	  -D OPENCV_EXTRA_MODULES_PATH=~/opencv_contrib/modules \
-	  -D BUILD_EXAMPLES=ON .. && \
+	      -D CMAKE_INSTALL_PREFIX=/usr/local \
+	      .. && \
     make -j8 && \
     make install
 
-RUN cp lib/cv2.so /usr/lib/python2.7/dist-packages/
+RUN cp /root/src/opencv-2.4.12/release/lib/cv2.so /usr/lib/python2.7/dist-packages/
 
 # install python
 RUN apt-get install -y python2.7 python2.7-dev python-pip
