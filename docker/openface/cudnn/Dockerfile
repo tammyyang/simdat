@@ -1,12 +1,9 @@
-FROM ubuntu:14.04
+FROM pyda:python2.7
 MAINTAINER Brandon Amos <brandon.amos.cs@gmail.com>
 
 RUN apt-get update && apt-get install -y \
-    build-essential \
     cmake \
     curl \
-    gfortran \
-    git \
     libatlas-dev \
     libavcodec-dev \
     libavformat-dev \
@@ -16,15 +13,9 @@ RUN apt-get update && apt-get install -y \
     liblapack-dev \
     libswscale-dev \
     pkg-config \
-    python-dev \
-    python-pip \
-    wget \
-    zip \
     && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-RUN pip2 install numpy scipy pandas
-RUN pip2 install scikit-learn scikit-image
-
+RUN apt-get update && apt-get install -y software-properties-common
 RUN curl -s https://raw.githubusercontent.com/torch/ezinstall/master/install-deps | bash -e
 RUN git clone https://github.com/torch/distro.git ~/torch --recursive
 RUN cd ~/torch && ./install.sh
@@ -37,21 +28,6 @@ RUN ~/torch/install/bin/luarocks install csvigo
 RUN ~/torch/install/bin/luarocks install cutorch
 RUN ~/torch/install/bin/luarocks install cunn
 RUN ~/torch/install/bin/luarocks install cudnn
-
-RUN cd ~ && \
-    mkdir -p src && \
-    cd src && \
-    curl -L https://github.com/Itseez/opencv/archive/2.4.11.zip -o ocv.zip && \
-    unzip ocv.zip && \
-    cd opencv-2.4.11 && \
-    mkdir release && \
-    cd release && \
-    cmake -D CMAKE_BUILD_TYPE=RELEASE \
-          -D CMAKE_INSTALL_PREFIX=/usr/local \
-          -D CUDA_GENERATION=Kepler \
-          .. && \
-    make -j8 && \
-    make install
 
 RUN cd ~ && \
     mkdir -p src && \

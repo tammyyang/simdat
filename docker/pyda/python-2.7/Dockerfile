@@ -1,4 +1,4 @@
-FROM cudnn
+FROM cudnn:v4
 
 RUN apt-get update
 RUN apt-get upgrade -y
@@ -7,6 +7,28 @@ RUN apt-get install -y openssh-server git-core curl wget vim-tiny build-essentia
 
 # compilers
 RUN apt-get install -y gfortran build-essential make gcc build-essential
+
+# install opencv
+RUN apt-get install -y cmake
+RUN apt-get install -y zip
+RUN cd ~ && \
+    mkdir -p src && \
+    cd src && \
+    curl -L https://github.com/Itseez/opencv/archive/2.4.12.zip -o ocv.zip && \
+    unzip ocv.zip && \
+    cd opencv-2.4.12 && \
+    mkdir release && \
+    cd release && \
+    cmake -D CMAKE_BUILD_TYPE=RELEASE \
+	  -D CMAKE_INSTALL_PREFIX=/usr/local \
+	  -D INSTALL_C_EXAMPLES=ON \
+	  -D INSTALL_PYTHON_EXAMPLES=ON \
+	  -D OPENCV_EXTRA_MODULES_PATH=~/opencv_contrib/modules \
+	  -D BUILD_EXAMPLES=ON .. && \
+    make -j8 && \
+    make install
+
+RUN cp lib/cv2.so /usr/lib/python2.7/dist-packages/
 
 # install python
 RUN apt-get install -y python2.7 python2.7-dev python-pip
@@ -18,7 +40,6 @@ RUN apt-get install -y python-numpy python-scipy python-pip
 RUN apt-get install -y libatlas-dev libatlas3gf-base
 RUN apt-get install -y python-skimage python-matplotlib python-pandas
 RUN apt-get install -y python-h5py
-RUN apt-get install -y python-opencv
 RUN pip install scikit-learn
 
 EXPOSE 8888
