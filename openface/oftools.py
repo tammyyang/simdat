@@ -29,7 +29,7 @@ class OFArgs(args.Args):
         self.fdlibFaceMean = 'mean.csv'
         self.fdlibPredictor = 'shape_predictor_68_face_landmarks.dat'
         self.parentOFModel = 'openface'
-        self.fmodel = 'nn4.v1.t7'
+        self.fmodel = 'nn4.small2.v1.t7'
         self.imgDim = 96
         # tightcrop/affine/perspective/homography
         self.align_method = 'affine'
@@ -37,8 +37,8 @@ class OFArgs(args.Args):
         self.outf = './result.json'
 
         self.pathdlibMean = None
-        self.pathPredictor = None
-        self.pathModel = None
+        self.dlibFacePredictor = None
+        self.networkModel = None
 
 
 class OFTools(object):
@@ -160,15 +160,15 @@ class OpenFace(OFTools):
             self.args.pathdlibMean = os.path.join(self.args.pathOF,
                                                   "./models/dlib/",
                                                   self.args.fdlibFaceMean)
-        if self.args.pathPredictor is None:
-            self.args.pathPredictor = os.path.join(_model_parent,
-                                                   self.args.parentdlibModel,
-                                                   self.args.fdlibPredictor)
-            self.args.pathPredictor = str(self.args.pathPredictor)
-        if self.args.pathModel is None:
-            self.args.pathModel = os.path.join(_model_parent,
-                                               self.args.parentOFModel,
-                                               self.args.fmodel)
+        if self.args.dlibFacePredictor is None:
+            self.args.dlibFacePredictor = os.path.join(_model_parent,
+                                                       self.args.parentdlibModel,
+                                                       self.args.fdlibPredictor)
+            self.args.dlibFacePredictor = str(self.args.dlibFacePredictor)
+        if self.args.networkModel is None:
+            self.args.networkModel = os.path.join(_model_parent,
+                                                  self.args.parentOFModel,
+                                                  self.args.fmodel)
         for attr in self.args.__dict__.keys():
             if attr[:4] == 'path':
                 io.check_exist(getattr(self.args, attr))
@@ -243,9 +243,10 @@ class OpenFace(OFTools):
         """
         import dlib
         import cv2
-        from openface.alignment import NaiveDlib
+        import openface
+        from openface import AlignDlib
 
-        align = NaiveDlib(self.args.pathdlibMean, self.args.pathPredictor)
+        align = AlignDlib(self.args.dlibFacePredictor)
         img = cv2.imread(imgPath)
         if img is None:
             print("Fail to read image: {}".format(imgPath))
@@ -261,8 +262,8 @@ class OpenFace(OFTools):
         logging.debug("Align the face using %s method"
                       % self.args.align_method)
         for bb in bbs:
-            alignedFace = align.alignImg(self.args.align_method,
-                                         self.args.imgDim, img, bb)
+            alignedFace = align.align(self.args.imgDim, img, bb,
+                                      landmarkIndices=openface.AlignDlib.OUTER_EYES_AND_NOSE)
             if alignedFace is None:
                 continue
             alignedFaces.append([alignedFace, [bb.left(), bb.top(),
@@ -278,9 +279,9 @@ class OpenFace(OFTools):
         """Open the pre-trained net"""
 
         import openface
-        return openface.TorchWrap(self.args.pathModel,
-                                  imgDim=self.args.imgDim,
-                                  cuda=self.args.cuda)
+        return openface.TorchNeuralNet(self.args.networkModel,
+                                       imgDim=self.args.imgDim,
+                                       cuda=self.args.cuda)
 
     def cal_rep(self, alignedFace, net=None):
         """Calculate facenet representation for an aligned face
@@ -293,7 +294,7 @@ class OpenFace(OFTools):
         """
         if net is None:
             net = self.get_net()
-        rep = net.forwardImage(alignedFace)
+        rep = net.forward(alignedFace)
         logging.debug("Representation:")
         logging.debug(rep)
         logging.debug("-----\n")
