@@ -208,7 +208,7 @@ class MLTools():
         self.args = MLArgs(pfs=[])
         return
 
-    def get_class_from_path(self, opath, keyword='00'):
+    def get_class_from_path(self, opath, keyword=''):
         """Get object class from the file path
 
         @param opath: path of the object
@@ -218,7 +218,9 @@ class MLTools():
         _dirname = os.path.dirname(opath)
         while len(_dirname) > 1:
             base = os.path.basename(_dirname)
-            if base.find(keyword) > -1:
+            if keyword == '':
+                return base
+            elif keyword is not None and base.find(keyword) > -1:
                 return base
             _dirname = os.path.dirname(_dirname)
         return None

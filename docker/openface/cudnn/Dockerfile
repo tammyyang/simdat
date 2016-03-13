@@ -1,4 +1,4 @@
-FROM pyda:python2.7
+FROM pyda:python-2.7
 MAINTAINER Brandon Amos <brandon.amos.cs@gmail.com>
 
 RUN apt-get update && apt-get install -y \
@@ -42,5 +42,7 @@ RUN cd ~ && \
     cmake ../../tools/python && \
     cmake --build . --config Release && \
     cp dlib.so ..
+
+RUN cp /root/src/dlib-18.16/python_examples/build/dlib.so /usr/lib/python2.7/dist-packages/
 
 EXPOSE 9000

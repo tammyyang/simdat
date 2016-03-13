@@ -27,7 +27,7 @@ Tune other parameters in openface.json and ml.json
 """
 
 pfs = ['openface.json', 'ml.json']
-mpf = '/tammy/viscovery/demo/db/models/train_homography/mapping.json'
+mpf = './mapping.json'
 im = image.IMAGE()
 io = tools.MLIO()
 pl = plot.PLOT()
@@ -38,10 +38,8 @@ args = sys.argv[1:]
 
 
 def pick_images():
-    root = '/home/tammy/viscovery/demo/db/'
-    dbs = [root + 'train/train_homography.json',
-           root + 'tests/tests_homography.json',
-           root + 'tests/tests_20151216_homography.json']
+    root = '/tammy/www/database/db/'
+    dbs = [root + 'face_30_training_original.json']
     return of.pick_reps(dbs)
 
 
@@ -67,7 +65,7 @@ def _pca(df, ncomp=2, pca_method='PCA'):
 def _rep():
     of = oftools.OpenFace(pfs=pfs)
     images = im.find_images()
-    return of.get_reps(images, output=True)
+    return of.get_reps(images, output=True, class_kwd='')
 
 
 act = 'pick'
