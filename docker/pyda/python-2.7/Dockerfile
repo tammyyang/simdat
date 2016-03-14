@@ -20,7 +20,7 @@ RUN apt-get install -y python-skimage python-matplotlib python-pandas
 RUN apt-get install -y python-h5py
 RUN pip install scikit-learn
 
-# install opencv
+# install opencv 2.4.12 
 RUN apt-get install -y cmake
 RUN apt-get install -y zip
 RUN cd ~ && \
