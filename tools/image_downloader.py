@@ -133,6 +133,7 @@ def main():
 
     t0 = time.time()
     results = {}
+    testfile = urllib.URLopener()
 
     url_base = ''.join(['https://www.google.com/search?q=',
                         'REPLACEME',
@@ -166,7 +167,6 @@ def main():
                 try:
                     print('  Downloading: ' + str(i+1) + '/' + str(len(items)))
                     filename = os.path.basename(url)
-                    testfile = urllib.URLopener()
                     testfile.retrieve(url, filename)
                 except IOError:
                     print(' Skipping ' + url)
