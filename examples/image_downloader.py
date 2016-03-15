@@ -26,6 +26,7 @@ import time
 import os
 import sys
 import json
+import urllib
 import argparse
 
 
@@ -123,46 +124,56 @@ def _images_get_all_items(page):
 
 def main():
     parser = argparse.ArgumentParser(
-                description="Simple tool to download images via Google Search."
-            )
+        description="Simple tool to download images via Google Search."
+        )
     parser.add_argument(
-                "-t", "--test", action='store_true'
-            )
+        "-t", "--test", action='store_true'
+        )
     args = parser.parse_args()
 
     t0 = time.time()
     results = {}
 
+    url_base = ''.join(['https://www.google.com/search?q=',
+                        'REPLACEME',
+                        '&espv=2&biw=1366&bih=667&',
+                        'site=webhp&source=lnms&tbm=isch&sa=X',
+                        '&ei=XosDVaCXD8TasATItgE&ved=0CAcQ_AUoAg'])
     for search_keyword in search_for:
         results[search_keyword] = []
         print (" Item name = ", search_keyword)
         search = search_keyword.replace(' ', '%20')
+        if len(search_for[search_keyword]) < 1:
+            url = url_base.replace('REPLACEME', search)
+            raw_html = (download_page(url))
+            results[search_keyword] = _images_get_all_items(raw_html)
+            continue
         for j in range(0, len(search_for[search_keyword])):
             pure_keyword = '%20' + search_for[search_keyword][j]
             pure_keyword = pure_keyword.replace(' ', '%20')
-            url = ''.join(['https://www.google.com/search?q=',
-                           search, pure_keyword,
-                           '&espv=2&biw=1366&bih=667&',
-                           'site=webhp&source=lnms&tbm=isch&sa=X',
-                           '&ei=XosDVaCXD8TasATItgE&ved=0CAcQ_AUoAg'])
+            url = url_base.replace('REPLACEME', search + pure_keyword)
             raw_html = (download_page(url))
             results[search_keyword] += _images_get_all_items(raw_html)
 
     if not args.test:
-        import wget
         for search_keyword in results:
             path = './images/' + search_keyword
             check_dir(path)
             os.chdir(path)
             items = results[search_keyword]
-            print('  Downloading: 1/' + str(len(items)))
             for i in range(0, len(items)):
-                url = items[i]
+                url = items[i].encode('utf8')
                 try:
-                    filename = wget.download(url)
-                    print('  Downloading: ' + str(i+2) + '/' + str(len(items)))
+                    print('  Downloading: ' + str(i+1) + '/' + str(len(items)))
+                    filename = os.path.basename(url)
+                    testfile = urllib.URLopener()
+                    testfile.retrieve(url, filename)
+                except IOError:
+                    print(' Skipping ' + url)
+                    pass
                 except IndexError:
                     print(' Skipping ' + url)
+                    pass
             os.chdir('../../')
     else:
         import json
