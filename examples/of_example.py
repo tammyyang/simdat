@@ -31,17 +31,20 @@ mpf = './mapping.json'
 im = image.IMAGE()
 io = tools.MLIO()
 pl = plot.PLOT()
+of = oftools.OpenFace(pfs=pfs)
 mltl = ml.MLTools()
-of = oftools.OFTools()
 
 args = sys.argv[1:]
 
 
 def pick_images():
     root = '/tammy/www/database/db/'
-    dbs = [root + 'face_30_training_original.json']
+    # root = '/home/tammy/www/database/db/'
+    dbs = [root + 'face_30_training_original.json',
+           root + 'face_30_val_original.json',
+           root + 'face_others.json',
+           root + 'face_30_val_roi.json',]
     return of.pick_reps(dbs)
-
 
 def _pca(df, ncomp=2, pca_method='PCA'):
     res = of.read_df(df, dtype='train', group=False, conv=False)
@@ -63,7 +66,6 @@ def _pca(df, ncomp=2, pca_method='PCA'):
 
 
 def _rep():
-    of = oftools.OpenFace(pfs=pfs)
     images = im.find_images()
     return of.get_reps(images, output=True, class_kwd='')
 
@@ -120,8 +122,8 @@ elif act == 'train':
     mf = ml.run(res['data'], res['target'])
 
 elif act == 'predict':
-    root = '/tammy/viscovery/demo/db/'
-    mf = root + 'models/train_homography/' + method + '.pkl'
+    root = '/tammy/www/database/db/'
+    mf = root + 'models/face/30/' + method + '.pkl'
     model = ml.read_model(mf)
     print('Reading model from %s' % mf)
     res = _rep()
@@ -137,12 +139,12 @@ elif act == 'test':
     if len(args) > 2:
         thre = float(args[2])
     print('Threshold applied %.2f' % thre)
-    root = '/home/tammy/viscovery/demo/db/'
-    mf = root + 'models/train_20151216/' + method + '.pkl'
-    # mf = "/tammy/viscovery/demo/20151126/full/outDir/classifier.pkl"
+    # root = '/home/tammy/www/database/'
+    root = '/tammy/www/database/'
+    mf = root + 'models/face/30/' + method + '.pkl'
+    mpf = root + '/db/mapping_face_30_training_original.json'
     print('Reading model from %s' % mf)
     print('Reading mappings from %s' % mpf)
-    # res = of.read_df(inf, dtype='test', mpf=mpf, group=True)
     df = pick_images()
     res = of.read_df(df, dtype='test', mpf=mpf, group=True)
     model = ml.read_model(mf)
@@ -150,7 +152,8 @@ elif act == 'test':
     match = 0
     nwrong = 0
     today = date.today().strftime("%Y%m%d")
-    new_home = '/home/tammy/viscovery/demo/images/matched/' + today
+    # new_home = '/home/tammy/experiments/face/30/matched/' + today
+    new_home = '/tammy/experiments/face/30/matched/' + today
     for i in range(0, len(res['data'])):
         r1 = ml.test(res['data'][i], res['target'][i], model,
                      target_names=res['target_names'])
@@ -160,7 +163,8 @@ elif act == 'test':
         if r1['prob'] is None:
             for p in range(0, len(r1['predicted'])):
                 if cat == r1['predicted'][p]:
-                    path = res['path'][i].replace('/tammy', '/home/tammy')
+                    # path = res['path'][i].replace('/tammy', '/home/tammy')
+                    path = res['path'][i]
                     pl.patch_rectangle_img(path, res['pos'][i][p],
                                            new_name=None)
                     found = True
@@ -171,7 +175,8 @@ elif act == 'test':
                 imax = prob.argmax()
                 if vmax > thre:
                     if imax == cat:
-                        path = res['path'][i].replace('/tammy', '/home/tammy')
+                        # path = res['path'][i].replace('/tammy', '/home/tammy')
+                        path = res['path'][i]
                         pl.patch_rectangle_img(path, res['pos'][i][p],
                                                new_home=new_home)
                         found = True

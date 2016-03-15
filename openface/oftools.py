@@ -99,11 +99,13 @@ class OFTools(object):
             mapping = self.map_cats_int(df, groupby=_target)
             print("Map of target - int is written to %s" % mpf)
             io.write_json(mapping, fname=mpf)
+            if conv:
+                df[_target] = df[_target].apply(lambda x: mapping[x])
         elif dtype == 'test':
             mapping = io.parse_json(mpf)
+            if conv:
+                df[_target] = df[_target].apply(lambda x: mapping[str(x)])
 
-        if conv:
-            df[_target] = df[_target].apply(lambda x: mapping[x])
         if conv and type(selclass) is int:
             df = df[df['class'] == selclass]
         res = {'data': [], 'target': [], 'pos': [],
