@@ -45,7 +45,7 @@ class OFTools(object):
     def __init__(self):
         pass
 
-    def pick_reps(self, dbs, dir_path=None):
+    def pick_reps(self, dbs, dir_path=None, l=2):
         """Pick entries which matched the images existing in
            a specified directory from multiple db json files
 
@@ -53,14 +53,15 @@ class OFTools(object):
 
         Keyword arguments:
         dir_path: parent directory of the images
+        l: level of path suffix (default: 2)
 
         """
         import pandas as pd
         im = image.IMAGE()
         img_sufs = im.find_images(dir_path=dir_path)
-        img_sufs = [im.path_suffix(x) for x in img_sufs]
+        img_sufs = [im.path_suffix(x, level=l) for x in img_sufs]
         df = io.read_jsons_to_df(dbs, orient='index')
-        df['path_suf'] = df['path'].apply(lambda x: im.path_suffix(x))
+        df['path_suf'] = df['path'].apply(lambda x: im.path_suffix(x, level=l))
         df = df[df['path_suf'].isin(img_sufs)]
         io.write_df_json(df, fname='./picked_rep.json')
         return df
@@ -163,9 +164,11 @@ class OpenFace(OFTools):
                                                   "./models/dlib/",
                                                   self.args.fdlibFaceMean)
         if self.args.dlibFacePredictor is None:
-            self.args.dlibFacePredictor = os.path.join(_model_parent,
-                                                       self.args.parentdlibModel,
-                                                       self.args.fdlibPredictor)
+            self.args.dlibFacePredictor = os.path.join(
+                _model_parent,
+                self.args.parentdlibModel,
+                self.args.fdlibPredictor
+            )
             self.args.dlibFacePredictor = str(self.args.dlibFacePredictor)
         if self.args.networkModel is None:
             self.args.networkModel = os.path.join(_model_parent,
@@ -264,8 +267,9 @@ class OpenFace(OFTools):
         logging.debug("Align the face using %s method"
                       % self.args.align_method)
         for bb in bbs:
-            alignedFace = align.align(self.args.imgDim, img, bb,
-                                      landmarkIndices=openface.AlignDlib.OUTER_EYES_AND_NOSE)
+            alignedFace = align.align(
+                self.args.imgDim, img, bb,
+                landmarkIndices=openface.AlignDlib.OUTER_EYES_AND_NOSE)
             if alignedFace is None:
                 continue
             alignedFaces.append([alignedFace, [bb.left(), bb.top(),
