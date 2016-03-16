@@ -153,6 +153,12 @@ class OpenFace(OFTools):
 
         self.args = OFArgs(pfs=pfs)
         self.set_paths()
+        self.of_init()
+
+    def of_init(self):
+        """Init function for child class"""
+
+        pass
 
     def set_paths(self):
         """Check paths used by openface"""
@@ -195,7 +201,7 @@ class OpenFace(OFTools):
                      from path (default: person-)
 
         """
-        print("Processing %s" % imgPath)
+        print("[oftools] Calculating rep for %s" % imgPath)
         io.check_exist(imgPath)
         alignedFaces = self.align(imgPath)
         if alignedFaces is None:

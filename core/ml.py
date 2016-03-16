@@ -577,7 +577,7 @@ class NeighborsRun(MLRun):
     def ml_init(self, pfs):
         """Initialize arguments needed
 
-        @param pfs: profiles to be read (used by SVMArgs)
+        @param pfs: profiles to be read (used by NeighborsArgs)
 
         """
         self.args = NeighborsArgs(pfs=pfs)
@@ -604,7 +604,7 @@ class RFRun(MLRun):
     def ml_init(self, pfs):
         """Initialize arguments needed
 
-        @param pfs: profiles to be read (used by SVMArgs)
+        @param pfs: profiles to be read (used by RFArgs)
 
         """
         self.args = RFArgs(pfs=pfs)

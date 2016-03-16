@@ -28,20 +28,9 @@ class IMAGE(tools.TOOLS):
         @return output: a list of images found
 
         """
-        if dir_path is None:
-            dir_path = os.getcwd()
-        output = []
-        for dirPath, dirNames, fileNames in os.walk(dir_path):
-            dirmatch = False
-            if keyword is not None and dirPath.find(keyword) > 0:
-                dirmatch = True
-            for f in fileNames:
-                if keyword is not None and dirPath.find(keyword) < 0:
-                    if not dirmatch:
-                        continue
-                if self.check_ext(f, ('.jpg', 'png')):
-                    output.append(os.path.join(dirPath, f))
-        return output
+
+        return self.find_files(dir_path=dir_path, keyword=keyword,
+                               suffix=('.jpg', 'png'))
 
     def get_img_info(self, img_path):
         """Find image size and pixel array
@@ -587,7 +576,7 @@ class OverlayTextDetection(IMAGE):
                 np.mean(img[lower:, (1-thre)*img.shape[1]:])
         right /= 2
         logging.debug("up: %.2f, down: %.2f, left: %.2f, right: %.2f"
-                       % (up, down, left, right))
+                      % (up, down, left, right))
 
         return (up+down+left+right)/4.0
 

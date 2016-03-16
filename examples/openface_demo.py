@@ -252,7 +252,7 @@ class DEMO(oftools.OpenFace):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Simple Openface Demo" +
+        description="Simple Openface Demo"
         )
     parser.add_argument(
         "-t", "--test", action='store_true'
@@ -267,8 +267,8 @@ def main():
              " (default: 0.4, used by action=test)"
         )
     parser.add_argument(
-        "-a", "--action", type=str, default='rep',
-        help="Action to be taken rep(default)/train/test/predict/pca"
+        "-a", "--action", type=str, default='reps',
+        help="Action to be taken reps(default)/train/test/predict/pca"
         )
     parser.add_argument(
         "--mpf", type=str, default='./mapping.json',

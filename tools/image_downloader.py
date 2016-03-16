@@ -14,12 +14,9 @@ keywords you want to search for. For example:
     }
 }
 
-To download the images, wget module is required. It can be installed via pip:
 
-    $pip install wget
-
-Otherwise, do $python image_downloader.py -t without downloading.
-The results will be written to outputs.txt
+Do $python image_downloader.py -t without downloading, otherwise, images
+will be downloaded to $PWD/images automaticall.
 '''
 
 import time

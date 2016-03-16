@@ -39,6 +39,33 @@ class TOOLS(object):
             suf = os.path.join(splits[0-i], suf)
         return suf
 
+    def find_files(self, dir_path=None, keyword=None,
+                   suffix=('.json')):
+        """Find files under a directory
+
+        Keyword arguments:
+        dir_path -- path of the directory to check (default: '.')
+        keyword  -- keyword used to filter files (default: None)
+        suffix   -- file extensions to be selected (default: ('.json'))
+
+        @return output: a list of file paths found
+
+        """
+        if dir_path is None:
+            dir_path = os.getcwd()
+        output = []
+        for dirPath, dirNames, fileNames in os.walk(dir_path):
+            dirmatch = False
+            if keyword is not None and dirPath.find(keyword) > 0:
+                dirmatch = True
+            for f in fileNames:
+                if keyword is not None and dirPath.find(keyword) < 0:
+                    if not dirmatch:
+                        continue
+                if self.check_ext(f, suffix):
+                    output.append(os.path.join(dirPath, f))
+        return output
+
     def read_template(self, fname, temp_vars):
         """Read jinja template
 
