@@ -1,6 +1,7 @@
 import os
 import sys
 import logging
+import numpy as np
 from simdat.core import tools
 from simdat.core import plot
 from simdat.core import ml
@@ -245,6 +246,35 @@ class OpenFace(OFTools):
             io.check_parent(self.args.outf)
             io.write_json(results, fname=self.args.outf)
         return results
+
+    def cal_distance(self, rep1, rep2):
+        """ Calculate distance between two representations """
+
+        d = rep1 - rep2
+        return np.dot(d, d)
+
+    def compare(self, item1, item2, thre=1.1):
+        """ Actual function to compare two rep items
+
+        @param item1: rep item of the first image returned by get_reps
+        @param item2: rep item of the second image returned by get_reps
+
+        Keyword Arguments:
+        thre -- distance threthold to decide whether two faces are alike
+                (default: 1.1 which was suggested in the facenet paper)
+
+        @return bsim (True if the two are similar), d (face distance)
+
+        """
+
+        d = self.cal_distance(item1['rep'], item2['rep'])
+        bsim = True if d < thre else False
+        sim = 'LIKELY to be same person' if bsim else 'NOT SIMILAR'
+        p1 = os.path.basename(item1['path'])
+        p2 = os.path.basename(item2['path'])
+        print('[oftools] %s and %s are %s (distance = %.2f)'
+              % (p1, p2, sim, d))
+        return bsim, d
 
     def align(self, imgPath):
         """Get aligned face(s) of a image
