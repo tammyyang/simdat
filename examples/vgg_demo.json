@@ -1,0 +1,4 @@
+{
+    "weight_path": "/docker/vgg/vgg16_weights.h5",
+    "imagenet_labels": "/docker/vgg/synset_words.txt"
+}

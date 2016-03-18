@@ -1,3 +1,4 @@
+import sys
 import theano
 import numpy as np
 import scipy as sp
@@ -52,6 +53,11 @@ class DP:
 class DPModel(DP):
     def __init__(self):
         self.layers = None
+        self.dpmodel_init()
+
+    def dpmodel_init(self):
+        """ place holder for child class """
+        pass
 
     def VGG_19(self, weights_path=None):
         '''VGG-19 model, source from https://goo.gl/rvcNDw'''

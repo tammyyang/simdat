@@ -15,8 +15,8 @@ imnet = dp_models.ImageNet()
 im = image.IMAGE()
 pl = plot.PLOT()
 
-weight_path = '/tammy/SOURCES/keras/examples/vgg16_weights.h5'
-img_path = 'airportwaitingarea_0001.jpg'
+weight_path = '/home/tammy/SOURCES/keras/examples/vgg16_weights.h5'
+img_path = 'images/0001/airportwaitingarea_0004.jpg'
 t0 = pl.print_time(t0, 'initiate')
 
 model = mdls.VGG_16(weight_path)
@@ -25,7 +25,8 @@ sgd = SGD(lr=0.1, decay=1e-6, momentum=0.9, nesterov=True)
 model.compile(optimizer=sgd, loss='categorical_crossentropy')
 t0 = pl.print_time(t0, 'compile')
 
-imgs = im.find_images()
+imgs = [img_path]
+# imgs = im.find_images()
 t0 = pl.print_time(t0, 'find images')
 for fimg in imgs:
     t0 = pl.print_time(t0, 'compute for one image')
@@ -37,11 +38,9 @@ for fimg in imgs:
     out = model.predict(img)
     prob = out.ravel()
     pl.plot(out.ravel())
-    imagenet_labels_filename = '/tammy/ImageNet/synset_words.txt'
+    imagenet_labels_filename = '/home/tammy/ImageNet/synset_words.txt'
     results = imnet.find_topk(prob, fname=imagenet_labels_filename)
-    for stack in ['conv1', 'conv2', 'conv3', 'conv4', 'conv5']:
-        for l in mdls.layers[stack]:
-            l.trainable = False
+    print(results)
 
     '''
     get_feature = theano.function([model.layers[0].input],
