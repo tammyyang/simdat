@@ -126,6 +126,10 @@ def main():
     parser.add_argument(
         "-t", "--test", action='store_true'
         )
+    parser.add_argument(
+        "-a", "--all", action='store_true',
+        help="Seatch for all images instead of those in 24 hours."
+        )
     args = parser.parse_args()
 
     t0 = time.time()
@@ -137,6 +141,8 @@ def main():
                         '&espv=2&biw=1366&bih=667&',
                         'site=webhp&source=lnms&tbm=isch&sa=X',
                         '&ei=XosDVaCXD8TasATItgE&ved=0CAcQ_AUoAg'])
+    if not args.all:
+        url_base = url_base + '&tbs=itp:photo,qdr:w'
     for search_keyword in search_for:
         results[search_keyword] = []
         print (" Item name = ", search_keyword)

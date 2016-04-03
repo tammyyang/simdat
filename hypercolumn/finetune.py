@@ -16,7 +16,7 @@ t0 = time.time()
 mdls = dp_models.DPModel()
 imnet = dp_models.ImageNet()
 
-weight_path = '/tammy/SOURCES/keras/examples/vgg16_weights.h5'
+weight_path = '/home/tammy/SOURCES/keras/examples/vgg16_weights.h5'
 t0 = pl.print_time(t0, 'initiate')
 
 model = mdls.VGG_16(weight_path)

@@ -197,6 +197,51 @@ class DPModel(DP):
 
         return model
 
+    def Simple(self, cats, img_row=224, img_col=224, conv_size=3,
+               colors=3, weights_path=None, filter_size=32):
+        '''Simple conv model to the best MNIST result.
+           The input shape should be (n_imgs, colors, img_row, img_col).
+
+        @param cats: total number of final categories
+
+        Arguments:
+        img_row -- number of rows of the image
+        img_col -- number of cols of the image
+        conv_size -- size of the conv window
+        colors  -- colors of the image (3 for RGB)
+        weights_path -- used for loading the existing model
+        filter_size -- number of the filters of the first conv layer
+
+        '''
+        self.layers = OrderedDict([
+            ('conv1', [
+                Convolution2D(filter_size, conv_size, conv_size,
+                              activation='relu', border_mode='valid',
+                              input_shape=(colors, img_row, img_col)),
+                Convolution2D(filter_size*2, conv_size, conv_size,
+                              activation='relu'),
+                MaxPooling2D((2, 2),  strides=(1, 1)),
+                Dropout(0.25)
+            ]),
+            ('fc', [
+                Flatten(),
+                Dense(128, activation='relu'),
+                Dropout(0.5),
+            ]),
+            ('classify', [
+                Dense(cats, activation='softmax')
+            ])
+        ])
+        model = Sequential()
+        for stack in self.layers:
+            for l in self.layers[stack]:
+                model.add(l)
+
+        if weights_path:
+            model.load_weights(weights_path)
+
+        return model
+
 
 class ImageNet(image.IMAGE):
     def get_labels(self, fname='synset_words.txt'):
