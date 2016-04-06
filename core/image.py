@@ -30,7 +30,7 @@ class IMAGE(tools.TOOLS):
         """
 
         return self.find_files(dir_path=dir_path, keyword=keyword,
-                               suffix=('.jpg', 'png'))
+                               suffix=('.jpg', 'png', '.JPEG'))
 
     def get_img_info(self, img_path):
         """Find image size and pixel array

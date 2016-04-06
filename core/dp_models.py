@@ -1,4 +1,5 @@
 import sys
+import h5py
 import theano
 import numpy as np
 import scipy as sp
@@ -97,10 +98,12 @@ class DP:
         # convert class vectors to binary class matrices
         Y_train = np_utils.to_categorical(y_train, nb_classes)
         Y_test = np_utils.to_categorical(y_test, nb_classes)
-        print('[dp_models] X_train shape:', X_train.shape)
-        print('[dp_models] Y_train shape:', Y_train.shape)
-        print('[dp_models] %i train samples' % X_train.shape[0])
-        print('[dp_models] %i test samples' % X_test.shape[0])
+        print('[DP] X_train shape: (%i, %i)'
+              % (X_train.shape[0], X_train.shape[1]))
+        print('[DP] Y_train shape: (%i, %i)'
+              % (Y_train.shape[0], Y_train.shape[1]))
+        print('[DP] %i train samples' % X_train.shape[0])
+        print('[DP] %i test samples' % X_test.shape[0])
         return X_train, X_test, Y_train, Y_test, classes
 
 
@@ -185,7 +188,7 @@ class DPModel(DP):
 
         return model
 
-    def VGG_16(self, weights_path=None):
+    def VGG_16(self, weights_path=None, lastFC=True):
         '''VGG-16 model, source from https://goo.gl/qqM88H'''
 
         self.layers = OrderedDict([
@@ -243,13 +246,40 @@ class DPModel(DP):
         ])
         model = Sequential()
         for stack in self.layers:
+            if stack == 'classify' and not lastFC:
+                print('[DPModels] Skip the last FC layer')
+                continue
             for l in self.layers[stack]:
                 model.add(l)
 
         if weights_path:
-            model.load_weights(weights_path)
+            self.load_weights(model, weights_path, lastFC=lastFC)
 
         return model
+
+    def load_weights(self, model, weights_path, lastFC=True):
+        """ Load model weights
+
+        @param model: the model
+        @param weight_path: path of the weight file
+
+        Arguments:
+
+        lastFC -- True to load weights for the last FC layer (default: True)
+
+        """
+        if lastFC:
+            model.load_weights(weights_path)
+            return
+        f = h5py.File(weights_path)
+        for k in range(f.attrs['nb_layers']):
+            if k >= len(model.layers):
+                break
+            g = f['layer_{}'.format(k)]
+            weights = [g['param_{}'.format(p)] for p in range(g.attrs['nb_params'])]
+            model.layers[k].set_weights(weights)
+        f.close()
+        return
 
     def Simple(self, cats, img_row=224, img_col=224, conv_size=3,
                colors=3, weights_path=None, filter_size=32):

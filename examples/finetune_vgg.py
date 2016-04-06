@@ -44,7 +44,7 @@ def main():
 
     t0 = time.time()
     mdls = dp_models.DPModel()
-    tl = tools.TOOLS
+    tl = tools.TOOLS()
 
     args = parser.parse_args()
     np.random.seed(args.seed)
@@ -54,13 +54,16 @@ def main():
     nclasses = len(classes)
     t0 = tl.print_time(t0, 'prepare data')
 
-    model = mdls.VGG_16(args.weights)
+    model = mdls.VGG_16(args.weights, lastFC=False)
     sgd = SGD(lr=0.1, decay=1e-6, momentum=0.9, nesterov=True)
     print('[finetune_vgg] Adding Dense(nclasses) and Activation(softmax)')
-    model.add(Dense(nclasses))
-    model.add(Activation('softmax'))
+    model.add(Dense(nclasses, activation='softmax'))
     model.compile(optimizer=sgd, loss='categorical_crossentropy')
     t0 = tl.print_time(t0, 'compile the model to be fine tuned.')
+
+    for stack in ['conv1', 'conv2', 'conv3', 'conv4', 'conv5']:
+        for l in mdls.layers[stack]:
+            l.trainable = False
 
     model.fit(X_train, Y_train, batch_size=args.batchsize,
               nb_epoch=args.epochs, show_accuracy=True, verbose=1,

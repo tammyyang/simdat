@@ -38,7 +38,7 @@ def main():
 
     t0 = time.time()
     mdls = dp_models.DPModel()
-    tl = tools.TOOLS
+    tl = tools.TOOLS()
 
     args = parser.parse_args()
     np.random.seed(args.seed)
