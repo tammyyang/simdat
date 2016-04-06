@@ -53,6 +53,14 @@ def main():
         "--momentum", type=float, default=0.9,
         help="Momentum of SGD lr, default 0.9."
         )
+    parser.add_argument(
+        "--output-json", type=str, default='model.json', dest='ojson',
+        help="Path to output the model as json file (default: ./model.json)"
+        )
+    parser.add_argument(
+        "--output-weights", type=str, default='weights.h5', dest='oweights',
+        help="Path to output the model weights (default: ./weights.h5)"
+        )
 
     t0 = time.time()
     mdls = dp_models.DPModel()
@@ -69,6 +77,9 @@ def main():
     model = mdls.VGG_16(args.weights, lastFC=False)
     sgd = SGD(lr=args.lr, decay=args.lrdecay,
               momentum=args.momentum, nesterov=True)
+    print('[finetune_vgg] lr = %f, decay = %f, momentum = %f'
+          % (args.lr, args.lrdecay, args.momentum))
+
     print('[finetune_vgg] Adding Dense(nclasses, activation=softmax) layer.')
     model.add(Dense(nclasses, activation='softmax'))
     model.compile(optimizer=sgd, loss='categorical_crossentropy')
@@ -86,6 +97,10 @@ def main():
     print('Test score:', score[0])
     print('Test accuracy:', score[1])
     t0 = tl.print_time(t0, 'evaluate')
+
+    json_string = model.to_json()
+    open(args.ojson, 'w').write(json_string)
+    model.save_weights(args.oweights, overwrite=True)
 
 if __name__ == '__main__':
     main()
