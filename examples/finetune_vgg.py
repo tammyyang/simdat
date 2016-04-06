@@ -41,6 +41,18 @@ def main():
         "--epochs", type=int, default=20,
         help="Number of epochs, default 20."
         )
+    parser.add_argument(
+        "--lr", type=float, default=0.001,
+        help="Learning rate of SGD, default 0.001."
+        )
+    parser.add_argument(
+        "--lr-decay", type=float, default=1e-6, dest='lrdecay',
+        help="Decay of SGD lr, default 1e-6."
+        )
+    parser.add_argument(
+        "--momentum", type=float, default=0.9,
+        help="Momentum of SGD lr, default 0.9."
+        )
 
     t0 = time.time()
     mdls = dp_models.DPModel()
@@ -55,8 +67,9 @@ def main():
     t0 = tl.print_time(t0, 'prepare data')
 
     model = mdls.VGG_16(args.weights, lastFC=False)
-    sgd = SGD(lr=0.1, decay=1e-6, momentum=0.9, nesterov=True)
-    print('[finetune_vgg] Adding Dense(nclasses) and Activation(softmax)')
+    sgd = SGD(lr=args.lr, decay=args.lrdecay,
+              momentum=args.momentum, nesterov=True)
+    print('[finetune_vgg] Adding Dense(nclasses, activation=softmax) layer.')
     model.add(Dense(nclasses, activation='softmax'))
     model.compile(optimizer=sgd, loss='categorical_crossentropy')
     t0 = tl.print_time(t0, 'compile the model to be fine tuned.')
