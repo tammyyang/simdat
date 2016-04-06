@@ -390,6 +390,9 @@ class IMAGE(tools.TOOLS):
             sys.exit(1)
         from cv2 import imread, resize
         img = imread(fimg)
+        if img is None:
+            print("[IMAGE] Error reading file %s" % fimg)
+            return img
         if size is not None:
             img = resize(img, size)
         return img

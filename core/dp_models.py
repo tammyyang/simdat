@@ -9,6 +9,7 @@ from keras.models import Sequential
 from keras.layers.core import Flatten, Dense, Dropout
 from keras.layers.convolutional import Convolution2D, MaxPooling2D
 from keras.layers.convolutional import ZeroPadding2D
+from keras.utils import np_utils
 
 
 class DP:
@@ -48,6 +49,59 @@ class DP:
         imcluster = imcluster.reshape((new_size,))
         imcluster = cluster_labels
         return imcluster.reshape(ori_size, ori_size)
+
+    def prepare_data(self, path, img_rows, img_cols):
+        """ Read images as dp inputs
+
+        @param path: path of the parent folder of images
+        @param img_rows: number rows used to resize the images
+        @param img_cols: number columns used to resize the images
+
+        """
+
+        from simdat.core import image
+        from simdat.core import ml
+        im = image.IMAGE()
+        mlr = ml.MLRun()
+
+        imgs = im.find_images(dir_path=path)
+        X = []
+        Y = []
+        classes = {}
+        counter = 0
+        for fimg in imgs:
+            if counter % 20 == 0:
+                print('Reading images: %i' % counter)
+            _cls_ix = mlr.get_class_from_path(fimg)
+            if _cls_ix not in classes:
+                classes[_cls_ix] = len(classes)
+            _img_original = im.read(fimg, size=(img_rows, img_cols))
+            if _img_original is None:
+                continue
+            _img = _img_original.transpose((2, 0, 1))
+            X.append(_img)
+            Y.append(classes[_cls_ix])
+            counter += 1
+
+        nb_classes = len(classes)
+
+        X = np.array(X)
+        Y = np.array(Y)
+
+        X_train, X_test, y_train, y_test = mlr.split_samples(X, Y)
+        X_train = X_train.astype('float32')
+        X_test = X_test.astype('float32')
+        X_train /= 255
+        X_test /= 255
+
+        # convert class vectors to binary class matrices
+        Y_train = np_utils.to_categorical(y_train, nb_classes)
+        Y_test = np_utils.to_categorical(y_test, nb_classes)
+        print('[dp_models] X_train shape:', X_train.shape)
+        print('[dp_models] Y_train shape:', Y_train.shape)
+        print('[dp_models] %i train samples' % X_train.shape[0])
+        print('[dp_models] %i test samples' % X_test.shape[0])
+        return X_train, X_test, Y_train, Y_test, classes
 
 
 class DPModel(DP):

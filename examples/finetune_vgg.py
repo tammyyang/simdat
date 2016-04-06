@@ -2,8 +2,9 @@ import time
 import argparse
 import numpy as np
 from simdat.core import dp_models
-from simdat.core import tools
 from keras.optimizers import SGD
+from simdat.core import tools
+from keras.layers.core import Dense, Activation
 from keras.utils import np_utils
 
 
@@ -14,6 +15,11 @@ def main():
     parser.add_argument(
         "-p", "--path", type=str, default='.',
         help="Path where the images are. Default: $PWD."
+        )
+    parser.add_argument(
+        "-w", "--weights", type=str,
+        default='/home/tammy/SOURCES/keras/examples/vgg16_weights.h5',
+        help="Path of vgg weights"
         )
     parser.add_argument(
         "--img-rows", type=int, default=224, dest='rows',
@@ -45,12 +51,16 @@ def main():
 
     X_train, X_test, Y_train, Y_test, classes = mdls.prepare_data(
         args.path, args.rows, args.cols)
+    nclasses = len(classes)
     t0 = tl.print_time(t0, 'prepare data')
-    model = mdls.Simple(len(classes), img_row=X_train.shape[2],
-                        img_col=X_train.shape[3], colors=X_train.shape[1])
+
+    model = mdls.VGG_16(args.weights)
     sgd = SGD(lr=0.1, decay=1e-6, momentum=0.9, nesterov=True)
+    print('[finetune_vgg] Adding Dense(nclasses) and Activation(softmax)')
+    model.add(Dense(nclasses))
+    model.add(Activation('softmax'))
     model.compile(optimizer=sgd, loss='categorical_crossentropy')
-    t0 = tl.print_time(t0, 'compile the Simple model')
+    t0 = tl.print_time(t0, 'compile the model to be fine tuned.')
 
     model.fit(X_train, Y_train, batch_size=args.batchsize,
               nb_epoch=args.epochs, show_accuracy=True, verbose=1,
