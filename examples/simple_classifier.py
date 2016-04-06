@@ -1,9 +1,9 @@
-import numpy as np
+import time
 import argparse
+import numpy as np
 from simdat.core import dp_models
 from simdat.core import image
 from simdat.core import ml
-from keras.datasets import mnist
 from keras.optimizers import SGD
 from keras.utils import np_utils
 
@@ -74,23 +74,28 @@ def main():
         help="Number of epochs, default 20."
         )
 
+    t0 = time.time()
     args = parser.parse_args()
     np.random.seed(args.seed)
 
     X_train, X_test, Y_train, Y_test, classes = prepare_data(
         args.path, args.rows, args.cols)
+    t0 = im.print_time(t0, 'prepare data')
     mdls = dp_models.DPModel()
     model = mdls.Simple(len(classes), img_row=X_train.shape[2],
                         img_col=X_train.shape[3], colors=X_train.shape[1])
     sgd = SGD(lr=0.1, decay=1e-6, momentum=0.9, nesterov=True)
     model.compile(optimizer=sgd, loss='categorical_crossentropy')
+    t0 = im.print_time(t0, 'compile the Simple model')
 
     model.fit(X_train, Y_train, batch_size=args.batchsize,
               nb_epoch=args.epochs, show_accuracy=True, verbose=1,
               validation_data=(X_test, Y_test))
+    t0 = im.print_time(t0, 'fit')
     score = model.evaluate(X_test, Y_test, show_accuracy=True, verbose=0)
     print('Test score:', score[0])
     print('Test accuracy:', score[1])
+    t0 = im.print_time(t0, 'evaluate')
 
 if __name__ == '__main__':
     main()
