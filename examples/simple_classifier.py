@@ -48,7 +48,7 @@ def main():
     t0 = tl.print_time(t0, 'prepare data')
     model = mdls.Simple(len(classes), img_row=X_train.shape[2],
                         img_col=X_train.shape[3], colors=X_train.shape[1])
-    sgd = SGD(lr=0.1, decay=1e-6, momentum=0.9, nesterov=True)
+    sgd = SGD(lr=0.001, decay=1e-6, momentum=0.9, nesterov=True)
     model.compile(optimizer=sgd, loss='categorical_crossentropy')
     t0 = tl.print_time(t0, 'compile the Simple model')
 

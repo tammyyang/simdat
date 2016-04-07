@@ -1,3 +1,4 @@
+import os
 import sys
 import h5py
 import theano
@@ -6,6 +7,7 @@ import scipy as sp
 from collections import OrderedDict
 from sklearn import cluster
 from simdat.core import image
+from simdat.core import ml
 from keras.models import Sequential
 from keras.layers.core import Flatten, Dense, Dropout
 from keras.layers.convolutional import Convolution2D, MaxPooling2D
@@ -15,6 +17,12 @@ from keras.utils import np_utils
 
 class DP:
     def __init__(self):
+        self.im = image.IMAGE()
+        self.mlr = ml.MLRun()
+        self.dp_init()
+
+    def dp_init(self):
+        """ place holder for child class """
         pass
 
     def extract_hypercolumn(self, model, la_idx, instance):
@@ -60,55 +68,78 @@ class DP:
 
         """
 
-        from simdat.core import image
-        from simdat.core import ml
-        im = image.IMAGE()
-        mlr = ml.MLRun()
-
-        imgs = im.find_images(dir_path=path)
+        imgs = self.im.find_images(dir_path=path)
         X = []
         Y = []
+        F = []
         classes = {}
         counter = 0
+
         for fimg in imgs:
             if counter % 20 == 0:
-                print('Reading images: %i' % counter)
-            _cls_ix = mlr.get_class_from_path(fimg)
+                print('[DP] Reading images: %i' % counter)
+            _cls_ix = self.mlr.get_class_from_path(fimg)
             if _cls_ix not in classes:
                 classes[_cls_ix] = len(classes)
-            _img_original = im.read(fimg, size=(img_rows, img_cols))
+            _img_original = self.im.read(fimg, size=(img_rows, img_cols))
             if _img_original is None:
                 continue
             _img = _img_original.transpose((2, 0, 1))
             X.append(_img)
             Y.append(classes[_cls_ix])
+            F.append(os.path.basename(fimg))
             counter += 1
 
-        nb_classes = len(classes)
+        X = np.array(X).astype('float32')
+        X /= 255
+        Y = np_utils.to_categorical(np.array(Y), len(classes))
 
-        X = np.array(X)
-        Y = np.array(Y)
+        return np.array(X), np.array(Y), classes, F
 
-        X_train, X_test, y_train, y_test = mlr.split_samples(X, Y)
-        X_train = X_train.astype('float32')
-        X_test = X_test.astype('float32')
-        X_train /= 255
-        X_test /= 255
+    def prepare_data_test(self, path, img_rows, img_cols):
+        """ Read images as dp inputs
 
-        # convert class vectors to binary class matrices
-        Y_train = np_utils.to_categorical(y_train, nb_classes)
-        Y_test = np_utils.to_categorical(y_test, nb_classes)
+        @param path: path of the parent folder of images
+        @param img_rows: number rows used to resize the images
+        @param img_cols: number columns used to resize the images
+
+        """
+        return self.prepare_data(path, img_rows, img_cols)
+
+    def prepare_data_train(self, path, img_rows, img_cols, test_size=None):
+        """ Read images as dp inputs
+
+        @param path: path of the parent folder of images
+        @param img_rows: number rows used to resize the images
+        @param img_cols: number columns used to resize the images
+
+        Arguments:
+
+        test_size -- size of the testing sample (default: 0.33)
+
+        """
+
+        X, Y, classes, F = self.prepare_data(path, img_rows, img_cols)
+
+        if type(test_size) is float:
+            self.mlr.args.test_size = test_size
+            print('[DP] Changing test_size to %f. The one written in'
+                  'ml.json will be overwritten!' % test_size)
+
+        X_train, X_test, Y_train, Y_test = self.mlr.split_samples(X, Y)
         print('[DP] X_train shape: (%i, %i)'
               % (X_train.shape[0], X_train.shape[1]))
         print('[DP] Y_train shape: (%i, %i)'
               % (Y_train.shape[0], Y_train.shape[1]))
         print('[DP] %i train samples' % X_train.shape[0])
         print('[DP] %i test samples' % X_test.shape[0])
+
         return X_train, X_test, Y_train, Y_test, classes
 
 
 class DPModel(DP):
-    def __init__(self):
+    def dp_init(self):
+        """ init called by the DP class """
         self.layers = None
         self.dpmodel_init()
 
