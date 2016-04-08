@@ -22,7 +22,7 @@ def main():
         help="Path where the images are. Default: $PWD."
         )
     parser.add_argument(
-        "-w", "--weights", type=str,
+        "-v", "--vgg-weights", type=str, dest='weights',
         default='/home/tammy/SOURCES/keras/examples/vgg16_weights.h5',
         help="Path of vgg weights"
         )
@@ -39,12 +39,8 @@ def main():
         help="Random seed, default: 1337."
         )
     parser.add_argument(
-        "--output-json", type=str, default='model.json', dest='ojson',
-        help="Path to output the model as json file (default: ./model.json)"
-        )
-    parser.add_argument(
-        "--output-weights", type=str, default='weights.h5', dest='oweights',
-        help="Path to output the model weights (default: ./weights.h5)"
+        "--model-loc", type=str, default=os.getcwd(), dest='ofolder',
+        help="Path of the folder to output or to load the model."
         )
     parser.add_argument(
         "--batch-size", type=int, default=64, dest='batchsize',
@@ -90,10 +86,16 @@ def main():
     args = parser.parse_args()
     np.random.seed(args.seed)
 
+    path_model = os.path.join(args.ofolder, 'model.json')
+    path_weights = os.path.join(args.ofolder, 'weights.h5')
+    path_cls = os.path.join(args.ofolder, 'classes.json')
+
     if args.sbp_name == 'train':
+        tl.check_dir(args.ofolder)
+
         X_train, X_test, Y_train, Y_test, classes = mdls.prepare_data_train(
             args.path, args.rows, args.cols)
-        tl.write_json(classes, fname='./classes.json')
+        tl.write_json(classes, fname=path_cls)
         nclasses = len(classes)
         t0 = tl.print_time(t0, 'prepare data')
 
@@ -122,21 +124,21 @@ def main():
         t0 = tl.print_time(t0, 'evaluate')
 
         json_string = model.to_json()
-        open(args.ojson, 'w').write(json_string)
-        model.save_weights(args.oweights, overwrite=True)
+        open(path_model, 'w').write(json_string)
+        model.save_weights(path_weights, overwrite=True)
 
     elif args.sbp_name == 'predict':
         X_test, Y_test, classes, F = mdls.prepare_data_test(
             args.path, args.rows, args.cols)
         t0 = tl.print_time(t0, 'prepare data')
 
-        model = model_from_json(open(args.ojson).read())
+        model = model_from_json(open(path_model).read())
         t0 = tl.print_time(t0, 'load model from json')
 
-        model.load_weights(args.oweights)
+        model.load_weights(path_weights)
         t0 = tl.print_time(t0, 'load model weights')
 
-        cls_map = tl.parse_json(args.model_path + '/classes.json')
+        cls_map = tl.parse_json(path_cls)
         results = model.predict_proba(
             X_test, batch_size=args.batchsize, verbose=1)
         for i in range(0, len(F)):
