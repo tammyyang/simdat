@@ -29,6 +29,8 @@ class IMAGE(tools.TOOLS):
 
         """
 
+        if dir_path is not None and os.path.isfile(dir_path):
+            return [dir_path]
         return self.find_files(dir_path=dir_path, keyword=keyword,
                                suffix=('.jpg', 'png', '.JPEG'))
 

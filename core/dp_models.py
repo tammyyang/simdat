@@ -1,7 +1,6 @@
 import os
 import sys
 import h5py
-import theano
 import numpy as np
 import scipy as sp
 from collections import OrderedDict
@@ -26,13 +25,14 @@ class DP:
         pass
 
     def extract_hypercolumn(self, model, la_idx, instance):
-        ''' Extract HyperColumn of pixels
+        ''' Extract HyperColumn of pixels (Theano Only)
 
         @param model: input DP model
         @param la_idx: indexes of the layers to be extract
         @param instamce: image instance used to extract the hypercolumns
 
         '''
+        import theano
         layers = [model.layers[li].get_output(train=False) for li in la_idx]
         get_feature = theano.function([model.layers[0].input], layers,
                                       allow_input_downcast=False)
