@@ -16,7 +16,7 @@ else:
     parent = os.getcwd()
 print("Looking for images in %s" % parent)
 
-temp = '/home/tammy/SOURCES/simdat/examples/html_plots.template'
+temp = '/home/tammy/SOURCES/simdat/tools/html_plots.template'
 if len(args) > 1:
     temp = args[1]
 
