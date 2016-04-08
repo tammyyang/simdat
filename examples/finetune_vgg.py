@@ -43,12 +43,16 @@ def main():
         help="Path of the folder to output or to load the model."
         )
     parser.add_argument(
-        "--batch-size", type=int, default=64, dest='batchsize',
-        help="Size of the mini batch. Default: 64."
+        "--batch-size", type=int, default=80, dest='batchsize',
+        help="Size of the mini batch. Default: 80."
         )
 
     predict_parser = subparsers.add_parser(
         "predict", help='Predict the images.'
+        )
+    predict_parser.add_argument(
+        "--input", type=str, default=None,
+        help="Input image to be predicted, this overwrites --path option."
         )
     predict_parser.add_argument(
         "--threshold", type=float, default=0.0,
@@ -57,6 +61,11 @@ def main():
     predict_parser.add_argument(
         "--model-loc", type=str, default=os.getcwd(), dest='model_path',
         help="Directory where classes.json is."
+        )
+    predict_parser.add_argument(
+        "--output-loc", type=str, dest='output_loc',
+        default='/home/tammy/www/prediction.json',
+        help="Path to store the prediction results."
         )
 
     train_parser = subparsers.add_parser(
@@ -141,14 +150,19 @@ def main():
         cls_map = tl.parse_json(path_cls)
         results = model.predict_proba(
             X_test, batch_size=args.batchsize, verbose=1)
+        outputs = []
         for i in range(0, len(F)):
             _cls = results[i].argmax()
             max_prob = results[i][_cls]
+            outputs.append({'input': F[i], 'max_probability': max_prob})
             if max_prob >= 0.7:
                 cls = [b for b in cls_map if cls_map[b] == _cls][0]
                 print('%s: %s' % (F[i], cls))
+                outputs[-1]['class'] = cls
             else:
                 print('Low probability (%.2f), cannot find a match' % max_prob)
+                outputs[-1]['class'] = None
+        tl.write_json(outputs, fname=args.output_loc)
 
     else:
         print('Wrong command.')
