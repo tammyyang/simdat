@@ -379,6 +379,43 @@ class IMAGE(tools.TOOLS):
         cv2.imwrite(fname, img)
         return 0
 
+    def read_and_random_crop(self, fimg, size=None, ratio=0.7):
+        """Access image pixels
+
+        @param fimg: input image file name
+
+        Keyword arguments:
+        size -- tuple of new size (default None)
+        ratio -- used to determin the croped size (default 0.7)
+
+        @return imgs: dictionary of the croped images
+
+        """
+        img = self.read(fimg)
+        if img is None:
+            return img
+        nrow = len(img)
+        ncol = len(img[0])
+        imgs = {}
+        imgs['crop_img_lt'] = img[0:int(nrow*ratio),
+                                  0:int(ncol*ratio)]
+        imgs['crop_img_lb'] = img[int(nrow*(1-ratio)):nrow,
+                                  0:int(ncol*ratio)]
+        imgs['crop_img_rt'] = img[0:int(nrow*ratio),
+                                  int(ncol*(1-ratio)):ncol]
+        imgs['crop_img_rb'] = img[int(nrow*(1-ratio)):nrow,
+                                  int(ncol*(1-ratio)):ncol]
+        if size is not None:
+            for corner in imgs:
+                imgs[corner] = self.resize(imgs[corner], size)
+        return imgs
+
+    def resize(self, img, size):
+        """ Resize the image """
+
+        from cv2 import resize
+        return resize(img, size)
+
     def read(self, fimg, size=None):
         """Access image pixels
 
@@ -390,13 +427,15 @@ class IMAGE(tools.TOOLS):
         """
         if not self.check_exist(fimg):
             sys.exit(1)
-        from cv2 import imread, resize
+
+        from cv2 import imread
         img = imread(fimg)
         if img is None:
             print("[IMAGE] Error reading file %s" % fimg)
             return img
         if size is not None:
-            img = resize(img, size)
+            img = self.resize(img, size)
+
         return img
 
     def get_jpeg_quality(self, img_path):

@@ -87,6 +87,10 @@ def main():
         "--momentum", type=float, default=0.9,
         help="Momentum of SGD lr, default 0.9."
         )
+    train_parser.add_argument(
+        "--rc", default=False, action='store_true',
+        help="Randomly crop the images (default: False)."
+        )
 
     t0 = time.time()
     mdls = dp_models.DPModel()
@@ -103,7 +107,7 @@ def main():
         tl.check_dir(args.ofolder)
 
         X_train, X_test, Y_train, Y_test, classes = mdls.prepare_data_train(
-            args.path, args.rows, args.cols)
+            args.path, args.rows, args.cols, rc=args.rc)
         tl.write_json(classes, fname=path_cls)
         nclasses = len(classes)
         t0 = tl.print_time(t0, 'prepare data')

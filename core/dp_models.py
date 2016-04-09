@@ -59,12 +59,15 @@ class DP:
         imcluster = cluster_labels
         return imcluster.reshape(ori_size, ori_size)
 
-    def prepare_data(self, path, img_rows, img_cols):
+    def prepare_data(self, path, img_rows, img_cols, rc=False):
         """ Read images as dp inputs
 
         @param path: path of the parent folder of images
         @param img_rows: number rows used to resize the images
         @param img_cols: number columns used to resize the images
+
+        Arguments:
+        rc -- True to random crop the images as four (default: False)
 
         """
 
@@ -75,19 +78,28 @@ class DP:
         classes = {}
         counter = 0
 
+        if rc:
+            print('[DP] Applying random crop to the image')
         for fimg in imgs:
             if counter % 20 == 0:
                 print('[DP] Reading images: %i' % counter)
             _cls_ix = self.mlr.get_class_from_path(fimg)
             if _cls_ix not in classes:
                 classes[_cls_ix] = len(classes)
-            _img_original = self.im.read(fimg, size=(img_rows, img_cols))
-            if _img_original is None:
+
+            if rc:
+                _img_original = self.im.read_and_random_crop(
+                    fimg, size=(img_rows, img_cols)).values()
+            else:
+                _img_original = [self.im.read(fimg, size=(img_rows, img_cols))]
+
+            if _img_original[0] is None:
                 continue
-            _img = _img_original.transpose((2, 0, 1))
-            X.append(_img)
-            Y.append(classes[_cls_ix])
-            F.append(os.path.basename(fimg))
+            for c in _img_original:
+                img = c.transpose((2, 0, 1))
+                X.append(img)
+                Y.append(classes[_cls_ix])
+                F.append(os.path.basename(fimg))
             counter += 1
 
         X = np.array(X).astype('float32')
@@ -106,7 +118,8 @@ class DP:
         """
         return self.prepare_data(path, img_rows, img_cols)
 
-    def prepare_data_train(self, path, img_rows, img_cols, test_size=None):
+    def prepare_data_train(self, path, img_rows, img_cols,
+                           test_size=None, rc=False):
         """ Read images as dp inputs
 
         @param path: path of the parent folder of images
@@ -119,7 +132,7 @@ class DP:
 
         """
 
-        X, Y, classes, F = self.prepare_data(path, img_rows, img_cols)
+        X, Y, classes, F = self.prepare_data(path, img_rows, img_cols, rc=rc)
 
         if type(test_size) is float:
             self.mlr.args.test_size = test_size
