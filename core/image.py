@@ -379,7 +379,7 @@ class IMAGE(tools.TOOLS):
         cv2.imwrite(fname, img)
         return 0
 
-    def read_and_random_crop(self, fimg, size=None, ratio=0.7):
+    def read_and_random_crop(self, fimg, size=None, ratio=0.7, save=False):
         """Access image pixels
 
         @param fimg: input image file name
@@ -405,9 +405,20 @@ class IMAGE(tools.TOOLS):
                                   int(ncol*(1-ratio)):ncol]
         imgs['crop_img_rb'] = img[int(nrow*(1-ratio)):nrow,
                                   int(ncol*(1-ratio)):ncol]
-        if size is not None:
-            for corner in imgs:
+        for corner in imgs:
+            if size is not None:
                 imgs[corner] = self.resize(imgs[corner], size)
+            if save:
+                dirname = os.path.dirname(fimg)
+                dirname = os.path.join(dirname, 'crops')
+                self.check_dir(dirname)
+
+                _fname = os.path.basename(fimg).split('.')
+                _fname.insert(-1, '_' + corner + '.')
+
+                fname = ''.join(_fname)
+                fname = os.path.join(dirname, fname)
+                self.save(imgs[corner], fname=fname)
         return imgs
 
     def resize(self, img, size):

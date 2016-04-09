@@ -3,6 +3,7 @@ import time
 import argparse
 import numpy as np
 from simdat.core import dp_models
+from simdat.core import image
 from keras.optimizers import SGD
 from simdat.core import tools
 from keras.layers.core import Dense, Activation
@@ -22,11 +23,6 @@ def main():
         help="Path where the images are. Default: $PWD."
         )
     parser.add_argument(
-        "-v", "--vgg-weights", type=str, dest='weights',
-        default='/home/tammy/SOURCES/keras/examples/vgg16_weights.h5',
-        help="Path of vgg weights"
-        )
-    parser.add_argument(
         "--img-rows", type=int, default=224, dest='rows',
         help="Rows of the images, default: 224."
         )
@@ -38,17 +34,17 @@ def main():
         "--seed", type=int, default=1337,
         help="Random seed, default: 1337."
         )
-    parser.add_argument(
-        "--model-loc", type=str, default=os.getcwd(), dest='ofolder',
-        help="Path of the folder to output or to load the model."
-        )
-    parser.add_argument(
-        "--batch-size", type=int, default=80, dest='batchsize',
-        help="Size of the mini batch. Default: 80."
-        )
 
     predict_parser = subparsers.add_parser(
         "predict", help='Predict the images.'
+        )
+    predict_parser.add_argument(
+        "--model-loc", type=str, default=os.getcwd(), dest='ofolder',
+        help="Path of the folder to output or to load the model."
+        )
+    predict_parser.add_argument(
+        "--batch-size", type=int, default=80, dest='batchsize',
+        help="Size of the mini batch. Default: 80."
         )
     predict_parser.add_argument(
         "--input", type=str, default=None,
@@ -59,10 +55,6 @@ def main():
         help="Threshold applied to judge whether it is identified correctly."
         )
     predict_parser.add_argument(
-        "--model-loc", type=str, default=os.getcwd(), dest='model_path',
-        help="Directory where classes.json is."
-        )
-    predict_parser.add_argument(
         "--output-loc", type=str, dest='output_loc',
         default='/home/tammy/www/prediction.json',
         help="Path to store the prediction results."
@@ -71,6 +63,19 @@ def main():
     train_parser = subparsers.add_parser(
         "train", help='Command to finetune the images.'
     )
+    train_parser.add_argument(
+        "-v", "--vgg-weights", type=str, dest='weights',
+        default='/home/tammy/SOURCES/keras/examples/vgg16_weights.h5',
+        help="Path of vgg weights"
+        )
+    train_parser.add_argument(
+        "--model-loc", type=str, default=os.getcwd(), dest='ofolder',
+        help="Path of the folder to output or to load the model."
+        )
+    train_parser.add_argument(
+        "--batch-size", type=int, default=80, dest='batchsize',
+        help="Size of the mini batch. Default: 80."
+        )
     train_parser.add_argument(
         "--epochs", type=int, default=20,
         help="Number of epochs, default 20."
@@ -91,6 +96,9 @@ def main():
         "--rc", default=False, action='store_true',
         help="Randomly crop the images (default: False)."
         )
+    crop_parser = subparsers.add_parser(
+        "augmentation", help='Generate scroped images.'
+    )
 
     t0 = time.time()
     mdls = dp_models.DPModel()
@@ -99,9 +107,10 @@ def main():
     args = parser.parse_args()
     np.random.seed(args.seed)
 
-    path_model = os.path.join(args.ofolder, 'model.json')
-    path_weights = os.path.join(args.ofolder, 'weights.h5')
-    path_cls = os.path.join(args.ofolder, 'classes.json')
+    if args.sbp_name in ['train', 'predict']:
+        path_model = os.path.join(args.ofolder, 'model.json')
+        path_weights = os.path.join(args.ofolder, 'weights.h5')
+        path_cls = os.path.join(args.ofolder, 'classes.json')
 
     if args.sbp_name == 'train':
         tl.check_dir(args.ofolder)
@@ -167,6 +176,12 @@ def main():
                 print('Low probability (%.2f), cannot find a match' % max_prob)
                 outputs[-1]['class'] = None
         tl.write_json(outputs, fname=args.output_loc)
+
+    elif args.sbp_name == 'augmentation':
+        simdat_im = image.IMAGE()
+        fimgs = simdat_im.find_images(dir_path=args.path)
+        for fimg in fimgs:
+            imgs = simdat_im.read_and_random_crop(fimg, save=True)
 
     else:
         print('Wrong command.')
