@@ -59,7 +59,7 @@ class DP:
         imcluster = cluster_labels
         return imcluster.reshape(ori_size, ori_size)
 
-    def prepare_data(self, path, img_rows, img_cols, rc=False):
+    def prepare_data(self, path, img_rows, img_cols, rc=False, scale=True):
         """ Read images as dp inputs
 
         @param path: path of the parent folder of images
@@ -103,12 +103,13 @@ class DP:
             counter += 1
 
         X = np.array(X).astype('float32')
-        X /= 255
+        if scale:
+            X /= 255
         Y = np_utils.to_categorical(np.array(Y), len(classes))
 
         return np.array(X), np.array(Y), classes, F
 
-    def prepare_data_test(self, path, img_rows, img_cols):
+    def prepare_data_test(self, path, img_rows, img_cols, scale=True):
         """ Read images as dp inputs
 
         @param path: path of the parent folder of images
@@ -116,10 +117,10 @@ class DP:
         @param img_cols: number columns used to resize the images
 
         """
-        return self.prepare_data(path, img_rows, img_cols)
+        return self.prepare_data(path, img_rows, img_cols, scale=scale)
 
     def prepare_data_train(self, path, img_rows, img_cols,
-                           test_size=None, rc=False):
+                           test_size=None, rc=False, scale=True):
         """ Read images as dp inputs
 
         @param path: path of the parent folder of images
@@ -132,7 +133,8 @@ class DP:
 
         """
 
-        X, Y, classes, F = self.prepare_data(path, img_rows, img_cols, rc=rc)
+        X, Y, classes, F = self.prepare_data(
+            path, img_rows, img_cols, rc=rc, scale=scale)
 
         if type(test_size) is float:
             self.mlr.args.test_size = test_size

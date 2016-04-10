@@ -9,6 +9,7 @@ from simdat.core import tools
 from keras.layers.core import Dense, Activation
 from keras.models import model_from_json
 from keras.utils import np_utils
+from keras.preprocessing.image import ImageDataGenerator
 
 
 def main():
@@ -62,7 +63,7 @@ def main():
 
     train_parser = subparsers.add_parser(
         "train", help='Command to finetune the images.'
-    )
+        )
     train_parser.add_argument(
         "-v", "--vgg-weights", type=str, dest='weights',
         default='/home/tammy/SOURCES/keras/examples/vgg16_weights.h5',
@@ -92,10 +93,16 @@ def main():
         "--momentum", type=float, default=0.9,
         help="Momentum of SGD lr, default 0.9."
         )
-    train_parser.add_argument(
+    group = train_parser.add_mutually_exclusive_group()
+    group.add_argument(
         "--rc", default=False, action='store_true',
         help="Randomly crop the images (default: False)."
         )
+    group.add_argument(
+        "--augmentation", default=False, action='store_true',
+        help="True to use ImageDataGenerator."
+        )
+
     crop_parser = subparsers.add_parser(
         "augmentation", help='Generate scroped images.'
     )
@@ -115,8 +122,11 @@ def main():
     if args.sbp_name == 'train':
         tl.check_dir(args.ofolder)
 
+        scale = True
+        if args.augmentation:
+            scale = False
         X_train, X_test, Y_train, Y_test, classes = mdls.prepare_data_train(
-            args.path, args.rows, args.cols, rc=args.rc)
+            args.path, args.rows, args.cols, rc=args.rc, scale=scale)
         tl.write_json(classes, fname=path_cls)
         nclasses = len(classes)
         t0 = tl.print_time(t0, 'prepare data')
@@ -136,9 +146,31 @@ def main():
             for l in mdls.layers[stack]:
                 l.trainable = False
 
-        model.fit(X_train, Y_train, batch_size=args.batchsize,
-                  nb_epoch=args.epochs, show_accuracy=True, verbose=1,
-                  validation_data=(X_test, Y_test))
+        if args.augmentation:
+            datagen = ImageDataGenerator(
+                featurewise_center=True,
+                samplewise_center=False,
+                featurewise_std_normalization=True,
+                samplewise_std_normalization=False,
+                zca_whitening=False,
+                rotation_range=20,
+                width_shift_range=0.2,
+                height_shift_range=0.2,
+                horizontal_flip=True,
+                vertical_flip=False)
+
+            datagen.fit(X_train)
+            model.fit_generator(
+                datagen.flow(X_train, Y_train, batch_size=args.batchsize),
+                samples_per_epoch=X_train.shape[0],
+                nb_epoch=args.epochs, show_accuracy=True,
+                validation_data=(X_test, Y_test),
+                nb_worker=1)
+
+        else:
+            model.fit(X_train, Y_train, batch_size=args.batchsize,
+                      nb_epoch=args.epochs, show_accuracy=True, verbose=1,
+                      validation_data=(X_test, Y_test))
         t0 = tl.print_time(t0, 'fit')
         score = model.evaluate(X_test, Y_test, show_accuracy=True, verbose=0)
         print('Test score:', score[0])
