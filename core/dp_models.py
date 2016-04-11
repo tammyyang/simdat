@@ -59,10 +59,10 @@ class DP:
         imcluster = cluster_labels
         return imcluster.reshape(ori_size, ori_size)
 
-    def prepare_data(self, path, img_rows, img_cols, rc=False, scale=True):
+    def prepare_data(self, img_loc, img_rows, img_cols, rc=False, scale=True):
         """ Read images as dp inputs
 
-        @param path: path of the parent folder of images
+        @param img_loc: path of the images or a list of image paths
         @param img_rows: number rows used to resize the images
         @param img_cols: number columns used to resize the images
 
@@ -71,7 +71,10 @@ class DP:
 
         """
 
-        imgs = self.im.find_images(dir_path=path)
+        if type(img_loc) is list:
+            imgs = lmg_loc
+        else:
+            imgs = self.im.find_images(dir_path=path)
         X = []
         Y = []
         F = []
@@ -109,21 +112,21 @@ class DP:
 
         return np.array(X), np.array(Y), classes, F
 
-    def prepare_data_test(self, path, img_rows, img_cols, scale=True):
+    def prepare_data_test(self, img_loc, img_rows, img_cols, scale=True):
         """ Read images as dp inputs
 
-        @param path: path of the parent folder of images
+        @param img_loc: path of the images or a list of image paths
         @param img_rows: number rows used to resize the images
         @param img_cols: number columns used to resize the images
 
         """
-        return self.prepare_data(path, img_rows, img_cols, scale=scale)
+        return self.prepare_data(img_loc, img_rows, img_cols, scale=scale)
 
-    def prepare_data_train(self, path, img_rows, img_cols,
+    def prepare_data_train(self, img_loc, img_rows, img_cols,
                            test_size=None, rc=False, scale=True):
         """ Read images as dp inputs
 
-        @param path: path of the parent folder of images
+        @param img_loc: path of the images or a list of image paths
         @param img_rows: number rows used to resize the images
         @param img_cols: number columns used to resize the images
 
@@ -134,7 +137,7 @@ class DP:
         """
 
         X, Y, classes, F = self.prepare_data(
-            path, img_rows, img_cols, rc=rc, scale=scale)
+            img_loc, img_rows, img_cols, rc=rc, scale=scale)
 
         if type(test_size) is float:
             self.mlr.args.test_size = test_size
