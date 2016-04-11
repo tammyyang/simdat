@@ -100,6 +100,15 @@ def main():
         "--size", type=int, default=10000,
         help="Size of the image batch (default: 10,000)"
         )
+    group1 = batch_train_parser.add_mutually_exclusive_group()
+    group1.add_argument(
+        "--rc", default=False, action='store_true',
+        help="Randomly crop the images (default: False)."
+        )
+    group1.add_argument(
+        "--augmentation", default=False, action='store_true',
+        help="True to use ImageDataGenerator."
+        )
 
     train_parser = subparsers.add_parser(
         "train", help='Command to finetune the images.'
@@ -183,7 +192,8 @@ def main():
                 if (i + 1)*args.size > len(imgs):
                     end = len(imgs)
                 X_train, X_test, Y_train, Y_test, _c = mdls.prepare_data_train(
-                    imgs[start:end], args.rows, args.cols, classes=classes)
+                    imgs[start:end], args.rows, args.cols,
+                    classes=classes, rc=args.rc)
                 model.fit(X_train, Y_train, batch_size=args.batchsize,
                           nb_epoch=1, show_accuracy=True, verbose=1,
                           validation_data=(X_test, Y_test))
