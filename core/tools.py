@@ -39,6 +39,23 @@ class TOOLS(object):
             suf = os.path.join(splits[0-i], suf)
         return suf
 
+    def find_folders(self, dir_path=None, keyword=None):
+        """Find folders under a directory
+
+        Keyword arguments:
+        dir_path -- path of the directory to check (default: '.')
+        keyword  -- keyword used to filter files (default: None)
+
+        @return output: a list of folders found
+
+        """
+        if dir_path is None:
+            dir_path = os.getcwd()
+        dirs = [x[1] for x in os.walk(dir_path)][0]
+        if keyword is not None:
+            dirs = [d for d in dirs if d.find(keyword) >= 0]
+        return dirs
+
     def find_files(self, dir_path=None, keyword=None,
                    suffix=('.json')):
         """Find files under a directory

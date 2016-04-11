@@ -11,6 +11,9 @@ from keras.models import model_from_json
 from keras.utils import np_utils
 from keras.preprocessing.image import ImageDataGenerator
 
+simdat_im = image.IMAGE()
+mdls = dp_models.DPModel()
+
 
 def main():
     parser = argparse.ArgumentParser(
@@ -61,6 +64,43 @@ def main():
         help="Path to store the prediction results."
         )
 
+    batch_train_parser = subparsers.add_parser(
+        "batch-train", help='Command to train with batches.'
+        )
+    batch_train_parser.add_argument(
+        "-v", "--vgg-weights", type=str, dest='weights',
+        default='/home/tammy/SOURCES/keras/examples/vgg16_weights.h5',
+        help="Path of vgg weights"
+        )
+    batch_train_parser.add_argument(
+        "--model-loc", type=str, default=os.getcwd(), dest='ofolder',
+        help="Path of the folder to output or to load the model."
+        )
+    batch_train_parser.add_argument(
+        "--batch-size", type=int, default=80, dest='batchsize',
+        help="Size of the mini batch. Default: 80."
+        )
+    batch_train_parser.add_argument(
+        "--epochs", type=int, default=20,
+        help="Number of epochs, default 20."
+        )
+    batch_train_parser.add_argument(
+        "--lr", type=float, default=0.001,
+        help="Learning rate of SGD, default 0.001."
+        )
+    batch_train_parser.add_argument(
+        "--lr-decay", type=float, default=1e-6, dest='lrdecay',
+        help="Decay of SGD lr, default 1e-6."
+        )
+    batch_train_parser.add_argument(
+        "--momentum", type=float, default=0.9,
+        help="Momentum of SGD lr, default 0.9."
+        )
+    batch_train_parser.add_argument(
+        "--size", type=int, default=10000,
+        help="Size of the image batch (default: 10,000)"
+        )
+
     train_parser = subparsers.add_parser(
         "train", help='Command to finetune the images.'
         )
@@ -108,18 +148,49 @@ def main():
     )
 
     t0 = time.time()
-    mdls = dp_models.DPModel()
     tl = tools.DATA()
 
     args = parser.parse_args()
     np.random.seed(args.seed)
 
-    if args.sbp_name in ['train', 'predict']:
+    if args.sbp_name in ['train', 'predict', 'batch-train']:
         path_model = os.path.join(args.ofolder, 'model.json')
         path_weights = os.path.join(args.ofolder, 'weights.h5')
         path_cls = os.path.join(args.ofolder, 'classes.json')
 
-    if args.sbp_name == 'train':
+    if args.sbp_name == 'batch-train':
+        from random import shuffle
+        imgs = simdat_im.find_images(dir_path=args.path)
+        classes = simdat_im.find_folders(dir_path=args.path)
+
+        model = mdls.VGG_16(args.weights, lastFC=False)
+        sgd = SGD(lr=args.lr, decay=args.lrdecay,
+                  momentum=args.momentum, nesterov=True)
+        print('[finetune_vgg] lr = %f, decay = %f, momentum = %f'
+              % (args.lr, args.lrdecay, args.momentum))
+
+        print('[finetune_vgg] Adding Dense(nclasses, activation=softmax).')
+        model.add(Dense(len(classes), activation='softmax'))
+        model.compile(optimizer=sgd, loss='categorical_crossentropy')
+        t0 = tl.print_time(t0, 'compile the model to be fine tuned.')
+
+        shuffle(imgs)
+        for e in range(args.epochs):
+            print("[finetune_vgg] Epoch %d/%d" % (e, args.epochs))
+            for i in range(len(imgs)/args.size + 1):
+                start = i*args.size
+                end = ((i + 1)*args.size)
+                if (i + 1)*args.size > len(imgs):
+                    end = len(imgs)
+                X_train, X_test, Y_train, Y_test, _c = mdls.prepare_data_train(
+                    imgs[start:end], args.rows, args.cols, classes=classes)
+                model.fit(X_train, Y_train, batch_size=args.batchsize,
+                          nb_epoch=1, show_accuracy=True, verbose=1,
+                          validation_data=(X_test, Y_test))
+
+        t0 = tl.print_time(t0, 'fit')
+
+    elif args.sbp_name == 'train':
         tl.check_dir(args.ofolder)
 
         scale = True
@@ -210,7 +281,6 @@ def main():
         tl.write_json(outputs, fname=args.output_loc)
 
     elif args.sbp_name == 'augmentation':
-        simdat_im = image.IMAGE()
         fimgs = simdat_im.find_images(dir_path=args.path)
         for fimg in fimgs:
             imgs = simdat_im.read_and_random_crop(fimg, save=True)
