@@ -2,117 +2,18 @@ import os
 import time
 import argparse
 import numpy as np
+from random import shuffle
 from simdat.core import dp_models
 from simdat.core import image
-from keras.optimizers import SGD
 from simdat.core import tools
+from keras.optimizers import SGD
 from keras.layers.core import Dense, Activation
 from keras.models import model_from_json
 from keras.utils import np_utils
 from keras.preprocessing.image import ImageDataGenerator
 
-simdat_im = image.IMAGE()
-mdls = dp_models.DPModel()
 
-
-def main():
-    parser = argparse.ArgumentParser(
-        description="Use Simple model to train a classifier."
-        )
-    subparsers = parser.add_subparsers(
-        help='commands', dest='sbp_name'
-    )
-    parser.add_argument(
-        "-p", "--path", type=str, default='.',
-        help="Path where the images are. Default: $PWD."
-        )
-    parser.add_argument(
-        "--img-rows", type=int, default=224, dest='rows',
-        help="Rows of the images, default: 224."
-        )
-    parser.add_argument(
-        "--img-cols", type=int, default=224, dest='cols',
-        help="Columns of the images, default: 224."
-        )
-    parser.add_argument(
-        "--seed", type=int, default=1337,
-        help="Random seed, default: 1337."
-        )
-
-    predict_parser = subparsers.add_parser(
-        "predict", help='Predict the images.'
-        )
-    predict_parser.add_argument(
-        "--model-loc", type=str, default=os.getcwd(), dest='ofolder',
-        help="Path of the folder to output or to load the model."
-        )
-    predict_parser.add_argument(
-        "--batch-size", type=int, default=80, dest='batchsize',
-        help="Size of the mini batch. Default: 80."
-        )
-    predict_parser.add_argument(
-        "--input", type=str, default=None,
-        help="Input image to be predicted, this overwrites --path option."
-        )
-    predict_parser.add_argument(
-        "--threshold", type=float, default=0.0,
-        help="Threshold applied to judge whether it is identified correctly."
-        )
-    predict_parser.add_argument(
-        "--output-loc", type=str, dest='output_loc',
-        default='/home/tammy/www/prediction.json',
-        help="Path to store the prediction results."
-        )
-
-    batch_train_parser = subparsers.add_parser(
-        "batch-train", help='Command to train with batches.'
-        )
-    batch_train_parser.add_argument(
-        "-v", "--vgg-weights", type=str, dest='weights',
-        default='/home/tammy/SOURCES/keras/examples/vgg16_weights.h5',
-        help="Path of vgg weights"
-        )
-    batch_train_parser.add_argument(
-        "--model-loc", type=str, default=os.getcwd(), dest='ofolder',
-        help="Path of the folder to output or to load the model."
-        )
-    batch_train_parser.add_argument(
-        "--batch-size", type=int, default=80, dest='batchsize',
-        help="Size of the mini batch. Default: 80."
-        )
-    batch_train_parser.add_argument(
-        "--epochs", type=int, default=20,
-        help="Number of epochs, default 20."
-        )
-    batch_train_parser.add_argument(
-        "--lr", type=float, default=0.001,
-        help="Learning rate of SGD, default 0.001."
-        )
-    batch_train_parser.add_argument(
-        "--lr-decay", type=float, default=1e-6, dest='lrdecay',
-        help="Decay of SGD lr, default 1e-6."
-        )
-    batch_train_parser.add_argument(
-        "--momentum", type=float, default=0.9,
-        help="Momentum of SGD lr, default 0.9."
-        )
-    batch_train_parser.add_argument(
-        "--size", type=int, default=10000,
-        help="Size of the image batch (default: 10,000)"
-        )
-    group1 = batch_train_parser.add_mutually_exclusive_group()
-    group1.add_argument(
-        "--rc", default=False, action='store_true',
-        help="Randomly crop the images (default: False)."
-        )
-    group1.add_argument(
-        "--augmentation", default=False, action='store_true',
-        help="True to use ImageDataGenerator."
-        )
-
-    train_parser = subparsers.add_parser(
-        "train", help='Command to finetune the images.'
-        )
+def add_traiining_args(train_parser):
     train_parser.add_argument(
         "-v", "--vgg-weights", type=str, dest='weights',
         default='/home/tammy/SOURCES/keras/examples/vgg16_weights.h5',
@@ -152,12 +53,81 @@ def main():
         help="True to use ImageDataGenerator."
         )
 
+
+def add_prediction_args(predict_parser):
+    predict_parser.add_argument(
+        "--model-loc", type=str, default=os.getcwd(), dest='ofolder',
+        help="Path of the folder to output or to load the model."
+        )
+    predict_parser.add_argument(
+        "--batch-size", type=int, default=80, dest='batchsize',
+        help="Size of the mini batch. Default: 80."
+        )
+    predict_parser.add_argument(
+        "--input", type=str, default=None,
+        help="Input image to be predicted, this overwrites --path option."
+        )
+    predict_parser.add_argument(
+        "--threshold", type=float, default=0.0,
+        help="Threshold applied to judge whether it is identified correctly."
+        )
+    predict_parser.add_argument(
+        "--output-loc", type=str, dest='output_loc',
+        default='/home/tammy/www/prediction.json',
+        help="Path to store the prediction results."
+        )
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Use Simple model to train a classifier."
+        )
+    subparsers = parser.add_subparsers(
+        help='commands', dest='sbp_name'
+    )
+    parser.add_argument(
+        "-p", "--path", type=str, default='.',
+        help="Path where the images are. Default: $PWD."
+        )
+    parser.add_argument(
+        "--img-rows", type=int, default=224, dest='rows',
+        help="Rows of the images, default: 224."
+        )
+    parser.add_argument(
+        "--img-cols", type=int, default=224, dest='cols',
+        help="Columns of the images, default: 224."
+        )
+    parser.add_argument(
+        "--seed", type=int, default=1337,
+        help="Random seed, default: 1337."
+        )
+
+    predict_parser = subparsers.add_parser(
+        "predict", help='Predict the images.'
+        )
+    add_prediction_args(predict_parser)
+
+    batch_train_parser = subparsers.add_parser(
+        "batch-train", help='Command to train with batches.'
+        )
+    add_traiining_args(batch_train_parser)
+    batch_train_parser.add_argument(
+        "--size", type=int, default=5000,
+        help="Size of the image batch (default: 5,000)"
+        )
+
+    finetune_parser = subparsers.add_parser(
+        "train", help='Command to finetune the images.'
+        )
+    add_traiining_args(finetune_parser)
+
     crop_parser = subparsers.add_parser(
         "augmentation", help='Generate scroped images.'
     )
 
     t0 = time.time()
     tl = tools.DATA()
+    simdat_im = image.IMAGE()
+    mdls = dp_models.DPModel()
 
     args = parser.parse_args()
     np.random.seed(args.seed)
@@ -168,7 +138,6 @@ def main():
         path_cls = os.path.join(args.ofolder, 'classes.json')
 
     if args.sbp_name == 'batch-train':
-        from random import shuffle
         imgs = simdat_im.find_images(dir_path=args.path)
         classes = simdat_im.find_folders(dir_path=args.path)
 
@@ -189,16 +158,23 @@ def main():
             for i in range(len(imgs)/args.size + 1):
                 start = i*args.size
                 end = ((i + 1)*args.size)
+                files = imgs[start:end]
+                shuffle(files)
                 if (i + 1)*args.size > len(imgs):
                     end = len(imgs)
                 X_train, X_test, Y_train, Y_test, _c = mdls.prepare_data_train(
-                    imgs[start:end], args.rows, args.cols,
+                    files, args.rows, args.cols,
                     classes=classes, rc=args.rc)
                 model.fit(X_train, Y_train, batch_size=args.batchsize,
                           nb_epoch=1, show_accuracy=True, verbose=1,
                           validation_data=(X_test, Y_test))
 
         t0 = tl.print_time(t0, 'fit')
+
+        tl.write_json(classes, fname=path_cls)
+        json_string = model.to_json()
+        open(path_model, 'w').write(json_string)
+        model.save_weights(path_weights, overwrite=True)
 
     elif args.sbp_name == 'train':
         tl.check_dir(args.ofolder)
