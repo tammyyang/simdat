@@ -154,7 +154,7 @@ def main():
 
         shuffle(imgs)
         for e in range(args.epochs):
-            print("[finetune_vgg] Epoch %d/%d" % (e, args.epochs))
+            print("[finetune_vgg] Epoch %d/%d" % (e+1, args.epochs))
             for i in range(len(imgs)/args.size + 1):
                 start = i*args.size
                 end = ((i + 1)*args.size)
