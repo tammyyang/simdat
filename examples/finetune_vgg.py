@@ -77,6 +77,7 @@ def add_prediction_args(predict_parser):
         help="Path to store the prediction results."
         )
 
+
 def main():
     parser = argparse.ArgumentParser(
         description="Use Simple model to train a classifier."
@@ -133,6 +134,7 @@ def main():
     np.random.seed(args.seed)
 
     if args.sbp_name in ['train', 'predict', 'batch-train']:
+        tl.check_dir(args.ofolder)
         path_model = os.path.join(args.ofolder, 'model.json')
         path_weights = os.path.join(args.ofolder, 'weights.h5')
         path_cls = os.path.join(args.ofolder, 'classes.json')
@@ -177,7 +179,6 @@ def main():
         model.save_weights(path_weights, overwrite=True)
 
     elif args.sbp_name == 'train':
-        tl.check_dir(args.ofolder)
 
         scale = True
         if args.augmentation:
@@ -253,18 +254,23 @@ def main():
         results = model.predict_proba(
             X_test, batch_size=args.batchsize, verbose=1)
         outputs = []
+        accu = 0
         for i in range(0, len(F)):
             _cls = results[i].argmax()
             max_prob = results[i][_cls]
             outputs.append({'input': F[i], 'max_probability': max_prob})
-            if max_prob >= 0.7:
-                cls = [b for b in cls_map if cls_map[b] == _cls][0]
-                print('%s: %s' % (F[i], cls))
+            if max_prob >= args.threshold:
+                cls = cls_map[_cls]
+                print('%s: %s (%.2f)' % (F[i], cls, max_prob))
                 outputs[-1]['class'] = cls
+                if Y_test[i] == cls:
+                    accu = accu + 1
             else:
-                print('Low probability (%.2f), cannot find a match' % max_prob)
+                print('%s: low probability (%.2f), cannot find a match'
+                      % (F[i], max_prob))
                 outputs[-1]['class'] = None
         tl.write_json(outputs, fname=args.output_loc)
+        print('Accuracy = %.2f' % (float(accu)/float(len(F))))
 
     elif args.sbp_name == 'augmentation':
         fimgs = simdat_im.find_images(dir_path=args.path)

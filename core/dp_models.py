@@ -59,7 +59,7 @@ class DP:
         imcluster = cluster_labels
         return imcluster.reshape(ori_size, ori_size)
 
-    def prepare_data(self, img_loc, img_rows, img_cols,
+    def prepare_data(self, img_loc, img_rows, img_cols, convert_Y=True,
                      rc=False, scale=True, classes=None):
         """ Read images as dp inputs
 
@@ -68,14 +68,18 @@ class DP:
         @param img_cols: number columns used to resize the images
 
         Arguments:
-        rc -- True to random crop the images as four (default: False)
+        rc        -- True to random crop the images as four (default: False)
+        scale     -- True to divide input images by 255 (default: True)
+        classes   -- A pre-defined list of class index (default: None)
+        convert_Y -- True to use np_utils.to_categorical to convert Y
+                     (default: True)
 
         """
 
         if type(img_loc) is list:
             imgs = img_loc
         else:
-            imgs = self.im.find_images(dir_path=path)
+            imgs = self.im.find_images(dir_path=img_loc)
         X = []
         Y = []
         F = []
@@ -112,21 +116,32 @@ class DP:
         X = np.array(X).astype('float32')
         if scale:
             X /= 255
-        Y = np_utils.to_categorical(np.array(Y), len(classes))
+        if convert_Y:
+            Y = np_utils.to_categorical(np.array(Y), len(classes))
 
         return np.array(X), np.array(Y), classes, F
 
     def prepare_data_test(self, img_loc, img_rows, img_cols,
-                          scale=True, classes=None):
+                          scale=True, classes=None, y_as_str=True):
         """ Read images as dp inputs
 
         @param img_loc: path of the images or a list of image paths
         @param img_rows: number rows used to resize the images
         @param img_cols: number columns used to resize the images
 
+        Arguments:
+        y_as_str: True to return Y as a list of class strings (default: True)
+
         """
-        return self.prepare_data(img_loc, img_rows, img_cols,
-                                 scale=scale, classes=classes)
+        if y_as_str:
+            X, Y, classes, F = self.prepare_data(
+                img_loc, img_rows, img_cols,
+                scale=scale, classes=classes, convert_Y=False)
+            _Y = [classes[_y] for _y in Y]
+            return X, _Y, classes, F
+        X, Y, classes, F = self.prepare_data(
+            img_loc, img_rows, img_cols, scale=scale, classes=classes)
+        return X, Y, classes, F
 
     def prepare_data_train(self, img_loc, img_rows, img_cols,
                            test_size=None, rc=False, scale=True, classes=None):
