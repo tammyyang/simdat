@@ -54,6 +54,21 @@ def add_traiining_args(train_parser):
         )
 
 
+def print_precision_recall(precision, recall, total):
+    for item in precision:
+        print('[finetune_vgg] Item %s' % item)
+        if recall[item] == 0:
+            p = -1
+        else:
+            p = float(precision[item])/float(recall[item])
+        if item in total and total[item] != 0:
+            r = float(precision[item])/float(total[item])
+        else:
+            r = -1
+        print('[finetune_vgg]     precision = %.2f' % p)
+        print('[finetune_vgg]     recall = %.2f' % r)
+
+
 def add_prediction_args(predict_parser):
     predict_parser.add_argument(
         "--model-loc", type=str, default=os.getcwd(), dest='ofolder',
@@ -231,8 +246,8 @@ def main():
                       validation_data=(X_test, Y_test))
         t0 = tl.print_time(t0, 'fit')
         score = model.evaluate(X_test, Y_test, show_accuracy=True, verbose=0)
-        print('Test score:', score[0])
-        print('Test accuracy:', score[1])
+        print('[finetune_vgg] Test score:', score[0])
+        print('[finetune_vgg] Test accuracy:', score[1])
         t0 = tl.print_time(t0, 'evaluate')
 
         json_string = model.to_json()
@@ -254,23 +269,27 @@ def main():
         results = model.predict_proba(
             X_test, batch_size=args.batchsize, verbose=1)
         outputs = []
-        accu = 0
+        precision = dict((el, 0) for el in cls_map)
+        recall = dict((el, 0) for el in cls_map)
+        total = dict((el, 0) for el in classes)
         for i in range(0, len(F)):
             _cls = results[i].argmax()
             max_prob = results[i][_cls]
             outputs.append({'input': F[i], 'max_probability': max_prob})
+            cls = cls_map[_cls]
+            recall[cls] += 1
+            total[Y_test[i]] += 1
             if max_prob >= args.threshold:
-                cls = cls_map[_cls]
-                print('%s: %s (%.2f)' % (F[i], cls, max_prob))
+                print('[finetune_vgg] %s: %s (%.2f)' % (F[i], cls, max_prob))
                 outputs[-1]['class'] = cls
                 if Y_test[i] == cls:
-                    accu = accu + 1
+                    precision[cls] += 1
             else:
-                print('%s: low probability (%.2f), cannot find a match'
-                      % (F[i], max_prob))
+                print('[finetune_vgg] %s: low probability (%.2f),'
+                      ' cannot find a match' % (F[i], max_prob))
                 outputs[-1]['class'] = None
         tl.write_json(outputs, fname=args.output_loc)
-        print('Accuracy = %.2f' % (float(accu)/float(len(F))))
+        print_precision_recall(precision, recall, total)
 
     elif args.sbp_name == 'augmentation':
         fimgs = simdat_im.find_images(dir_path=args.path)
