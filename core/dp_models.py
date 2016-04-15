@@ -121,7 +121,7 @@ class DP:
 
         return np.array(X), np.array(Y), classes, F
 
-    def prepare_data_test(self, img_loc, img_rows, img_cols,
+    def prepare_data_test(self, img_loc, img_rows, img_cols, convert_Y=True,
                           scale=True, classes=None, y_as_str=True):
         """ Read images as dp inputs
 
@@ -130,7 +130,10 @@ class DP:
         @param img_cols: number columns used to resize the images
 
         Arguments:
-        y_as_str: True to return Y as a list of class strings (default: True)
+        y_as_str  -- True to return Y as a list of class strings
+                     This overwrites convert_Y as False. (default: True)
+        convert_Y -- True to use np_utils.to_categorical to convert Y
+                     (default: True)
 
         """
         if y_as_str:
@@ -140,7 +143,8 @@ class DP:
             _Y = [classes[_y] for _y in Y]
             return X, _Y, classes, F
         X, Y, classes, F = self.prepare_data(
-            img_loc, img_rows, img_cols, scale=scale, classes=classes)
+            img_loc, img_rows, img_cols, scale=scale,
+            classes=classes, convert_Y=convert_Y)
         return X, Y, classes, F
 
     def prepare_data_train(self, img_loc, img_rows, img_cols,

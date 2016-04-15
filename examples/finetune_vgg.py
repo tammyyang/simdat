@@ -91,6 +91,10 @@ def add_prediction_args(predict_parser):
         default='/home/tammy/www/prediction.json',
         help="Path to store the prediction results."
         )
+    predict_parser.add_argument(
+        "--cm", default=False, action='store_true',
+        help="Draw confusion matrix."
+        )
 
 
 def main():
@@ -255,41 +259,58 @@ def main():
         model.save_weights(path_weights, overwrite=True)
 
     elif args.sbp_name == 'predict':
-        X_test, Y_test, classes, F = mdls.prepare_data_test(
-            args.path, args.rows, args.cols)
-        t0 = tl.print_time(t0, 'prepare data')
-
+        cls_map = tl.parse_json(path_cls)
         model = model_from_json(open(path_model).read())
         t0 = tl.print_time(t0, 'load model from json')
 
         model.load_weights(path_weights)
         t0 = tl.print_time(t0, 'load model weights')
 
-        cls_map = tl.parse_json(path_cls)
-        results = model.predict_proba(
-            X_test, batch_size=args.batchsize, verbose=1)
-        outputs = []
-        precision = dict((el, 0) for el in cls_map)
-        recall = dict((el, 0) for el in cls_map)
-        total = dict((el, 0) for el in classes)
-        for i in range(0, len(F)):
-            _cls = results[i].argmax()
-            max_prob = results[i][_cls]
-            outputs.append({'input': F[i], 'max_probability': max_prob})
-            cls = cls_map[_cls]
-            recall[cls] += 1
-            total[Y_test[i]] += 1
-            if max_prob >= args.threshold:
-                print('[finetune_vgg] %s: %s (%.2f)' % (F[i], cls, max_prob))
-                outputs[-1]['class'] = cls
-                if Y_test[i] == cls:
-                    precision[cls] += 1
-            else:
-                print('[finetune_vgg] %s: low probability (%.2f),'
-                      ' cannot find a match' % (F[i], max_prob))
-                outputs[-1]['class'] = None
-        tl.write_json(outputs, fname=args.output_loc)
-        print_precision_recall(precision, recall, total)
+        if args.cm:
+            from simdat.core import plot
+            from sklearn.metrics import confusion_matrix
+            pl = plot.PLOT()
+
+            X_test, Y_test, classes, F = mdls.prepare_data_test(
+                args.path, args.rows, args.cols, convert_Y=False,
+                y_as_str=False, classes=cls_map)
+            t0 = tl.print_time(t0, 'prepare data')
+            results = model.predict_classes(
+                X_test, batch_size=args.batchsize, verbose=1)
+            cm = confusion_matrix(Y_test, results)
+            pl.plot_confusion_matrix(cm, xticks=cls_map, yticks=cls_map)
+
+        else:
+            X_test, Y_test, classes, F = mdls.prepare_data_test(
+                args.path, args.rows, args.cols)
+            t0 = tl.print_time(t0, 'prepare data')
+
+            results = model.predict_proba(
+                X_test, batch_size=args.batchsize, verbose=1)
+            outputs = []
+            precision = dict((el, 0) for el in cls_map)
+            recall = dict((el, 0) for el in cls_map)
+            total = dict((el, 0) for el in classes)
+            for i in range(0, len(F)):
+                _cls = results[i].argmax()
+                max_prob = results[i][_cls]
+                outputs.append({'input': F[i], 'max_probability': max_prob})
+                cls = cls_map[_cls]
+                recall[cls] += 1
+                total[Y_test[i]] += 1
+                if max_prob >= args.threshold:
+                    outputs[-1]['class'] = cls
+                    if Y_test[i] == cls:
+                        precision[cls] += 1
+                    else:
+                        print('[finetune_vgg] %s: %s (%.2f)'
+                              % (F[i], cls, max_prob))
+                else:
+                    print('[finetune_vgg] %s: low probability (%.2f),'
+                          ' cannot find a match' % (F[i], max_prob))
+                    outputs[-1]['class'] = None
+            tl.write_json(outputs, fname=args.output_loc)
+            print_precision_recall(precision, recall, total)
 
     elif args.sbp_name == 'augmentation':
         fimgs = simdat_im.find_images(dir_path=args.path)
