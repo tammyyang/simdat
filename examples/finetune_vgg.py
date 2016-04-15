@@ -278,7 +278,8 @@ def main():
             results = model.predict_classes(
                 X_test, batch_size=args.batchsize, verbose=1)
             cm = confusion_matrix(Y_test, results)
-            pl.plot_confusion_matrix(cm, xticks=cls_map, yticks=cls_map)
+            pl.plot_confusion_matrix(cm, xticks=cls_map, yticks=cls_map,
+                                     xrotation=90)
 
         else:
             X_test, Y_test, classes, F = mdls.prepare_data_test(
