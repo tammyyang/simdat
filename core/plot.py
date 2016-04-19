@@ -853,7 +853,7 @@ class PLOT(tools.DATA, COLORS):
 
     def histogram(self, data, xlabel='', ylabel='', clear=True,
                   title='Histogram', nbins=None, bfit=False,
-                  xlim=None, fname='./hist.png', grid=True,
+                  xlim=None, ylim=None, fname='./hist.png', grid=True,
                   align='mid', log=False, facecolor='#339966'):
         """Draw histogram of the numpy array
 
@@ -865,6 +865,7 @@ class PLOT(tools.DATA, COLORS):
         ylabel -- label of the y axis (default: '')
         clear  -- true to clear panel after output (default: True)
         xlim   -- limits of x axis (default: max, min of data)
+        ylim   -- limits of y axis (default: max, min of data)
         title  -- chart title (default: 'Histogram')
         nbins  -- number of bins (default: length of the set of input data)
         bfit   -- also draw fit function (default: False)
@@ -896,7 +897,10 @@ class PLOT(tools.DATA, COLORS):
             xmax, xmin = self.find_axis_max_min(x)
         else:
             xmin, xmax = xlim
-        ymax, ymin = self.find_axis_max_min(y)
+        if ylim is None:
+            ymax, ymin = self.find_axis_max_min(y)
+        else:
+            ymin, ymax = ylim
         plt.axis([xmin, xmax, 0, ymax])
         if fname is not None:
             plt.savefig(fname)
