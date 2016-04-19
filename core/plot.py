@@ -852,7 +852,7 @@ class PLOT(tools.DATA, COLORS):
             plt.clf()
 
     def histogram(self, data, xlabel='', ylabel='', clear=True,
-                  title='Histogram', nbins=None, bfit=False,
+                  title='Histogram', nbins=None, bfit=False, norm=False,
                   xlim=None, ylim=None, fname='./hist.png', grid=True,
                   align='mid', log=False, facecolor='#339966'):
         """Draw histogram of the numpy array
@@ -866,6 +866,7 @@ class PLOT(tools.DATA, COLORS):
         clear  -- true to clear panel after output (default: True)
         xlim   -- limits of x axis (default: max, min of data)
         ylim   -- limits of y axis (default: max, min of data)
+        norm   -- True to normalize to the first bin (default: False)
         title  -- chart title (default: 'Histogram')
         nbins  -- number of bins (default: length of the set of input data)
         bfit   -- also draw fit function (default: False)
@@ -880,7 +881,7 @@ class PLOT(tools.DATA, COLORS):
 
         if nbins is None:
             nbins = len(set(data))
-        y, x, patches = plt.hist(data, nbins, normed=1, log=log,
+        y, x, patches = plt.hist(data, nbins, normed=norm, log=log,
                                  facecolor=facecolor, alpha=0.7,
                                  align=align, rwidth=1.0)
         if bfit:
