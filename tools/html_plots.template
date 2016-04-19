@@ -7,19 +7,21 @@
 <table border=2 cellspacing=20>
 {% for img in imgs %}
 {% set f = img.split('/')[-1].split('.')[0] %}
-{% if loop.index %6 == 1 %}<tr>{% endif %}
+{% set fname = img.split('/')[-1] %}
+{% if loop.index %4 == 1 %}<tr>{% endif %}
     <th>{{ f }}<br>
-    <img src ='{{ img }}'
+    <img src ='{{ ip }}/{{ fname }}'
     width ='240' height ='180'
     usemap =#{{ f }} border=0 /></th>
-{% if loop.index %6 == 6 %}</tr>{% endif %}
+{% if loop.index %4 == 4 %}</tr>{% endif %}
 {% endfor %}
-{% if imgs | length %6 != 6 %}</tr>{% endif %}
+{% if imgs | length %4 != 4 %}</tr>{% endif %}
 </table>
 
 {% for img in imgs %}
 {% set f = img.split('/')[-1].split('.')[0] %}
+{% set fname = img.split('/')[-1] %}
 <map name='{{ f }}'>
 <area shape =rect coords =0,0,800,600 
-href ={{ img }} /></map>
+href = {{ ip }}/{{ fname }} /></map>
 {% endfor %}
