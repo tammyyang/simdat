@@ -111,8 +111,8 @@ class PLOT(tools.DATA, COLORS):
         self.ax.set_ylabel(ylabel, color='#504A4B')
         self.ax.set_xlabel(xlabel, color='#504A4B')
 
-    def _add_legend(self, loc, mandarin=False, size=None):
-        """Add Legend to the figure
+    def _define_legend_args(self, loc, mandarin, size):
+        """Define the argument for legend
 
         @param loc: location of the legend
                     rt   - right top
@@ -121,7 +121,6 @@ class PLOT(tools.DATA, COLORS):
                     lb   - left bottom
                     c/ct - central top
                     cb   - central bottom
-
         """
 
         args = {'loc': self.loc_map[loc]}
@@ -138,7 +137,26 @@ class PLOT(tools.DATA, COLORS):
             args['borderaxespad'] = 1
         elif loc in ['c', 'ct']:
             args['borderaxespad'] = -2.5
+        return args
+
+    def _add_legend(self, loc, mandarin=False, size=None):
+        """Add Legend to the figure"""
+
+        args = self._define_legend_args(loc, mandarin, size)
         self.ax.legend(**args)
+
+    def _add_legend_2D(self, plt, plots, legend, size=None,
+                       loc='rt', mandarin=False):
+        """Add Legend to the 2D figure
+
+        @param plt: the plt object
+        @param plots: a list of plot objects
+        @param legend: a list of legend
+
+        """
+
+        args = self._define_legend_args(loc, mandarin, size)
+        plt.legend(plots, legend, **args)
 
     def patch_line(self, x, y, color='#7D0552', clear=True,
                    linewidth=None, linestype='solid',
@@ -667,7 +685,8 @@ class PLOT(tools.DATA, COLORS):
 
     def plot_2D_dists(self, data, scale=False, legend=None, clear=True,
                       title='Distrubitions', connected=True, amin=None,
-                      amax=None, xlabel='', ylabel='',
+                      amax=None, xlabel='', ylabel='', yticks=None,
+                      xmin=None, xmax=None, yrotation=0,
                       fname='./dist_2d.png', leg_loc='rt'):
         """Draw the dist of multiple 2D arrays.
 
@@ -681,10 +700,14 @@ class PLOT(tools.DATA, COLORS):
                      (default: index of the list to be drawn)
         xlabel    -- label of the X axis (default: '')
         ylabel    -- label of the y axis (default: '')
+        yticks    -- ticks of the y axis (default: array index)
+        yrotation -- totation angle of y ticks (default: 0)
         clear     -- true to clear panel after output (default: True)
         title     -- chart title (default: 'Distributions')
         amax      -- maximum of y axis (default: max(data)+0.1)
         amin      -- minimum of y axis (default: max(data)-0.1)
+        xmax      -- maximum of x axis (default: max(data)+0.1)
+        xmin      -- minimum of x axis (default: max(data)-0.1)
         connected -- true to draw line between dots (default: True)
         fname     -- output filename (default: './dist_2d.png')
 
@@ -694,9 +717,10 @@ class PLOT(tools.DATA, COLORS):
 
         ymax = amax
         ymin = amin
-        xmax = None
-        xmin = None
+        xmax = xmax
+        xmin = xmin
         fmt = '-o' if connected else 'o'
+        pls = []
         for i in range(0, len(data)):
             label = legend[i] if legend is not None else str(i)
             a = data[i]
@@ -704,7 +728,9 @@ class PLOT(tools.DATA, COLORS):
                 a = np.array(a)
             if scale:
                 a = self.scale(a)
-            plt.plot(a[0], a[1], fmt, label=label)
+
+            p, = plt.plot(a[0], a[1], fmt, label=label)
+            pls.append(p)
 
             _xmax, _xmin = self.find_axis_max_min(a[0])
             _ymax, _ymin = self.find_axis_max_min(a[1])
@@ -716,7 +742,14 @@ class PLOT(tools.DATA, COLORS):
                 ymin = _ymin if ymin is None else min(ymin, _ymin)
 
         plt.axis([xmin, xmax, ymin, ymax])
-        self._add_legend(leg_loc)
+
+        if legend is not None:
+            self._add_legend_2D(plt, pls, legend)
+
+        if yticks is not None:
+            ytick_marks = np.arange(len(yticks))
+            plt.yticks(ytick_marks, yticks, rotation=yrotation)
+
         self._add_titles(title, xlabel, ylabel)
         if fname is not None:
             plt.savefig(fname)
