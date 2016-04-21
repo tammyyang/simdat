@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
 from matplotlib import font_manager
 from simdat.core import tools
-from sklearn.metrics import confusion_matrix
 
 
 class COLORS:
@@ -145,11 +144,10 @@ class PLOT(tools.DATA, COLORS):
         args = self._define_legend_args(loc, mandarin, size)
         self.ax.legend(**args)
 
-    def _add_legend_2D(self, plt, plots, legend, size=None,
+    def _add_legend_2D(self, plots, legend, size=None,
                        loc='rt', mandarin=False):
         """Add Legend to the 2D figure
 
-        @param plt: the plt object
         @param plots: a list of plot objects
         @param legend: a list of legend
 
@@ -744,7 +742,7 @@ class PLOT(tools.DATA, COLORS):
         plt.axis([xmin, xmax, ymin, ymax])
 
         if legend is not None:
-            self._add_legend_2D(plt, pls, legend)
+            self._add_legend_2D(pls, legend)
 
         if yticks is not None:
             ytick_marks = np.arange(len(yticks))
