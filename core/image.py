@@ -367,7 +367,7 @@ class IMAGE(tools.TOOLS):
                                 show_text=False, show_axis=False, norm=False)
         return intensity
 
-    def save(self, img, fname='cv2.img'):
+    def save(self, img, fname='cv2.jpg'):
         """Write images
 
         @param img: image array
