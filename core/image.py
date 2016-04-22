@@ -184,6 +184,23 @@ class IMAGE(tools.TOOLS):
             return False
         return True
 
+    def substract_bkg_files(self, fimg, fbkgs, fname=None):
+        """Substract image background
+
+        @param img: file name of the input forward image
+        @param bkgs: a list of file names of the background images
+
+        Keyword arguments:
+        fname -- specify to output the substracted image
+
+        """
+
+        bkgs = []
+        for fbkg in fbkgs:
+            bkgs.append(self.read(fbkg))
+        img = self.read(fimg)
+        return self.substract_bkg(img, bkgs, fname=fname)
+
     def substract_bkg(self, img, bkgs, fname=None):
         """Substract image background
 
