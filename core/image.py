@@ -184,6 +184,26 @@ class IMAGE(tools.TOOLS):
             return False
         return True
 
+    def substract_bkg(self, img, bkgs, fname=None):
+        """Substract image background
+
+        @param img: input forward image in np array
+        @param bkgs: a list of background image in np arrays
+
+        Keyword arguments:
+        fname -- specify to output the substracted image
+
+        """
+
+        backsub = cv2.BackgroundSubtractorMOG2()
+        fgmask = None
+        for bkg in bkgs:
+            fgmask = backsub.apply(bkg)
+        fgmask = backsub.apply(img)
+        if fname is not None and type(fname) is str:
+            self.save(fgmask, fname=fname)
+        return cv2.bitwise_and(img, img, mask=fgmask)
+
     def get_houghlines(self, img):
         """Get lines from hough transform"""
 
