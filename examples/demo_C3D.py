@@ -4,7 +4,7 @@ import cv2
 import time
 import numpy as np
 import argparse
-
+from simdat.core import plot
 from simdat.core import dp_models
 from simdat.core import tools
 from keras.models import model_from_json
@@ -32,8 +32,9 @@ def main():
         )
 
     t0 = time.time()
-    mdls = dp_models.DPModel()
     tl = tools.TOOLS()
+    pl = plot.PLOT()
+    mdls = dp_models.DPModel()
     args = parser.parse_args()
     path_model = os.path.join(args.ofolder, 'model.json')
     path_weights = os.path.join(args.ofolder, 'weights.h5')
@@ -59,15 +60,19 @@ def main():
     # height and width of the frame
     # Original shape = (16, 3, 122, 122)
     # New shape = (3, 16, 122, 122)
+    results = []
+    detected_lbs = {}
     for i in range(0, X_test.shape[0]-16):
         X = X_test[i:i+16, :, 8:120, 30:142].transpose((1, 0, 2, 3))
         output = model.predict_on_batch(np.array([X]))
+        iframe = int(F[i].split('.')[0].split('-')[1])
+        pos_max = output[0].argmax()
+        results.append(pos_max)
+        if pos_max not in detected_lbs:
+            detected_lbs[pos_max] = labels[pos_max]
 
-        print('==============')
-        print('Frame %i to %i' % (i, i+16))
-        print('Position of maximum probability: {}'.format(output[0].argmax()))
-        print('Maximum probability: {:.5f}'.format(max(output[0][0])))
-        print('Corresponding label: {}'.format(labels[output[0].argmax()]))
+    pl.plot(results, xlabel='Frame (FPS=20)', ylabel='Detected Sport')
+    print(detected_lbs)
     t0 = tl.print_time(t0, 'predict')
 
 if __name__ == '__main__':
