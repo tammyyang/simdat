@@ -14,7 +14,7 @@ from keras.layers import Flatten, Dense, Dropout
 from keras.layers import Convolution2D, MaxPooling2D
 from keras.layers import ZeroPadding2D
 from keras.layers import AveragePooling2D
-from keras.layers import Input, merge
+# from keras.layers import Input, merge
 from keras.utils import np_utils
 
 
@@ -63,13 +63,13 @@ class DP:
         imcluster = cluster_labels
         return imcluster.reshape(ori_size, ori_size)
 
-    def prepare_data(self, img_loc, img_rows, img_cols, convert_Y=True,
-                     rc=False, scale=True, classes=None):
+    def prepare_data(self, img_loc, width, height, convert_Y=True,
+                     rc=False, scale=True, classes=None, sort=False):
         """ Read images as dp inputs
 
         @param img_loc: path of the images or a list of image paths
-        @param img_rows: number rows used to resize the images
-        @param img_cols: number columns used to resize the images
+        @param width: number rows used to resize the images
+        @param height: number columns used to resize the images
 
         Arguments:
         rc        -- True to random crop the images as four (default: False)
@@ -77,6 +77,7 @@ class DP:
         classes   -- A pre-defined list of class index (default: None)
         convert_Y -- True to use np_utils.to_categorical to convert Y
                      (default: True)
+        sort     -- True to sort the images (default: False)
 
         """
 
@@ -95,6 +96,8 @@ class DP:
 
         if rc:
             print('[DP] Applying random crop to the image')
+        if sort:
+            imgs = sorted(imgs)
         for fimg in imgs:
             if counter % 1000 == 0:
                 print('[DP] Reading images: %i' % counter)
@@ -104,9 +107,9 @@ class DP:
 
             if rc:
                 _img_original = self.im.read_and_random_crop(
-                    fimg, size=(img_rows, img_cols)).values()
+                    fimg, size=(width, height)).values()
             else:
-                _img_original = [self.im.read(fimg, size=(img_rows, img_cols))]
+                _img_original = [self.im.read(fimg, size=(width, height))]
 
             if _img_original[0] is None:
                 continue
@@ -125,13 +128,13 @@ class DP:
 
         return np.array(X), np.array(Y), classes, F
 
-    def prepare_data_test(self, img_loc, img_rows, img_cols, convert_Y=True,
+    def prepare_data_test(self, img_loc, width, height, convert_Y=True,
                           scale=True, classes=None, y_as_str=True):
         """ Read images as dp inputs
 
         @param img_loc: path of the images or a list of image paths
-        @param img_rows: number rows used to resize the images
-        @param img_cols: number columns used to resize the images
+        @param width: number rows used to resize the images
+        @param height: number columns used to resize the images
 
         Arguments:
         y_as_str  -- True to return Y as a list of class strings
@@ -142,31 +145,33 @@ class DP:
         """
         if y_as_str:
             X, Y, classes, F = self.prepare_data(
-                img_loc, img_rows, img_cols,
+                img_loc, width, height, sort=True,
                 scale=scale, classes=classes, convert_Y=False)
             _Y = [classes[_y] for _y in Y]
             return X, _Y, classes, F
         X, Y, classes, F = self.prepare_data(
-            img_loc, img_rows, img_cols, scale=scale,
-            classes=classes, convert_Y=convert_Y)
+            img_loc, width, height, scale=scale,
+            classes=classes, convert_Y=convert_Y, sort=True)
         return X, Y, classes, F
 
-    def prepare_data_train(self, img_loc, img_rows, img_cols,
+    def prepare_data_train(self, img_loc, width, height, sort=False,
                            test_size=None, rc=False, scale=True, classes=None):
         """ Read images as dp inputs
 
         @param img_loc: path of the images or a list of image paths
-        @param img_rows: number rows used to resize the images
-        @param img_cols: number columns used to resize the images
+        @param width: number rows used to resize the images
+        @param height: number columns used to resize the images
 
         Arguments:
 
+        sort      -- True to sort the images (default: False)
         test_size -- size of the testing sample (default: 0.33)
 
         """
 
         X, Y, classes, F = self.prepare_data(
-            img_loc, img_rows, img_cols, rc=rc, scale=scale, classes=classes)
+            img_loc, width, height, rc=rc,
+            scale=scale, classes=classes, sort=sort)
 
         if type(test_size) is float:
             self.mlr.args.test_size = test_size
@@ -507,6 +512,10 @@ class DPModel(DP):
         # Define model
 
         model = Model(input=img_input, output=[preds, aux_preds])
+
+        if weights_path:
+            model.load_weights(weights_path)
+
         model.compile('rmsprop', 'categorical_crossentropy')
 
     def VGG_19(self, weights_path=None):

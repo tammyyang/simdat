@@ -109,11 +109,11 @@ def main():
         help="Path where the images are. Default: $PWD."
         )
     parser.add_argument(
-        "--img-rows", type=int, default=224, dest='rows',
+        "--img-width", type=int, default=224, dest='width',
         help="Rows of the images, default: 224."
         )
     parser.add_argument(
-        "--img-cols", type=int, default=224, dest='cols',
+        "--img-height", type=int, default=224, dest='height',
         help="Columns of the images, default: 224."
         )
     parser.add_argument(
@@ -184,7 +184,7 @@ def main():
                 if (i + 1)*args.size > len(imgs):
                     end = len(imgs)
                 X_train, X_test, Y_train, Y_test, _c = mdls.prepare_data_train(
-                    files, args.rows, args.cols,
+                    files, args.width, args.height,
                     classes=classes, rc=args.rc)
                 model.fit(X_train, Y_train, batch_size=args.batchsize,
                           nb_epoch=1, show_accuracy=True, verbose=1,
@@ -203,7 +203,7 @@ def main():
         if args.augmentation:
             scale = False
         X_train, X_test, Y_train, Y_test, classes = mdls.prepare_data_train(
-            args.path, args.rows, args.cols, rc=args.rc, scale=scale)
+            args.path, args.width, args.height, rc=args.rc, scale=scale)
         tl.write_json(classes, fname=path_cls)
         nclasses = len(classes)
         t0 = tl.print_time(t0, 'prepare data')
@@ -272,7 +272,7 @@ def main():
             pl = plot.PLOT()
 
             X_test, Y_test, classes, F = mdls.prepare_data_test(
-                args.path, args.rows, args.cols, convert_Y=False,
+                args.path, args.width, args.height, convert_Y=False,
                 y_as_str=False, classes=cls_map)
             t0 = tl.print_time(t0, 'prepare data')
             results = model.predict_classes(
@@ -283,7 +283,7 @@ def main():
 
         else:
             X_test, Y_test, classes, F = mdls.prepare_data_test(
-                args.path, args.rows, args.cols)
+                args.path, args.width, args.height)
             t0 = tl.print_time(t0, 'prepare data')
 
             results = model.predict_proba(

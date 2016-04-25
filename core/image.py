@@ -470,7 +470,7 @@ class IMAGE(tools.TOOLS):
         @param fimg: input image file name
 
         Keyword arguments:
-        size -- tuple of new size (default None)
+        size -- tuple of new size in (width, height)
 
         """
         if not self.check_exist(fimg):

@@ -1,8 +1,10 @@
 ''' Original Model/Weights/Sources from https://goo.gl/b8hPpu'''
 import os
 import cv2
+import time
 import numpy as np
 import argparse
+
 from simdat.core import dp_models
 from simdat.core import tools
 from keras.models import model_from_json
@@ -21,12 +23,12 @@ def main():
         help="Path of the video."
         )
     parser.add_argument(
-        "--img-rows", type=int, default=244, dest='rows',
-        help="Rows of the images, default: 171."
+        "--img-width", type=int, default=128, dest='width',
+        help="Rows of the images, default: 128."
         )
     parser.add_argument(
-        "--img-cols", type=int, default=244, dest='cols',
-        help="Columns of the images, default: 128."
+        "--img-height", type=int, default=171, dest='height',
+        help="Columns of the images, default: 171."
         )
 
     t0 = time.time()
@@ -50,14 +52,14 @@ def main():
     print('Total labels: {}'.format(len(labels)))
 
     X_test, Y_test, classes, F = mdls.prepare_data_test(
-        args.path, args.rows, args.cols)
+        args.path, args.width, args.height)
     t0 = tl.print_time(t0, 'load data')
     # c x l x h x w where c is the number of
     # channels, l is length in number of frames, h and w are the
     # height and width of the frame
     # Original shape = (16, 3, 122, 122)
     # New shape = (3, 16, 122, 122)
-    for i in range(0, X_test.shape[0]-17):
+    for i in range(0, X_test.shape[0]-16):
         X = X_test[i:i+16, :, 8:120, 30:142].transpose((1, 0, 2, 3))
         output = model.predict_on_batch(np.array([X]))
 
