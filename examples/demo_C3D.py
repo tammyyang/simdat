@@ -53,8 +53,9 @@ def main():
     print('Total labels: {}'.format(len(labels)))
 
     X_test, Y_test, classes, F = mdls.prepare_data_test(
-        args.path, args.width, args.height)
+        args.path, args.width, args.height, trans=False, scale=False)
     t0 = tl.print_time(t0, 'load data')
+
     # c x l x h x w where c is the number of
     # channels, l is length in number of frames, h and w are the
     # height and width of the frame
@@ -63,15 +64,16 @@ def main():
     results = []
     detected_lbs = {}
     for i in range(0, X_test.shape[0]-16):
-        X = X_test[i:i+16, :, 8:120, 30:142].transpose((1, 0, 2, 3))
+        X = X_test[i:i+16, 8:120, 30:142, :].transpose((3, 0, 1, 2))
         output = model.predict_on_batch(np.array([X]))
-        iframe = int(F[i].split('.')[0].split('-')[1])
+        iframe = int(F[i].split('.')[0].split('_')[1])
+        # iframe = int(F[i].split('.')[0].split('-')[1])
         pos_max = output[0].argmax()
         results.append(pos_max)
         if pos_max not in detected_lbs:
             detected_lbs[pos_max] = labels[pos_max]
 
-    pl.plot(results, xlabel='Frame (FPS=20)', ylabel='Detected Sport')
+    pl.plot(results, xlabel='Frame', ylabel='Detected Sport')
     print(detected_lbs)
     t0 = tl.print_time(t0, 'predict')
 

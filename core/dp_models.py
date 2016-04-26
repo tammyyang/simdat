@@ -64,7 +64,8 @@ class DP:
         return imcluster.reshape(ori_size, ori_size)
 
     def prepare_data(self, img_loc, width, height, convert_Y=True,
-                     rc=False, scale=True, classes=None, sort=False):
+                     rc=False, scale=True, classes=None,
+                     sort=False, trans=True):
         """ Read images as dp inputs
 
         @param img_loc: path of the images or a list of image paths
@@ -77,10 +78,12 @@ class DP:
         classes   -- A pre-defined list of class index (default: None)
         convert_Y -- True to use np_utils.to_categorical to convert Y
                      (default: True)
-        sort     -- True to sort the images (default: False)
+        sort      -- True to sort the images (default: False)
+        trans     -- True to transport the image from (h, w, c) to (c, h, w)
 
         """
 
+        print('[dp_models] width = %i, height = %i' % (width, height))
         if type(img_loc) is list:
             imgs = img_loc
         else:
@@ -107,18 +110,22 @@ class DP:
 
             if rc:
                 _img_original = self.im.read_and_random_crop(
-                    fimg, size=(width, height)).values()
+                    fimg, size=(height, width)).values()
             else:
-                _img_original = [self.im.read(fimg, size=(width, height))]
+                _img_original = [self.im.read(fimg, size=(height, width))]
 
             if _img_original[0] is None:
                 continue
             for c in _img_original:
-                img = c.transpose((2, 0, 1))
+                if trans:
+                    img = c.transpose((2, 0, 1))
+                else:
+                    img = c
                 X.append(img)
                 Y.append(classes.index(_cls_ix))
                 F.append(os.path.basename(fimg))
             counter += 1
+            fname = str(counter) + '.jpg'
 
         X = np.array(X).astype('float32')
         if scale:
@@ -128,7 +135,8 @@ class DP:
 
         return np.array(X), np.array(Y), classes, F
 
-    def prepare_data_test(self, img_loc, width, height, convert_Y=True,
+    def prepare_data_test(self, img_loc, width, height,
+                          convert_Y=True, trans=True,
                           scale=True, classes=None, y_as_str=True):
         """ Read images as dp inputs
 
@@ -145,17 +153,18 @@ class DP:
         """
         if y_as_str:
             X, Y, classes, F = self.prepare_data(
-                img_loc, width, height, sort=True,
+                img_loc, width, height, sort=True, trans=trans,
                 scale=scale, classes=classes, convert_Y=False)
             _Y = [classes[_y] for _y in Y]
             return X, _Y, classes, F
         X, Y, classes, F = self.prepare_data(
-            img_loc, width, height, scale=scale,
+            img_loc, width, height, scale=scale, trans=trans,
             classes=classes, convert_Y=convert_Y, sort=True)
         return X, Y, classes, F
 
     def prepare_data_train(self, img_loc, width, height, sort=False,
-                           test_size=None, rc=False, scale=True, classes=None):
+                           trans=True, test_size=None, rc=False,
+                           scale=True, classes=None):
         """ Read images as dp inputs
 
         @param img_loc: path of the images or a list of image paths
@@ -170,7 +179,7 @@ class DP:
         """
 
         X, Y, classes, F = self.prepare_data(
-            img_loc, width, height, rc=rc,
+            img_loc, width, height, rc=rc, trans=trans,
             scale=scale, classes=classes, sort=sort)
 
         if type(test_size) is float:
