@@ -1,3 +1,7 @@
+'''
+Usage:
+    python read_hdf5.py -p /home/tammy/www/vgg-16/$PATH_OF_YOUR_HDF5_FILE
+'''
 from __future__ import print_function
 import h5py
 import argparse
