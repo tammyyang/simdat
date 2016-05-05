@@ -757,8 +757,9 @@ class PLOT(tools.DATA, COLORS):
     def plot_1D_dists(self, data, scale=False, legend=None, clear=True,
                       title='Distrubitions', connected=True, ymax=None,
                       ymin=None, xlabel='', ylabel='', xticks=None,
-                      xrotation=45, leg_loc='rt', xmax=None, leg_size=None,
-                      fname='./dist_1d.png', rebin=None, mandarin=False):
+                      xrotation=45, leg_loc='rt', xmax=None,
+                      leg_size=None, log=False, mandarin=False,
+                      fname='./dist_1d.png', rebin=None):
         """Draw the dist of multiple 1D arrays.
 
         @param data: list of 1D arrays
@@ -779,6 +780,7 @@ class PLOT(tools.DATA, COLORS):
         ymin      -- minimum of y axis (default: max(data)-0.1)
         fname     -- output filename (default: './dist_1d.png')
         rebin     -- N bins to be grouped together
+        log       -- true to draw log scale (default: False)
 
         """
 
@@ -806,6 +808,9 @@ class PLOT(tools.DATA, COLORS):
             ymax = _ymax if ymax is None else max(ymax, _ymax)
             ymin = _ymin if ymin is None else min(ymin, _ymin)
             xmax = _xmax if xmax is None else max(xmax, _xmax)
+
+        if log:
+            self.ax.set_yscale('log')
 
         plt.axis([-0.1, xmax, ymin, ymax])
         xtick_marks = np.arange(len(data[0]))
