@@ -790,6 +790,10 @@ class PLOT(tools.DATA, COLORS):
         if rebin is not None:
             data = self.rebin2D(data, (data.shape[0], data.shape[1]/rebin))
 
+        _ymax = None
+        _ymin = None
+        _xmax = None
+
         for i in range(0, len(data)):
             label = legend[i] if legend is not None else str(i)
             a = data[i]
@@ -803,11 +807,15 @@ class PLOT(tools.DATA, COLORS):
             color = getattr(self, self.colors[color_idx])[dks]
             plt.plot(a, fmt, label=label, color=color)
 
-            _ymax, _ymin = self.find_axis_max_min(a)
-            _xmax = 1.1*(a.shape[0] - 1)
-            ymax = _ymax if ymax is None else max(ymax, _ymax)
-            ymin = _ymin if ymin is None else min(ymin, _ymin)
-            xmax = _xmax if xmax is None else max(xmax, _xmax)
+            __ymax, __ymin = self.find_axis_max_min(a)
+            __xmax = 1.1*(a.shape[0] - 1)
+            _ymax = __ymax if _ymax is None else max(_ymax, __ymax)
+            _ymin = __ymin if _ymin is None else min(_ymin, __ymin)
+            _xmax = __xmax if _xmax is None else max(_xmax, __xmax)
+
+        ymax = _ymax if ymax is None else ymax
+        ymin = _ymin if ymin is None else ymin
+        xmax = _xmax if xmax is None else xmax
 
         if log:
             self.ax.set_yscale('log')
