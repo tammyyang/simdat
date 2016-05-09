@@ -14,7 +14,6 @@ from keras.layers import Flatten, Dense, Dropout
 from keras.layers import Convolution2D, MaxPooling2D
 from keras.layers import ZeroPadding2D
 from keras.layers import AveragePooling2D
-# from keras.layers import Input, merge
 from keras.utils import np_utils
 
 
@@ -212,6 +211,7 @@ class DPModel(DP):
                      DIM_ORDERING='th', WEIGHT_DECAY=0,
                      USE_BN=False, NB_CLASS=1000):
 
+        from keras.layers import Input, merge
         def conv2D_bn(x, nb_filter, nb_row, nb_col,
                       border_mode='same', subsample=(1, 1),
                       activation='relu', batch_norm=USE_BN,
@@ -522,10 +522,25 @@ class DPModel(DP):
 
         model = Model(input=img_input, output=[preds, aux_preds])
 
+        # Keras accepts shape as
+        #   (output_channels, input_channels, height, width)
+        # For example, (32, 3, 3, 3) means there are 32
+        # filters, with 3 channels, 3pixel height 3pixel width,
+        # and bias is stored at param_1 and its shape (32,),
+        # one for each filter.
+        # https://github.com/fchollet/keras/issues/91
+        # TensorFlow weight matrix is of order:
+        #   (height, width, input_channels, output_channels)
+        # https://goo.gl/eRKmJv
+
+        with h5py.File('/home/tammy/www/model_zoo/inception-v3-hdf5-20160301/conv.h5','r') as hf:
+            weights = hf['weights'][()].transpose((3, 2, 0, 1))
+            model.layers[1].set_weights([weights, np.zeros((weights.shape[0],))])
+
         if weights_path:
             model.load_weights(weights_path)
 
-        model.compile('rmsprop', 'categorical_crossentropy')
+        return model
 
     def VGG_19(self, weights_path=None):
         '''VGG-19 model, source from https://goo.gl/rvcNDw'''
