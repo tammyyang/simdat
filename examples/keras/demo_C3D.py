@@ -66,8 +66,8 @@ def main():
     for i in range(0, X_test.shape[0]-16):
         X = X_test[i:i+16, 8:120, 30:142, :].transpose((3, 0, 1, 2))
         output = model.predict_on_batch(np.array([X]))
-        iframe = int(F[i].split('.')[0].split('_')[1])
-        # iframe = int(F[i].split('.')[0].split('-')[1])
+        # iframe = int(F[i].split('.')[0].split('_')[1])
+        iframe = int(F[i].split('.')[0].split('-')[1])
         pos_max = output[0].argmax()
         results.append(pos_max)
         if pos_max not in detected_lbs:

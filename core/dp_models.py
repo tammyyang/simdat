@@ -48,6 +48,26 @@ class DP:
                 hypercolumns.append(upscaled)
         return np.asarray(hypercolumns)
 
+    def is_dense(self, layer):
+        '''Check if the layer is dense (fully connected)
+           Return layer name if it is a dense layer, None otherwise'''
+
+        layer_name = layer.get_config()['name']
+        ltype = layer_name.split('_')[0]
+        if ltype == 'dense':
+            return layer_name
+        return None
+
+    def is_convolutional(self, layer):
+        '''Check if the layer is convolutional
+           Return layer name if it is a dense layer, None otherwise'''
+
+        layer_name = layer.get_config()['name']
+        ltype = layer_name.split('_')[0]
+        if ltype.find('convolution') > -1:
+            return layer_name
+        return None
+
     def cluster_hc(self, hc, n_jobs=1):
         ''' Use KMeans to cluster hypercolumns'''
 
@@ -212,6 +232,7 @@ class DPModel(DP):
                      USE_BN=False, NB_CLASS=1000):
 
         from keras.layers import Input, merge
+
         def conv2D_bn(x, nb_filter, nb_row, nb_col,
                       border_mode='same', subsample=(1, 1),
                       activation='relu', batch_norm=USE_BN,
