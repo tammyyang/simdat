@@ -6,7 +6,7 @@ References:
 
 Before running this script, download the weights for the VGG16 model at:
 https://drive.google.com/file/d/0Bz7KyqmuGsilT0J5dmRCM0ROVHc/view?usp=sharing
-and make sure the variable `weights_path` in this script matches the location.
+and make sure the variable `args.weights` in this script matches the location.
 '''
 from __future__ import print_function
 import numpy as np
@@ -14,6 +14,7 @@ import numpy.ma as ma
 import time
 import os
 import math
+import argparse
 import pylab as pl
 import matplotlib.cm as cm
 from keras import backend as K
@@ -59,40 +60,56 @@ def make_mosaic(imgs, border=1):
     return mosaic
 
 
-# Visualize convolution result (after activation)
-def conv_f(X):
-    # The [0] is to disable the training phase flag
-    return _conv_f([0] + [X])
+def main():
+    parser = argparse.ArgumentParser(
+        description="Simple script to visualize VGG fliters."
+        )
+    parser.add_argument(
+        "-p", "--path", type=str, default=None, required=True,
+        help="Path where the image is."
+        )
+    parser.add_argument(
+        "-w", "--weights", type=str, default=None, required=True,
+        help="Path of the VGG-16 weight file."
+        )
 
-# simdat dependencies
-dp = dp_models.DPModel()
-tl = tools.DATA()
+    args = parser.parse_args()
 
-# basic parameters
-img_width = 224
-img_height = 224
-weights_path = '/home/tammy/www/vgg-16/vgg16_weights.h5'
-img_path = '/home/tammy/www/database/food-test/broccoli/broccoli.jpg'
+    # simdat dependencies
+    dp = dp_models.DPModel()
+    tl = tools.DATA()
 
-model = dp.VGG_16(weights_path=weights_path)
-model.summary()
-X, Y, cls, F = dp.prepare_data_test(
-    img_path, img_width, img_height, convert_Y=False, y_as_str=False)
-inputs = [K.learning_phase()] + model.inputs
+    # basic parameters
+    img_width = 224
+    img_height = 224
 
-for layer in model.layers:
-    lname = dp.is_convolutional(layer)
-    if lname is None:
-        continue
-    # return the output of a certain layer given a certain input
-    # http://keras.io/getting-started/faq/
-    _conv_f = K.function(inputs, [layer.output])
-    C1 = conv_f(X)
-    C1 = np.squeeze(C1)
-    print("%s shape : " % lname, C1.shape)
-    pl.figure(figsize=(15, 15))
-    pl.suptitle(lname)
-    nice_imshow(pl.gca(), make_mosaic(C1), cmap=cm.binary,
-                name=lname + '.png')
+    model = dp.VGG_16(weights_path=args.weights)
+    model.summary()
+    X, Y, cls, F = dp.prepare_data_test(
+        args.path, img_width, img_height, convert_Y=False, y_as_str=False)
+    inputs = [K.learning_phase()] + model.inputs
 
-# TODO: Visualize weights
+    # Visualize convolution result (after activation)
+    def conv_f(X):
+        # The [0] is to disable the training phase flag
+        return _conv_f([0] + [X])
+
+    for layer in model.layers:
+        lname = dp.is_convolutional(layer)
+        if lname is None:
+            continue
+        # return the output of a certain layer given a certain input
+        # http://keras.io/getting-started/faq/
+        _conv_f = K.function(inputs, [layer.output])
+        C1 = conv_f(X)
+        C1 = np.squeeze(C1)
+        print("%s shape : " % lname, C1.shape)
+        pl.figure(figsize=(15, 15))
+        pl.suptitle(lname)
+        nice_imshow(pl.gca(), make_mosaic(C1), cmap=cm.binary,
+                    name=lname + '.png')
+
+    # TODO: Visualize weights
+
+if __name__ == '__main__':
+    main()
