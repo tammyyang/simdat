@@ -9,7 +9,9 @@ from simdat.core import image
 from simdat.core import ml
 from keras import regularizers
 from keras.models import Sequential
+from keras.models import Graph
 from keras.models import Model
+from keras.layers import Activation
 from keras.layers import Flatten, Dense, Dropout
 from keras.layers import Convolution2D, MaxPooling2D
 from keras.layers import ZeroPadding2D
@@ -26,6 +28,86 @@ class DP:
     def dp_init(self):
         """ place holder for child class """
         pass
+
+    def prepare_cifar10_data(self, nb_classes=10):
+        """ Get Cifar10 data """
+
+        from keras.datasets import cifar10
+        (X_train, y_train), (X_test, y_test) = cifar10.load_data()
+        print('X_train shape:', X_train.shape)
+        print(X_train.shape[0], 'train samples')
+        print(X_test.shape[0], 'test samples')
+
+        X_train = X_train.astype('float32')
+        X_test = X_test.astype('float32')
+        X_train /= 255
+        X_test /= 255
+
+        Y_train = np_utils.to_categorical(y_train, nb_classes)
+        Y_test = np_utils.to_categorical(y_test, nb_classes)
+
+        return X_train, X_test, Y_train, Y_test
+
+    def prepare_mnist_data(self, rows=28, cols=28, nb_classes=10):
+        """ Get MNIST data """
+
+        from keras.datasets import mnist
+
+        (X_train, y_train), (X_test, y_test) = mnist.load_data()
+
+        X_train = X_train.reshape(X_train.shape[0], 1, rows, cols)
+        X_test = X_test.reshape(X_test.shape[0], 1, rows, cols)
+        X_train = X_train.astype('float32')
+        X_test = X_test.astype('float32')
+        X_train /= 255
+        X_test /= 255
+        print('X_train shape:', X_train.shape)
+        print(X_train.shape[0], 'train samples')
+        print(X_test.shape[0], 'test samples')
+
+        # convert class vectors to binary class matrices
+        Y_train = np_utils.to_categorical(y_train, nb_classes)
+        Y_test = np_utils.to_categorical(y_test, nb_classes)
+
+        return X_train, X_test, Y_train, Y_test
+
+    def visualize_model(self, model, to_file='model.png'):
+        '''Visualize model (work with Keras 1.0)'''
+
+        import pydot
+        graph = pydot.Dot(graph_type='digraph')
+        if type(model) == Sequential:
+            previous_node = None
+            written_nodes = []
+            n = 1
+            for layer in model.layers:
+                config = layer.get_config()
+                if (config['name'] + str(n)) in written_nodes:
+                    n += 1
+                current_node = pydot.Node(config['name'] + str(n))
+                written_nodes.append(config['name'] + str(n))
+                graph.add_node(current_node)
+                if previous_node:
+                    graph.add_edge(pydot.Edge(previous_node, current_node))
+                previous_node = current_node
+            graph.write_png(to_file)
+
+        elif type(model) == Graph:
+            config = model.get_config()
+            for input_node in config['input_config']:
+                graph.add_node(pydot.Node(input_node['name']))
+
+            for layer_config in [config['node_config'],
+                                 config['output_config']]:
+                for node in layer_config:
+                    graph.add_node(pydot.Node(node['name']))
+                    if node['inputs']:
+                        for e in node['inputs']:
+                            graph.add_edge(pydot.Edge(e, node['name']))
+                    else:
+                        graph.add_edge(pydot.Edge(node['input'], node['name']))
+
+            graph.write_png(to_file)
 
     def extract_hypercolumn(self, model, la_idx, instance):
         ''' Extract HyperColumn of pixels (Theano Only)
@@ -226,6 +308,257 @@ class DPModel(DP):
     def dpmodel_init(self):
         """ place holder for child class """
         pass
+
+    def SqueezeNet(self, nb_classes, inputs=(3, 227, 227)):
+        """ Keras Implementation of SqueezeNet(arXiv 1602.07360)
+            Original source from https://goo.gl/6ly2wj """
+
+        graph = Graph()
+        graph.add_input(name='input', input_shape=inputs)
+        graph.add_node(
+            Convolution2D(96, 7, 7, activation='relu', subsample=(2, 2)),
+            name='conv1',
+            input='input'
+            )
+
+        graph.add_node(
+            MaxPooling2D(pool_size=(3, 3), strides=(2, 2)),
+            name='maxpool1',
+            input='conv1'
+            )
+
+        # The Fire module is implemented as follows. Please note the axis
+        # to be concatenated and the graph structure.
+
+        graph.add_node(
+            Convolution2D(16, 1, 1, activation='relu'),
+            name='fire2_squeeze1x1',
+            input='maxpool1'
+            )
+        graph.add_node(
+            Convolution2D(64, 1, 1, activation='relu'),
+            name='fire2_expand1x1',
+            input='fire2_squeeze1x1'
+            )
+        graph.add_node(
+            ZeroPadding2D((1, 1)),
+            name='fire2_expand3x3_zeropad',
+            input='fire2_squeeze1x1'
+            )
+        graph.add_node(
+            Convolution2D(64, 3, 3, activation='relu'),
+            name='fire2_expand3x3',
+            input='fire2_expand3x3_zeropad'
+            )
+
+        graph.add_node(
+            Convolution2D(16, 1, 1, activation='relu'),
+            name='fire3_squeeze1x1',
+            inputs=['fire2_expand1x1', 'fire2_expand3x3'],
+            merge_mode='concat',
+            concat_axis=1
+            )
+        graph.add_node(
+            Convolution2D(64, 1, 1, activation='relu'),
+            name='fire3_expand1x1',
+            input='fire3_squeeze1x1'
+            )
+        graph.add_node(
+            ZeroPadding2D((1, 1)),
+            name='fire3_expand3x3_zeropad',
+            input='fire3_squeeze1x1'
+            )
+        graph.add_node(
+            Convolution2D(64, 3, 3, activation='relu'),
+            name='fire3_expand3x3',
+            input='fire3_expand3x3_zeropad'
+            )
+
+        graph.add_node(
+            Convolution2D(32, 1, 1, activation='relu'),
+            name='fire4_squeeze1x1',
+            inputs=['fire3_expand1x1', 'fire3_expand3x3'],
+            merge_mode='concat',
+            concat_axis=1
+            )
+        graph.add_node(
+            Convolution2D(128, 1, 1, activation='relu'),
+            name='fire4_expand1x1',
+            input='fire4_squeeze1x1'
+            )
+        graph.add_node(
+            ZeroPadding2D((1, 1)),
+            name='fire4_expand3x3_zeropad',
+            input='fire4_squeeze1x1'
+            )
+        graph.add_node(Convolution2D(
+            128, 3, 3, activation='relu'),
+            name='fire4_expand3x3',
+            input='fire4_expand3x3_zeropad'
+            )
+
+        graph.add_node(
+            MaxPooling2D(pool_size=(3, 3), strides=(2, 2)),
+            name='maxpool4',
+            inputs=['fire4_expand1x1', 'fire4_expand3x3'],
+            merge_mode='concat',
+            concat_axis=1
+            )
+
+        graph.add_node(
+            Convolution2D(32, 1, 1, activation='relu'),
+            name='fire5_squeeze1x1',
+            input='maxpool4'
+            )
+        graph.add_node(
+            Convolution2D(128, 1, 1, activation='relu'),
+            name='fire5_expand1x1',
+            input='fire5_squeeze1x1'
+            )
+        graph.add_node(
+            ZeroPadding2D((1, 1)),
+            name='fire5_expand3x3_zeropad',
+            input='fire5_squeeze1x1'
+            )
+        graph.add_node(
+            Convolution2D(128, 3, 3, activation='relu'),
+            name='fire5_expand3x3',
+            input='fire5_expand3x3_zeropad'
+            )
+
+        graph.add_node(
+            Convolution2D(48, 1, 1, activation='relu'),
+            name='fire6_squeeze1x1',
+            inputs=['fire5_expand1x1', 'fire5_expand3x3'],
+            merge_mode='concat',
+            concat_axis=1
+            )
+        graph.add_node(
+            Convolution2D(192, 1, 1, activation='relu'),
+            name='fire6_expand1x1',
+            input='fire6_squeeze1x1'
+            )
+        graph.add_node(
+            ZeroPadding2D((1, 1)),
+            name='fire6_expand3x3_zeropad',
+            input='fire6_squeeze1x1'
+            )
+        graph.add_node(
+            Convolution2D(192, 3, 3, activation='relu'),
+            name='fire6_expand3x3',
+            input='fire6_expand3x3_zeropad'
+            )
+
+        graph.add_node(
+            Convolution2D(48, 1, 1, activation='relu'),
+            name='fire7_squeeze1x1',
+            inputs=['fire6_expand1x1', 'fire6_expand3x3'],
+            merge_mode='concat',
+            concat_axis=1
+            )
+        graph.add_node(
+            Convolution2D(192, 1, 1, activation='relu'),
+            name='fire7_expand1x1',
+            input='fire7_squeeze1x1'
+            )
+        graph.add_node(
+            ZeroPadding2D((1, 1)),
+            name='fire7_expand3x3_zeropad',
+            input='fire7_squeeze1x1'
+            )
+        graph.add_node(
+            Convolution2D(192, 3, 3, activation='relu'),
+            name='fire7_expand3x3',
+            input='fire7_expand3x3_zeropad'
+            )
+
+        graph.add_node(
+            Convolution2D(64, 1, 1, activation='relu'),
+            name='fire8_squeeze1x1',
+            inputs=['fire7_expand1x1', 'fire7_expand3x3'],
+            merge_mode='concat',
+            concat_axis=1
+            )
+        graph.add_node(
+            Convolution2D(256, 1, 1, activation='relu'),
+            name='fire8_expand1x1',
+            input='fire8_squeeze1x1'
+            )
+        graph.add_node(
+            ZeroPadding2D((1, 1)),
+            name='fire8_expand3x3_zeropad',
+            input='fire8_squeeze1x1'
+            )
+        graph.add_node(
+            Convolution2D(256, 3, 3, activation='relu'),
+            name='fire8_expand3x3',
+            input='fire8_expand3x3_zeropad'
+            )
+
+        graph.add_node(
+            MaxPooling2D(pool_size=(3, 3), strides=(2, 2)),
+            name='maxpool8',
+            inputs=['fire8_expand1x1', 'fire8_expand3x3'],
+            merge_mode='concat',
+            concat_axis=1
+            )
+
+        graph.add_node(
+            Convolution2D(64, 1, 1, activation='relu'),
+            name='fire9_squeeze1x1',
+            input='maxpool8'
+            )
+        graph.add_node(
+            Convolution2D(256, 1, 1, activation='relu'),
+            name='fire9_expand1x1',
+            input='fire9_squeeze1x1'
+            )
+        graph.add_node(
+            ZeroPadding2D((1, 1)),
+            name='fire9_expand3x3_zeropad',
+            input='fire9_squeeze1x1'
+            )
+        graph.add_node(
+            Convolution2D(256, 3, 3, activation='relu'),
+            name='fire9_expand3x3',
+            input='fire9_expand3x3_zeropad'
+            )
+
+        graph.add_node(
+            Dropout(0.5),
+            name='dropout',
+            inputs=['fire9_expand1x1', 'fire9_expand3x3'],
+            merge_mode='concat',
+            concat_axis=1
+            )
+
+        graph.add_node(
+            Convolution2D(nb_classes, 1, 1, activation='relu'),
+            name='conv10',
+            input='dropout'
+            )
+
+        graph.add_node(
+            AveragePooling2D(pool_size=(13, 13)),
+            name='avgpool10',
+            input='conv10'
+            )
+
+        graph.add_node(
+            Flatten(),
+            name='flatten',
+            input='avgpool10'
+            )
+
+        graph.add_node(
+            Activation('softmax'),
+            name='softmax',
+            input='flatten'
+            )
+
+        graph.add_output(name='output', input='softmax')
+
+        return graph
 
     def Inception_v3(self, weights_path=None,
                      DIM_ORDERING='th', WEIGHT_DECAY=0,
