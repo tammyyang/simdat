@@ -309,256 +309,187 @@ class DPModel(DP):
         """ place holder for child class """
         pass
 
-    def SqueezeNet(self, nb_classes, inputs=(3, 227, 227)):
+    def SqueezeNet(self, nb_classes, inputs=(3, 224, 224)):
         """ Keras Implementation of SqueezeNet(arXiv 1602.07360)
-            Original source from https://goo.gl/6ly2wj """
+            Original source from https://goo.gl/jtkvZW """
 
-        graph = Graph()
-        graph.add_input(name='input', input_shape=inputs)
-        graph.add_node(
-            Convolution2D(96, 7, 7, activation='relu', subsample=(2, 2)),
-            name='conv1',
-            input='input'
-            )
+        model = Graph()
+        model.add_input(name='input', input_shape=inputs)
+        model.add_node(
+            Convolution2D(96, 3, 3, activation='relu',
+                          init='glorot_uniform', subsample=(2, 2),
+                          border_mode='valid'),
+            name='conv1', input='input')
 
-        graph.add_node(
-            MaxPooling2D(pool_size=(3, 3), strides=(2, 2)),
-            name='maxpool1',
-            input='conv1'
-            )
+        model.add_node(MaxPooling2D((2, 2)), name='maxpool1', input='conv1')
 
-        # The Fire module is implemented as follows. Please note the axis
-        # to be concatenated and the graph structure.
+        #fire 1
+        model.add_node(
+            Convolution2D(16, 1, 1, activation='relu',
+                          init='glorot_uniform', border_mode='same'),
+            name='fire2_squeeze', input='maxpool1')
+        model.add_node(
+            Convolution2D(64, 1, 1, activation='relu',
+                          init='glorot_uniform', border_mode='same'),
+            name='fire2_expand1', input='fire2_squeeze')
+        model.add_node(
+            Convolution2D(64, 3, 3, activation='relu',
+                          init='glorot_uniform', border_mode='same'),
+            name='fire2_expand2', input='fire2_squeeze')
+        model.add_node(
+            Activation("linear"), name='fire2',
+            inputs=["fire2_expand1", "fire2_expand2"],
+            merge_mode="concat", concat_axis=1)
 
-        graph.add_node(
-            Convolution2D(16, 1, 1, activation='relu'),
-            name='fire2_squeeze1x1',
-            input='maxpool1'
-            )
-        graph.add_node(
-            Convolution2D(64, 1, 1, activation='relu'),
-            name='fire2_expand1x1',
-            input='fire2_squeeze1x1'
-            )
-        graph.add_node(
-            ZeroPadding2D((1, 1)),
-            name='fire2_expand3x3_zeropad',
-            input='fire2_squeeze1x1'
-            )
-        graph.add_node(
-            Convolution2D(64, 3, 3, activation='relu'),
-            name='fire2_expand3x3',
-            input='fire2_expand3x3_zeropad'
-            )
+        #fire 2
+        model.add_node(
+            Convolution2D(16, 1, 1, activation='relu',
+                          init='glorot_uniform', border_mode='same'),
+            name='fire3_squeeze', input='fire2')
+        model.add_node(
+            Convolution2D(64, 1, 1, activation='relu',
+                          init='glorot_uniform', border_mode='same'),
+            name='fire3_expand1', input='fire3_squeeze')
+        model.add_node(
+            Convolution2D(64, 3, 3, activation='relu',
+                          init='glorot_uniform', border_mode='same'),
+            name='fire3_expand2', input='fire3_squeeze')
+        model.add_node(
+            Activation("linear"), name='fire3',
+            inputs=["fire3_expand1", "fire3_expand2"],
+            merge_mode="concat", concat_axis=1)
 
-        graph.add_node(
-            Convolution2D(16, 1, 1, activation='relu'),
-            name='fire3_squeeze1x1',
-            inputs=['fire2_expand1x1', 'fire2_expand3x3'],
-            merge_mode='concat',
-            concat_axis=1
-            )
-        graph.add_node(
-            Convolution2D(64, 1, 1, activation='relu'),
-            name='fire3_expand1x1',
-            input='fire3_squeeze1x1'
-            )
-        graph.add_node(
-            ZeroPadding2D((1, 1)),
-            name='fire3_expand3x3_zeropad',
-            input='fire3_squeeze1x1'
-            )
-        graph.add_node(
-            Convolution2D(64, 3, 3, activation='relu'),
-            name='fire3_expand3x3',
-            input='fire3_expand3x3_zeropad'
-            )
+        #fire 3
+        model.add_node(
+            Convolution2D(32, 1, 1, activation='relu',
+                          init='glorot_uniform', border_mode='same'),
+            name='fire4_squeeze', input='fire3')
+        model.add_node(
+            Convolution2D(128, 1, 1, activation='relu',
+                          init='glorot_uniform', border_mode='same'),
+            name='fire4_expand1', input='fire4_squeeze')
+        model.add_node(
+            Convolution2D(128, 3, 3, activation='relu',
+                          init='glorot_uniform', border_mode='same'),
+            name='fire4_expand2', input='fire4_squeeze')
+        model.add_node(
+            Activation("linear"), name='fire4',
+            inputs=["fire4_expand1", "fire4_expand2"],
+            merge_mode="concat", concat_axis=1)
 
-        graph.add_node(
-            Convolution2D(32, 1, 1, activation='relu'),
-            name='fire4_squeeze1x1',
-            inputs=['fire3_expand1x1', 'fire3_expand3x3'],
-            merge_mode='concat',
-            concat_axis=1
-            )
-        graph.add_node(
-            Convolution2D(128, 1, 1, activation='relu'),
-            name='fire4_expand1x1',
-            input='fire4_squeeze1x1'
-            )
-        graph.add_node(
-            ZeroPadding2D((1, 1)),
-            name='fire4_expand3x3_zeropad',
-            input='fire4_squeeze1x1'
-            )
-        graph.add_node(Convolution2D(
-            128, 3, 3, activation='relu'),
-            name='fire4_expand3x3',
-            input='fire4_expand3x3_zeropad'
-            )
+        #maxpool 4
+        model.add_node(MaxPooling2D((2, 2)), name='maxpool4', input='fire4')
 
-        graph.add_node(
-            MaxPooling2D(pool_size=(3, 3), strides=(2, 2)),
-            name='maxpool4',
-            inputs=['fire4_expand1x1', 'fire4_expand3x3'],
-            merge_mode='concat',
-            concat_axis=1
-            )
+        #fire 5
+        model.add_node(
+            Convolution2D(32, 1, 1, activation='relu',
+                          init='glorot_uniform', border_mode='same'),
+            name='fire5_squeeze', input='maxpool4')
+        model.add_node(
+            Convolution2D(128, 1, 1, activation='relu',
+                          init='glorot_uniform', border_mode='same'),
+            name='fire5_expand1', input='fire5_squeeze')
+        model.add_node(
+            Convolution2D(128, 3, 3, activation='relu',
+                          init='glorot_uniform', border_mode='same'),
+            name='fire5_expand2', input='fire5_squeeze')
+        model.add_node(
+            Activation("linear"), name='fire5',
+            inputs=["fire5_expand1", "fire5_expand2"],
+            merge_mode="concat", concat_axis=1)
 
-        graph.add_node(
-            Convolution2D(32, 1, 1, activation='relu'),
-            name='fire5_squeeze1x1',
-            input='maxpool4'
-            )
-        graph.add_node(
-            Convolution2D(128, 1, 1, activation='relu'),
-            name='fire5_expand1x1',
-            input='fire5_squeeze1x1'
-            )
-        graph.add_node(
-            ZeroPadding2D((1, 1)),
-            name='fire5_expand3x3_zeropad',
-            input='fire5_squeeze1x1'
-            )
-        graph.add_node(
-            Convolution2D(128, 3, 3, activation='relu'),
-            name='fire5_expand3x3',
-            input='fire5_expand3x3_zeropad'
-            )
+        #fire 6
+        model.add_node(
+            Convolution2D(48, 1, 1, activation='relu',
+                          init='glorot_uniform', border_mode='same'),
+            name='fire6_squeeze', input='fire5')
+        model.add_node(
+            Convolution2D(192, 1, 1, activation='relu',
+                          init='glorot_uniform', border_mode='same'),
+            name='fire6_expand1', input='fire6_squeeze')
+        model.add_node(
+            Convolution2D(192, 3, 3, activation='relu',
+                          init='glorot_uniform', border_mode='same'),
+            name='fire6_expand2', input='fire6_squeeze')
+        model.add_node(
+            Activation("linear"), name='fire6',
+            inputs=["fire6_expand1", "fire6_expand2"],
+            merge_mode="concat", concat_axis=1)
 
-        graph.add_node(
-            Convolution2D(48, 1, 1, activation='relu'),
-            name='fire6_squeeze1x1',
-            inputs=['fire5_expand1x1', 'fire5_expand3x3'],
-            merge_mode='concat',
-            concat_axis=1
-            )
-        graph.add_node(
-            Convolution2D(192, 1, 1, activation='relu'),
-            name='fire6_expand1x1',
-            input='fire6_squeeze1x1'
-            )
-        graph.add_node(
-            ZeroPadding2D((1, 1)),
-            name='fire6_expand3x3_zeropad',
-            input='fire6_squeeze1x1'
-            )
-        graph.add_node(
-            Convolution2D(192, 3, 3, activation='relu'),
-            name='fire6_expand3x3',
-            input='fire6_expand3x3_zeropad'
-            )
+        #fire 7
+        model.add_node(
+            Convolution2D(48, 1, 1, activation='relu',
+                          init='glorot_uniform', border_mode='same'),
+            name='fire7_squeeze', input='fire6')
+        model.add_node(
+            Convolution2D(192, 1, 1, activation='relu',
+                          init='glorot_uniform', border_mode='same'),
+            name='fire7_expand1', input='fire7_squeeze')
+        model.add_node(
+            Convolution2D(192, 3, 3, activation='relu',
+                          init='glorot_uniform', border_mode='same'),
+            name='fire7_expand2', input='fire7_squeeze')
+        model.add_node(
+            Activation("linear"), name='fire7',
+            inputs=["fire7_expand1", "fire7_expand2"],
+            merge_mode="concat", concat_axis=1)
 
-        graph.add_node(
-            Convolution2D(48, 1, 1, activation='relu'),
-            name='fire7_squeeze1x1',
-            inputs=['fire6_expand1x1', 'fire6_expand3x3'],
-            merge_mode='concat',
-            concat_axis=1
-            )
-        graph.add_node(
-            Convolution2D(192, 1, 1, activation='relu'),
-            name='fire7_expand1x1',
-            input='fire7_squeeze1x1'
-            )
-        graph.add_node(
-            ZeroPadding2D((1, 1)),
-            name='fire7_expand3x3_zeropad',
-            input='fire7_squeeze1x1'
-            )
-        graph.add_node(
-            Convolution2D(192, 3, 3, activation='relu'),
-            name='fire7_expand3x3',
-            input='fire7_expand3x3_zeropad'
-            )
+        #fire 8
+        model.add_node(
+            Convolution2D(64, 1, 1, activation='relu',
+                          init='glorot_uniform', border_mode='same'),
+            name='fire8_squeeze', input='fire7')
+        model.add_node(
+            Convolution2D(256, 1, 1, activation='relu',
+                          init='glorot_uniform', border_mode='same'),
+            name='fire8_expand1', input='fire8_squeeze')
+        model.add_node(
+            Convolution2D(256, 3, 3, activation='relu',
+                          init='glorot_uniform', border_mode='same'),
+            name='fire8_expand2', input='fire8_squeeze')
+        model.add_node(
+            Activation("linear"), name='fire8',
+            inputs=["fire8_expand1", "fire8_expand2"],
+            merge_mode="concat", concat_axis=1)
 
-        graph.add_node(
-            Convolution2D(64, 1, 1, activation='relu'),
-            name='fire8_squeeze1x1',
-            inputs=['fire7_expand1x1', 'fire7_expand3x3'],
-            merge_mode='concat',
-            concat_axis=1
-            )
-        graph.add_node(
-            Convolution2D(256, 1, 1, activation='relu'),
-            name='fire8_expand1x1',
-            input='fire8_squeeze1x1'
-            )
-        graph.add_node(
-            ZeroPadding2D((1, 1)),
-            name='fire8_expand3x3_zeropad',
-            input='fire8_squeeze1x1'
-            )
-        graph.add_node(
-            Convolution2D(256, 3, 3, activation='relu'),
-            name='fire8_expand3x3',
-            input='fire8_expand3x3_zeropad'
-            )
+        #maxpool 8
+        model.add_node(MaxPooling2D((2, 2)), name='maxpool8', input='fire8')
 
-        graph.add_node(
-            MaxPooling2D(pool_size=(3, 3), strides=(2, 2)),
-            name='maxpool8',
-            inputs=['fire8_expand1x1', 'fire8_expand3x3'],
-            merge_mode='concat',
-            concat_axis=1
-            )
+        #fire 9
+        model.add_node(
+            Convolution2D(64, 1, 1, activation='relu',
+                          init='glorot_uniform', border_mode='same'),
+            name='fire9_squeeze', input='maxpool8')
+        model.add_node(
+            Convolution2D(256, 1, 1, activation='relu',
+                          init='glorot_uniform', border_mode='same'),
+            name='fire9_expand1', input='fire9_squeeze')
+        model.add_node(
+            Convolution2D(256, 3, 3, activation='relu',
+                          init='glorot_uniform', border_mode='same'),
+            name='fire9_expand2', input='fire9_squeeze')
+        model.add_node(
+            Activation("linear"), name='fire9',
+            inputs=["fire9_expand1", "fire9_expand2"],
+            merge_mode="concat", concat_axis=1)
+        model.add_node(Dropout(0.5), input='fire9', name='fire9_dropout')
 
-        graph.add_node(
-            Convolution2D(64, 1, 1, activation='relu'),
-            name='fire9_squeeze1x1',
-            input='maxpool8'
-            )
-        graph.add_node(
-            Convolution2D(256, 1, 1, activation='relu'),
-            name='fire9_expand1x1',
-            input='fire9_squeeze1x1'
-            )
-        graph.add_node(
-            ZeroPadding2D((1, 1)),
-            name='fire9_expand3x3_zeropad',
-            input='fire9_squeeze1x1'
-            )
-        graph.add_node(
-            Convolution2D(256, 3, 3, activation='relu'),
-            name='fire9_expand3x3',
-            input='fire9_expand3x3_zeropad'
-            )
+        #conv 10
+        model.add_node(
+            Convolution2D(nb_classes, 1, 1, init='glorot_uniform',
+                          border_mode='valid'),
+            name='conv10', input='fire9_dropout')
+        #avgpool 1
+        model.add_node(
+            AveragePooling2D((13, 13)), name='avgpool10', input='conv10')
 
-        graph.add_node(
-            Dropout(0.5),
-            name='dropout',
-            inputs=['fire9_expand1x1', 'fire9_expand3x3'],
-            merge_mode='concat',
-            concat_axis=1
-            )
+        model.add_node(Flatten(), name='flatten', input='avgpool10')
 
-        graph.add_node(
-            Convolution2D(nb_classes, 1, 1, activation='relu'),
-            name='conv10',
-            input='dropout'
-            )
+        model.add_node(Activation("softmax"), input='flatten', name='softmax')
 
-        graph.add_node(
-            AveragePooling2D(pool_size=(13, 13)),
-            name='avgpool10',
-            input='conv10'
-            )
+        model.add_output(name='output', input='softmax')
 
-        graph.add_node(
-            Flatten(),
-            name='flatten',
-            input='avgpool10'
-            )
-
-        graph.add_node(
-            Activation('softmax'),
-            name='softmax',
-            input='flatten'
-            )
-
-        graph.add_output(name='output', input='softmax')
-
-        return graph
+        return model
 
     def Inception_v3(self, weights_path=None,
                      DIM_ORDERING='th', WEIGHT_DECAY=0,

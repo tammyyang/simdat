@@ -58,7 +58,8 @@ def main():
     dp.visualize_model(graph)
 
     adam = Adam(lr=args.lr, beta_1=0.9, beta_2=0.999, epsilon=args.epsilon)
-    graph.compile(optimizer=adam, loss='categorical_crossentropy')
+    graph.compile(
+        optimizer=adam, loss='categorical_crossentropy', metrics=['accuracy'])
     print "Model built"
 
     print "Training"
@@ -70,7 +71,8 @@ def main():
     print "Evaluating"
     score = graph.evaluate({'input': X_test, 'output': Y_test},
                            batch_size=args.batchsize, verbose=1)
-    print score
+    print('Test score:', score[0])
+    print('Test accuracy:', score[1])
 
 if __name__ == '__main__':
     main()
