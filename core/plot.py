@@ -1074,7 +1074,7 @@ class PLOT(tools.DATA, COLORS):
                     xticks=None, yticks=None, fname='./cm.png',
                     xlabel='Predicted label', ylabel='True label',
                     xrotation=45, clear=True,
-                    color='YlOrRd', rebin=None,
+                    color='YlOrRd', rebin=None, autorebin=False,
                     show_text=True, show_axis=True, norm=True):
         """Plot (confusion) matrix
 
@@ -1094,6 +1094,7 @@ class PLOT(tools.DATA, COLORS):
         show_text  -- true to show values on grids (default: True)
         show_axis  -- true to show axis (default: True)
         color      -- color map, see http://goo.gl/51s91K (default: YlOrRd)
+        autorebin  -- rebin automatically (default: False)
         norm       -- true to normlize numbers (default: True)
 
         """
@@ -1120,7 +1121,7 @@ class PLOT(tools.DATA, COLORS):
             xticks = xtick_marks
         if yticks is None:
             yticks = ytick_marks
-        if (len(xticks) > 20 or len(yticks) > 20) and rebin is None:
+        if (len(xticks) > 20 or len(yticks) > 20) and autorebin:
             rebin = max(len(xticks), len(yticks))/20
         if rebin is not None:
             xtick_marks, xticks = self.red_ticks(xtick_marks, xticks, rebin)
