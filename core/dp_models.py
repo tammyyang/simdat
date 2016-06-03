@@ -74,25 +74,13 @@ class DP:
     def visualize_model(self, model, to_file='model.png'):
         '''Visualize model (work with Keras 1.0)'''
 
-        import pydot
-        graph = pydot.Dot(graph_type='digraph')
-        if type(model) == Sequential:
-            previous_node = None
-            written_nodes = []
-            n = 1
-            for layer in model.layers:
-                config = layer.get_config()
-                if (config['name'] + str(n)) in written_nodes:
-                    n += 1
-                current_node = pydot.Node(config['name'] + str(n))
-                written_nodes.append(config['name'] + str(n))
-                graph.add_node(current_node)
-                if previous_node:
-                    graph.add_edge(pydot.Edge(previous_node, current_node))
-                previous_node = current_node
-            graph.write_png(to_file)
+        if type(model) == Sequential or type(model) == Model:
+            from keras.utils.visualize_util import plot
+            plot(model, to_file=to_file)
 
         elif type(model) == Graph:
+            import pydot
+            graph = pydot.Dot(graph_type='digraph')
             config = model.get_config()
             for input_node in config['input_config']:
                 graph.add_node(pydot.Node(input_node['name']))
