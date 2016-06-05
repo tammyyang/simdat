@@ -1,11 +1,16 @@
 """
 Usage: python squeezenet_demo.py -p "/home/db/www/database/tests"
 """
+import time
 import argparse
-from simdat.core import dp_models
+from simdat.core import dp_tools
+from simdat.core import keras_models as km
+from simdat.core import tools
 from keras.optimizers import Adam
+from keras.optimizers import SGD
 
-dp = dp_models.DPModel()
+dp = dp_tools.DP()
+tl = tools.TOOLS()
 
 
 def main():
@@ -33,12 +38,12 @@ def main():
         help="Path where the images are. Default: $PWD."
         )
     parser.add_argument(
-        "--img-width", type=int, default=227, dest='width',
-        help="Rows of the images, default: 227."
+        "--img-width", type=int, default=224, dest='width',
+        help="Rows of the images, default: 224."
         )
     parser.add_argument(
-        "--img-height", type=int, default=227, dest='height',
-        help="Columns of the images, default: 227."
+        "--img-height", type=int, default=224, dest='height',
+        help="Columns of the images, default: 224."
         )
     parser.add_argument(
         "--channels", type=int, default=3,
@@ -51,28 +56,31 @@ def main():
         args.path, args.width, args.height)
 
     nb_classes = Y_train[0].shape[0]
+    print('Total classes are %i' % nb_classes)
 
+    t0 = time.time()
     print "Building the model"
-    graph = dp.SqueezeNet(
+    model = km.SqueezeNet(
         nb_classes, inputs=(args.channels, args.height, args.width))
-    dp.visualize_model(graph)
+    dp.visualize_model(model)
 
     adam = Adam(lr=args.lr, beta_1=0.9, beta_2=0.999, epsilon=args.epsilon)
-    graph.compile(
+    model.compile(
         optimizer=adam, loss='categorical_crossentropy', metrics=['accuracy'])
     print "Model built"
+    print(model.summary())
 
     print "Training"
-    graph.fit({'input': X_train, 'output': Y_train},
-              batch_size=args.batchsize, nb_epoch=args.epochs,
-              validation_split=0.1, verbose=1)
+    model.fit(X_train, Y_train, nb_epoch=args.epochs,
+              batch_size=args.batchsize, verbose=1)
     print "Model trained"
 
     print "Evaluating"
-    score = graph.evaluate({'input': X_test, 'output': Y_test},
-                           batch_size=args.batchsize, verbose=1)
+    score = model.evaluate(
+        X_test, Y_test, batch_size=args.batchsize, verbose=1)
     print('Test score:', score[0])
     print('Test accuracy:', score[1])
+    t0 = tl.print_time(t0, 'score squeezenet')
 
 if __name__ == '__main__':
     main()
