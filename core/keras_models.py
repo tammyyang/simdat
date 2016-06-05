@@ -1,4 +1,5 @@
 import h5py
+from collections import OrderedDict
 from keras import regularizers
 from keras.models import Sequential
 from keras.models import Graph
@@ -10,7 +11,7 @@ from keras.layers import ZeroPadding2D
 from keras.layers import AveragePooling2D
 
 
-def SqueezeNet(nb_classes, inputs=(3, 227, 227)):
+def SqueezeNet(nb_classes, inputs=(3, 224, 224)):
     """ Keras Implementation of SqueezeNet(arXiv 1602.07360)
 
     @param nb_classes: total number of final categories
@@ -22,8 +23,8 @@ def SqueezeNet(nb_classes, inputs=(3, 227, 227)):
 
     input_img = Input(shape=inputs)
     conv1 = Convolution2D(
-        96, 3, 3, activation='relu', init='glorot_uniform',
-        subsample=(2, 2), border_mode='valid', name='conv1')(input_img)
+        96, 7, 7, activation='relu', init='glorot_uniform',
+        subsample=(2, 2), border_mode='same', name='conv1')(input_img)
     maxpool1 = MaxPooling2D(
         pool_size=(3, 3), strides=(2, 2), name='maxpool1')(conv1)
 
@@ -48,12 +49,12 @@ def SqueezeNet(nb_classes, inputs=(3, 227, 227)):
     fire3_expand2 = Convolution2D(
         64, 3, 3, activation='relu', init='glorot_uniform',
         border_mode='same', name='fire3_expand2')(fire3_squeeze)
-    merge2 = merge(
+    merge3 = merge(
         [fire3_expand1, fire3_expand2], mode='concat', concat_axis=1)
 
     fire4_squeeze = Convolution2D(
         32, 1, 1, activation='relu', init='glorot_uniform',
-        border_mode='same', name='fire4_squeeze')(merge2)
+        border_mode='same', name='fire4_squeeze')(merge3)
     fire4_expand1 = Convolution2D(
         128, 1, 1, activation='relu', init='glorot_uniform',
         border_mode='same', name='fire4_expand1')(fire4_squeeze)
@@ -133,8 +134,8 @@ def SqueezeNet(nb_classes, inputs=(3, 227, 227)):
         nb_classes, 1, 1, init='glorot_uniform',
         border_mode='valid', name='conv10')(fire9_dropout)
     # The size should match the output of conv10
-    # avgpool10 = AveragePooling2D((13, 13), name='avgpool10')(conv10)
-    avgpool10 = AveragePooling2D((1, 1), name='avgpool10')(conv10)
+    avgpool10 = AveragePooling2D((13, 13), name='avgpool10')(conv10)
+    # avgpool10 = AveragePooling2D((1, 1), name='avgpool10')(conv10)
 
     flatten = Flatten(name='flatten')(avgpool10)
     softmax = Activation("softmax", name='softmax')(flatten)
