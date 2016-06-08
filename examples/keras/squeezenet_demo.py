@@ -38,6 +38,10 @@ def main():
         help="Path where the images are. Default: $PWD."
         )
     parser.add_argument(
+        "-v", "--val-path", type=str, default='.', required=True,
+        dest='valpath', help="Path where the val images are. Default: $PWD."
+        )
+    parser.add_argument(
         "--img-width", type=int, default=224, dest='width',
         help="Rows of the images, default: 224."
         )
@@ -52,34 +56,39 @@ def main():
 
     args = parser.parse_args()
 
-    X_train, X_test, Y_train, Y_test, classes = dp.prepare_data_train(
+    train_generator = dp.train_data_generator(
         args.path, args.width, args.height)
+    validation_generator = dp.val_data_generator(
+        args.valpath, args.width, args.height)
 
-    nb_classes = Y_train[0].shape[0]
-    print('Total classes are %i' % nb_classes)
+    nb_train_samples = train_generator.nb_sample
+    nb_val_samples = validation_generator.nb_sample
+    print("Number of training samples: %i " % nb_train_samples)
+    print("Number of training samples: %i " % nb_val_samples)
+    nb_class = train_generator.nb_class
+    print('Total classes are %i' % nb_class)
 
     t0 = time.time()
     print "Building the model"
     model = km.SqueezeNet(
-        nb_classes, inputs=(args.channels, args.height, args.width))
+        nb_class, inputs=(args.channels, args.height, args.width))
     dp.visualize_model(model)
 
-    adam = Adam(lr=args.lr, beta_1=0.9, beta_2=0.999, epsilon=args.epsilon)
+    sgd = SGD(lr=args.lr, decay=0.0002, momentum=0.9)
     model.compile(
-        optimizer=adam, loss='categorical_crossentropy', metrics=['accuracy'])
+        optimizer=sgd, loss='categorical_crossentropy', metrics=['accuracy'])
     print "Model built"
-    print(model.summary())
 
     print "Training"
-    model.fit(X_train, Y_train, nb_epoch=args.epochs,
-              batch_size=args.batchsize, verbose=1)
+    model.fit_generator(
+        train_generator,
+        samples_per_epoch=nb_train_samples,
+        nb_epoch=args.epochs,
+        validation_data=validation_generator,
+        nb_val_samples=nb_val_samples)
+
     print "Model trained"
 
-    print "Evaluating"
-    score = model.evaluate(
-        X_test, Y_test, batch_size=args.batchsize, verbose=1)
-    print('Test score:', score[0])
-    print('Test accuracy:', score[1])
     t0 = tl.print_time(t0, 'score squeezenet')
 
 if __name__ == '__main__':

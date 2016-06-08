@@ -16,6 +16,7 @@ from keras.layers import Flatten, Dense, Dropout
 from keras.layers import Convolution2D, MaxPooling2D
 from keras.layers import ZeroPadding2D
 from keras.layers import AveragePooling2D
+from keras.preprocessing.image import ImageDataGenerator
 from keras.utils import np_utils
 
 
@@ -28,6 +29,53 @@ class DP:
     def dp_init(self):
         """ place holder for child class """
         pass
+
+    def train_data_generator(self, data_dir, img_width, img_height,
+                             class_mode="categorical", batch_size=32,
+                             train_mode=True):
+        """trturn ImageDataGenerator for training data
+
+        @param data_dir: path of the images
+        @param img_width: image width
+        @param img_height: image height
+
+        Arguments:
+        class_mode -- class mode for y labels, can be "categorical",
+                      "binary", "sparse" (default: categorical)
+        batch_size -- Batch size (default: 32)
+        classes   -- A pre-defined list of class index (default: None)
+        convert_Y -- True to use np_utils.to_categorical to convert Y
+                     (default: True)
+        sort      -- True to sort the images (default: False)
+        trans     -- True to transport the image from (h, w, c) to (c, h, w)
+
+        """
+
+        if train_mode:
+            datagen = ImageDataGenerator(
+                rescale=1./255,
+                shear_range=0.2,
+                zoom_range=0.2,
+                horizontal_flip=True)
+
+        else:
+            datagen = ImageDataGenerator(rescale=1./255)
+
+        generator = datagen.flow_from_directory(
+            data_dir,
+            target_size=(img_width, img_height),
+            batch_size=batch_size,
+            class_mode=class_mode)
+
+        return generator
+
+    def val_data_generator(self, val_data_dir, img_width, img_height,
+                           class_mode="categorical", batch_size=32):
+        """return ImageDataGenerator for validation data"""
+
+        return self.train_data_generator(
+            val_data_dir, img_width, img_height, train_mode=False,
+            class_mode=class_mode, batch_size=batch_size)
 
     def prepare_cifar10_data(self, nb_classes=10):
         """ Get Cifar10 data """
