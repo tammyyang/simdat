@@ -1,12 +1,11 @@
 """
-Usage: python squeezenet_demo.py -p "/home/db/www/database/tests"
+Usage: python squeezenet_demo.py -p "/home/db/www/database/tests/train" -v -p "/home/db/www/database/tests/validation"
 """
 import time
 import argparse
 from simdat.core import dp_tools
 from simdat.core import keras_models as km
 from simdat.core import tools
-from keras.optimizers import Adam
 from keras.optimizers import SGD
 
 dp = dp_tools.DP()
@@ -18,20 +17,12 @@ def main():
         description="SqueezeNet example."
         )
     parser.add_argument(
-        "--batch-size", type=int, default=32, dest='batchsize',
-        help="Size of the mini batch. Default: 32."
-        )
-    parser.add_argument(
         "--epochs", type=int, default=20,
         help="Number of epochs, default 20."
         )
     parser.add_argument(
         "--lr", type=float, default=0.001,
         help="Learning rate of SGD, default 0.001."
-        )
-    parser.add_argument(
-        "--epsilon", type=float, default=1e-8,
-        help="Epsilon of Adam epsilon, default 1e-8."
         )
     parser.add_argument(
         "-p", "--path", type=str, default='.', required=True,
@@ -63,13 +54,13 @@ def main():
 
     nb_train_samples = train_generator.nb_sample
     nb_val_samples = validation_generator.nb_sample
-    print("Number of training samples: %i " % nb_train_samples)
-    print("Number of training samples: %i " % nb_val_samples)
+    print("[squeezenet] Number of training samples: %i " % nb_train_samples)
+    print("[squeezenet] Number of training samples: %i " % nb_val_samples)
     nb_class = train_generator.nb_class
-    print('Total classes are %i' % nb_class)
+    print('[squeezenet] Total classes are %i' % nb_class)
 
     t0 = time.time()
-    print "Building the model"
+    print "[squeezenet] Building the model..."
     model = km.SqueezeNet(
         nb_class, inputs=(args.channels, args.height, args.width))
     dp.visualize_model(model)
@@ -77,9 +68,9 @@ def main():
     sgd = SGD(lr=args.lr, decay=0.0002, momentum=0.9)
     model.compile(
         optimizer=sgd, loss='categorical_crossentropy', metrics=['accuracy'])
-    print "Model built"
+    print "[squeezenet] Model built."
 
-    print "Training"
+    print "[squeezenet] Start training..."
     model.fit_generator(
         train_generator,
         samples_per_epoch=nb_train_samples,
@@ -87,7 +78,7 @@ def main():
         validation_data=validation_generator,
         nb_val_samples=nb_val_samples)
 
-    print "Model trained"
+    print "[squeezenet] Model trained."
 
     t0 = tl.print_time(t0, 'score squeezenet')
 
