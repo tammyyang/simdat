@@ -11,7 +11,7 @@ from keras.layers import ZeroPadding2D
 from keras.layers import AveragePooling2D
 
 
-def SqueezeNet(nb_classes, inputs=(3, 224, 224)):
+def SqueezeNet(nb_classes, inputs=(3, 224, 224), weights_path=None):
     """ Keras Implementation of SqueezeNet(arXiv 1602.07360)
 
     @param nb_classes: total number of final categories
@@ -140,7 +140,11 @@ def SqueezeNet(nb_classes, inputs=(3, 224, 224)):
     flatten = Flatten(name='flatten')(avgpool10)
     softmax = Activation("softmax", name='softmax')(flatten)
 
-    return Model(input=input_img, output=softmax)
+    model = Model(input=input_img, output=softmax)
+    if weights_path is not None:
+        load_weights(model, weights_path)
+
+    return model
 
 
 def Inception_v3(weights_path=None,
