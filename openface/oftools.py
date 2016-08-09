@@ -276,10 +276,13 @@ class OpenFace(OFTools):
               % (p1, p2, sim, d))
         return bsim, d
 
-    def align(self, imgPath):
+    def align(self, imgPath, write_out=False):
         """Get aligned face(s) of a image
 
         @param imgPath: input image path
+
+        Keyword Arguments:
+        write_out -- write out aligned faces (default: False)
 
         """
         import dlib
@@ -310,6 +313,11 @@ class OpenFace(OFTools):
                 continue
             alignedFaces.append([alignedFace, [bb.left(), bb.top(),
                                                bb.right(), bb.bottom()]])
+
+            if write_out:
+                _fname = os.path.basename(imgPath)
+                fname = _fname.replace('.', '_cut.')
+                cv2.imwrite(fname, alignedFace)
 
             if len(alignedFace) < 1:
                 print("Fail to align image: {}".format(imgPath))
