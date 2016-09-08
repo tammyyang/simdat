@@ -65,7 +65,7 @@ def main():
         nb_class, inputs=(args.channels, args.height, args.width))
     dp.visualize_model(model)
 
-    sgd = SGD(lr=args.lr, decay=0.0002, momentum=0.9)
+    sgd = SGD(lr=args.lr, decay=0.0002, momentum=0.9, nesterov=True)
     model.compile(
         optimizer=sgd, loss='categorical_crossentropy', metrics=['accuracy'])
     print "[squeezenet] Model built."
@@ -81,6 +81,7 @@ def main():
     print "[squeezenet] Model trained."
 
     t0 = tl.print_time(t0, 'score squeezenet')
+    model.save_weights('squeeze_net.h5', overwrite=True)
 
 if __name__ == '__main__':
     main()
