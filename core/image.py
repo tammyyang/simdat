@@ -259,6 +259,30 @@ class IMAGE(tools.TOOLS):
             return False
         return True
 
+    def read_and_gray(self, fimg, save=False):
+        """Read and convert images to gray
+
+        @param fimg: input image file name
+
+        Keyword arguments:
+        save      -- True to save the image
+
+        @return img
+
+        """
+        img = self.read(fimg)
+        if img is None:
+            return img
+        img_gray = self.gray(img)
+        if save:
+            dirname = os.path.dirname(fimg)
+            _fname = os.path.basename(fimg).split('.')
+            _fname.insert(-1, '_gray.')
+            fname = ''.join(_fname)
+            fname = os.path.join(dirname, fname)
+            self.save(img_gray, fname=fname)
+        return img_gray
+
     def gray(self, img, save=False):
         """Convert the image to gray scale
 
@@ -416,7 +440,7 @@ class IMAGE(tools.TOOLS):
         cv2.imwrite(fname, img)
         return 0
 
-    def flip(self, fimg, direction='h', save=False):
+    def read_and_flip(self, fimg, direction='h', save=False):
         """Flip images
 
         @param fimg: input image file name
