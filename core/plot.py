@@ -742,7 +742,7 @@ class PLOT(tools.DATA, COLORS):
         plt.axis([xmin, xmax, ymin, ymax])
 
         if legend is not None:
-            self._add_legend_2D(pls, legend)
+            self._add_legend_2D(pls, legend, loc=leg_loc)
 
         if yticks is not None:
             ytick_marks = np.arange(len(yticks))
