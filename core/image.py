@@ -259,6 +259,30 @@ class IMAGE(tools.TOOLS):
             return False
         return True
 
+    def read_and_gray(self, fimg, save=False):
+        """Read and convert images to gray
+
+        @param fimg: input image file name
+
+        Keyword arguments:
+        save      -- True to save the image
+
+        @return img
+
+        """
+        img = self.read(fimg)
+        if img is None:
+            return img
+        img_gray = self.gray(img)
+        if save:
+            dirname = os.path.dirname(fimg)
+            _fname = os.path.basename(fimg).split('.')
+            _fname.insert(-1, '_gray.')
+            fname = ''.join(_fname)
+            fname = os.path.join(dirname, fname)
+            self.save(img_gray, fname=fname)
+        return img_gray
+
     def gray(self, img, save=False):
         """Convert the image to gray scale
 
@@ -416,8 +440,34 @@ class IMAGE(tools.TOOLS):
         cv2.imwrite(fname, img)
         return 0
 
+    def read_and_flip(self, fimg, direction='h', save=False):
+        """Flip images
+
+        @param fimg: input image file name
+
+        Keyword arguments:
+        direction -- 'h' for horizontal or 'v' for vertical
+        save      -- True to save the image
+
+        @return img
+
+        """
+        img = self.read(fimg)
+        if img is None:
+            return img
+        code = 1 if direction == 'h' else 0
+        img_flip = cv2.flip(img, code)
+        if save:
+            dirname = os.path.dirname(fimg)
+            _fname = os.path.basename(fimg).split('.')
+            _fname.insert(-1, '_flip.')
+            fname = ''.join(_fname)
+            fname = os.path.join(dirname, fname)
+            self.save(img_flip, fname=fname)
+        return img_flip
+
     def read_and_random_crop(self, fimg, size=None, ratio=0.7, save=False):
-        """Access image pixels
+        """Read images and do random crops
 
         @param fimg: input image file name
 
