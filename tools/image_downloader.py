@@ -28,7 +28,7 @@ import os
 import sys
 import json
 import argparse
-from icrawler.examples import BingImageCrawler
+from icrawler.builtin import BingImageCrawler
 
 
 def parse_json(fname):
@@ -92,7 +92,7 @@ def main():
     for kwd in search_for:
         subdir = os.path.join(args.path, kwd)
         check_dir(subdir)
-        print (" Item name = ", kwd)
+        print(" Item name = ", kwd)
         if len(search_for[kwd]) == 0:
             bing_crawler = BingImageCrawler(subdir)
             bing_crawler.crawl(
@@ -107,11 +107,10 @@ def main():
                 check_dir(ssubdir)
                 pure_keyword = '%20' + search_for[kwd][j]
                 pure_keyword = kwd + pure_keyword.replace(' ', '%20')
-                bing_crawler = BingImageCrawler(ssubdir)
+                bing_crawler = BingImageCrawler(storage={'root_dir': ssubdir})
                 bing_crawler.crawl(
                     keyword=pure_keyword, offset=args.offset,
-                    max_num=args.num, feeder_thr_num=1,
-                    parser_thr_num=1, downloader_thr_num=args.threads,
+                    max_num=args.num,
                     min_size=args.min, max_size=args.max)
 
 if __name__ == '__main__':
