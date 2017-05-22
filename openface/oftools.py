@@ -295,6 +295,7 @@ class OpenFace(OFTools):
         if img is None:
             print("Fail to read image: {}".format(imgPath))
             return None
+        img = cv2.resize(img, (400, 300)) #TAMMY
 
         logging.debug("  + Original size: {}".format(img.shape))
         bbs = align.getAllFaceBoundingBoxes(img)

@@ -9,7 +9,7 @@ from simdat.core import image
 from simdat.core import ml
 from keras import regularizers
 from keras.models import Sequential
-from keras.models import Graph
+# from keras.models import Graph
 from keras.models import Model
 from keras.layers import Input, Activation, merge
 from keras.layers import Flatten, Dense, Dropout

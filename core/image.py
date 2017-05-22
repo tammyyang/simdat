@@ -514,6 +514,24 @@ class IMAGE(tools.TOOLS):
         from cv2 import resize
         return resize(img, size)
 
+    def padding(self, img, top=0, bottom=0, right=0, left=0, value=127):
+        """Padding images
+        @param img: image to be padded
+
+        Keyword arguments:
+        top    -- padding size to the top border
+        bottom -- padding size to the bottom border
+        right  -- padding size to the right border
+        left   -- padding size to the left border
+        value  -- padded value
+
+        """
+
+        padded_img = cv2.copyMakeBorder(img, top, bottom, left, right,
+                                        borderType=cv2.BORDER_CONSTANT,
+                                        value=value)
+        return padded_img
+
     def read(self, fimg, size=None):
         """Access image pixels
 
