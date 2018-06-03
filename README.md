@@ -17,11 +17,6 @@ $cp simdat/setdevenv . && source setdevenv
 from simdat.core import tools, ml, plot
 ```
 
-## To rebuild
-```shell
-$python setup.py build_ext --inplace
-```
-
 ## Architecture
 
     .
